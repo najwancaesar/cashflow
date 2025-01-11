@@ -359,6 +359,9 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                             <tr>
                                 <th
                                     class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    Status</th>
+                                <th
+                                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Tanggal</th>
                                 <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Catatan
@@ -373,6 +376,18 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                         <tbody>
                             <?php while ($row = mysqli_fetch_array($q_pengeluaran_terbaru)) { ?>
                             <tr>
+                                <td class="align-middle text-center text-sm">
+                                    <span
+                                        class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-info' : 'bg-gradient-secondary' ?>">
+                                        <?php if ($row['status'] == 'selesai'): ?>
+                                        <?= $row['status'] ?>
+                                        <?php else : ?>
+                                        <a href="" class="text-white">
+                                            <?= $row['status'] ?>
+                                        </a>
+                                        <?php endif ?>
+                                    </span>
+                                </td>
                                 <td class="align-middle text-center">
                                     <span class="text-secondary text-xs font-weight-bold"><?= $row['tanggal'] ?></span>
                                 </td>
