@@ -73,25 +73,40 @@ if (isset($_SESSION['username'])) {
         <?php
         // rentan sql injection
 		if (isset($_POST['kirim'])) {
-			include "includes/koneksi.php";
-			$username 	= $_POST['username'];
-			$password   = $_POST['password'];
-
-			$login = mysqli_query($con, "SELECT * FROM user where username = '$username' and password = '$password' and is_active = '1'");
-
-			if (mysqli_num_rows($login) > 0) {
-				$sesi	= mysqli_fetch_array($login);
-				session_start();
-
-				$_SESSION['nama'] 			= $sesi['nama'];
-				$_SESSION['id_user'] 		= $sesi['id_user'];
-				$_SESSION['role'] 	        = $sesi['role'];
-				$_SESSION['foto'] 	    	= $sesi['foto'];
-				echo "<script>window.location=(href='main.php?module=home')</script>";
-			} else {
-				echo "<script>alert('Maaf akun anda belum di aktifkan atau username/password salah')</script>";
-			}
-		}
+            include "includes/koneksi.php";
+        
+            $username = $_POST['username'];
+            $password = $_POST['password'];
+        
+            // Siapkan query dengan prepared statements
+            $stmt = $con->prepare("SELECT * FROM user WHERE username = ? AND password = ? AND is_active = '1'");
+            
+            // Bind parameter ke prepared statements
+            $stmt->bind_param("ss", $username, $password);
+        
+            // Eksekusi query
+            $stmt->execute();
+        
+            // Ambil hasil
+            $result = $stmt->get_result();
+        
+            if ($result->num_rows > 0) {
+                $sesi = $result->fetch_assoc();
+                session_start();
+        
+                $_SESSION['nama']    = $sesi['nama'];
+                $_SESSION['id_user'] = $sesi['id_user'];
+                $_SESSION['role']    = $sesi['role'];
+                $_SESSION['foto']    = $sesi['foto'];
+        
+                echo "<script>window.location.href='main.php?module=home';</script>";
+            } else {
+                echo "<script>alert('Maaf akun anda belum di aktifkan atau username/password salah');</script>";
+            }
+        
+            // Tutup statement
+            $stmt->close();
+        }
 		?>
 
     </section>

@@ -1,10 +1,23 @@
 <?php 
+
+// Query untuk mengambil data user dengan id_user = 1
+session_start(); // Mulai sesi
+if (isset($_SESSION['id_user'])) {
+    echo "<pre>";
+    print_r($_SESSION); // Menampilkan seluruh data sesi yang ada
+    echo "</pre>";
+} else {
+    echo "Sesi tidak ditemukan.";
+}
 include "includes/koneksi.php";
-// error fetching data on database
-$q_user = mysqli_query($con, "select * from user  
-    where id_user = '$_GET[id]'");
+if (!$con) {
+    die("Koneksi database gagal: " . mysqli_connect_error());
+}
+
+$q_user = mysqli_query($con, "SELECT * from user  
+    where id_user = '$_SESSION[id_user]'");
     $user = mysqli_fetch_array($q_user);
-?>
+    ?>
 <div class="container-fluid px-2 px-md-4">
     <div class="page-header min-height-300 border-radius-xl mt-4"
         style="background-image: url('https://images.unsplash.com/photo-1531512073830-ba890ca4eba2?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');">
