@@ -1,14 +1,7 @@
 <?php 
 
 // Query untuk mengambil data user dengan id_user = 1
-session_start(); // Mulai sesi
-if (isset($_SESSION['id_user'])) {
-    echo "<pre>";
-    print_r($_SESSION); // Menampilkan seluruh data sesi yang ada
-    echo "</pre>";
-} else {
-    echo "Sesi tidak ditemukan.";
-}
+
 include "includes/koneksi.php";
 if (!$con) {
     die("Koneksi database gagal: " . mysqli_connect_error());
