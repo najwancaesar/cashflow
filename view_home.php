@@ -25,7 +25,7 @@ $tpengeluaran = mysqli_num_rows($q_tpengeluaran);
 
 $transaksi_hariini = $tpemasukan + $tpengeluaran;
 
-$q_tpemasukan = mysqli_query($con, "select * from pemasukan where status = 'pending'");
+$q_tpemasukan = mysqli_query($con, "select * from pemasukan where status = 'pending' and user=$userYangSedangLogin");
 $tpemasukan_pending = mysqli_num_rows($q_tpemasukan);
 
 
@@ -52,9 +52,9 @@ $user = mysqli_num_rows($q_user);
 
 
 //terbaru
-$q_pemasukan_terbaru = mysqli_query($con, "select * from pemasukan inner join user on pemasukan.user = user.id_user order by id_pemasukan limit 10");
+$q_pemasukan_terbaru = mysqli_query($con, "select * from pemasukan inner join user on pemasukan.user = user.id_user order by id_pemasukan limit 5");
 
-$q_pengeluaran_terbaru = mysqli_query($con, "select * from pengeluaran inner join user on pengeluaran.user = user.id_user order by id_pengeluaran limit 10");
+$q_pengeluaran_terbaru = mysqli_query($con, "select * from pengeluaran inner join user on pengeluaran.user = user.id_user order by id_pengeluaran limit 5");
 
 
 

@@ -3,6 +3,7 @@ session_start();
 if(!isset($_SESSION['nama'])){
     echo "<script>window.location=(href='./')</script>";
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -85,6 +86,9 @@ if(!isset($_SESSION['nama'])){
         $('#id_piutang').val($(this).attr("data-id"));
     });
     </script>
+    <?php
+    include("./includes/footer.php");
+    ?>
 </body>
 
 </html>

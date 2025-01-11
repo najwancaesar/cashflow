@@ -69,7 +69,7 @@ include "includes/koneksi.php";
 									</td>
 									<td class="align-middle">
 										<a href="aksi_piutang.php?&act=h&id=<?php echo $row['id_piutang'] ?>"
-											onclick="return confirm('Hapus ?')"
+											onclick="return confirm('Mau di hapus?')"
 											class="text-secondary text-danger font-weight-bold text-xs">
 											<i class="material-icons opacity-10" translate="no">delete
 											</i>

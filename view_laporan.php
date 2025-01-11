@@ -71,34 +71,41 @@
 </div>
 
 <script>
-	$(function () {
+	$(function() {
+    var start = moment().subtract(29, 'days');
+    var end = moment();
 
-		var start = moment().subtract(29, 'days');
-		var end = moment();
+    function cb(start, end) {
+        $('#tanggal').val(start.format('YYYY-MM-DD') + ' - ' + end.format('YYYY-MM-DD'));
+    }
 
-		function cb(start, end) {
-			$('#tangal').val(start.format('YYYY-MM-DD') + ' - ' + end.format('YYYY-MM-DD'));
-		}
+    $('#tanggal').daterangepicker({
+        startDate: start,
+        endDate: end,
+        locale: {
+            format: 'YYYY-MM-DD'
+        },
+        ranges: {
+            'Hari ini': [moment(), moment()],
+            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            '7 hari terakhir': [moment().subtract(6, 'days'), moment()],
+            '30 hari terakhir': [moment().subtract(29, 'days'), moment()],
+            'Bulan ini': [moment().startOf('month'), moment().endOf('month')],
+            'Bulan lalu': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            'Tahun ini': [moment().startOf('year'), moment().endOf('year')],
+            'Tahun lalu': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')]
+        }
+    }, cb);
 
-		$('#tanggal').daterangepicker({
-			startDate: start,
-			endDate: end,
-			ranges: {
-				'Hari ini': [moment(), moment()],
-				'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-				'7 hari terakhir': [moment().subtract(6, 'days'), moment()],
-				'30 hari terakhir': [moment().subtract(29, 'days'), moment()],
-				'Bulan ini': [moment().startOf('month'), moment().endOf('month')],
-				'Bulan lalu': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1,
-					'month').endOf('month')],
-				'Tahun ini': [moment().startOf('year'), moment().endOf('year')],
-				'Tahun lalu': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year')
-					.endOf('year')
-				]
-			}
-		}, cb);
+    cb(start, end);
 
-		cb(start, end);
-	});
+    // Validasi form sebelum submit
+    $('form').on('submit', function(e) {
+        if (!$('#tanggal').val()) {
+            e.preventDefault();
+            alert('Silakan pilih rentang tanggal terlebih dahulu');
+        }
+    });
+});
 
 </script>

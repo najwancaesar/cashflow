@@ -40,6 +40,9 @@ include "includes/koneksi.php";
 										Jumlah pengeluaran</th>
 									<th>
 										User</th>
+									<th>
+										Status
+									</th>
 									<th></th>
 								</tr>
 							</thead>
@@ -63,6 +66,19 @@ include "includes/koneksi.php";
 									<td>
 										<p class="text-xs text-secondary mb-0"><?= $row['nama'] ?></p>
 									</td>
+									<td class="align-middle text-center text-sm">
+                                        <span
+                                            class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
+                                            <?php if ($row['status'] == 'selesai'): ?>
+                                                <?= $row['status'] ?>
+                                            <?php else : ?>
+                                                <a href="aksi_pengeluaran.php?act=l&id=<?php echo $row['id_pengeluaran'] ?>"
+                                                    class="text-white">
+                                                    <?= $row['status'] ?>
+                                                </a>
+                                            <?php endif ?>
+                                        </span>
+                                    </td>
 									<td class="align-middle">
 										<a href="aksi_pengeluaran.php?&act=h&id=<?php echo $row['id_pengeluaran'] ?>"
 											onclick="return confirm('Hapus ?')"
@@ -74,6 +90,7 @@ include "includes/koneksi.php";
 										<a type="submit"
 											data-id="<?php echo $row['id_pengeluaran'] ?>"
 											data-tanggal="<?php echo $row['tanggal'] ?>"
+                                            data-status="<?php echo $row['status'] ?>"
 											data-catatan="<?php echo $row['catatan'] ?>"
 											data-jumlah="<?php echo $row['jumlah'] ?>"
 											class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
