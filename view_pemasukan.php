@@ -20,7 +20,7 @@ $userYangSedangLogin = $_SESSION['id_user'];
                 </div>
                 <div class="card-body px-0 pb-2">
                     <div class="text-end me-3">
-                        <?php if ($_SESSION['role'] == 'admin' or $_SESSION['role'] == 'mahasiswa') : ?>
+                        <?php if ($_SESSION['role'] == 'dosen' or $_SESSION['role'] == 'mahasiswa') : ?>
                             <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
                                 data-bs-target="#modalTambah">
                                 <i class="material-icons opacity-10" translate="no">add</i> Tambah Transaksi

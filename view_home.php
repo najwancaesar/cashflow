@@ -51,10 +51,34 @@ $q_user = mysqli_query($con, "select * from user ");
 $user = mysqli_num_rows($q_user);
 
 
-//terbaru
-$q_pemasukan_terbaru = mysqli_query($con, "select * from pemasukan inner join user on pemasukan.user = user.id_user order by id_pemasukan limit 5");
 
-$q_pengeluaran_terbaru = mysqli_query($con, "select * from pengeluaran inner join user on pengeluaran.user = user.id_user order by id_pengeluaran limit 5");
+// Memeriksa apakah 'id_user' ada dalam session
+if (isset($_SESSION['id_user'])) {
+    $id_user = $_SESSION['id_user']; // Mendapatkan ID user dari session
+} else {
+    // Jika tidak ada, beri pesan error atau arahkan ke halaman login
+    die("User tidak terdeteksi dalam session.");
+}
+
+// Menyesuaikan query untuk hanya menampilkan data untuk pengguna yang sedang aktif
+$q_pemasukan_terbaru = mysqli_query($con, "
+    SELECT * 
+    FROM pemasukan
+    INNER JOIN user ON pemasukan.user = user.id_user
+    WHERE pemasukan.user = '$id_user' 
+    ORDER BY id_pemasukan DESC
+    LIMIT 5
+");
+
+
+$q_pengeluaran_terbaru = mysqli_query($con, "
+    SELECT * 
+    FROM pengeluaran
+    INNER JOIN user ON pengeluaran.user = user.id_user
+    WHERE pengeluaran.user = '$id_user'  -- Menambahkan filter untuk user yang aktif
+    ORDER BY id_pengeluaran DESC
+    LIMIT 5
+");
 
 
 

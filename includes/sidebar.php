@@ -3,8 +3,10 @@ if ($_SESSION['role'] == 'Admin') {
 	$role = 1;
 } elseif ($_SESSION['role'] == 'mahasiswa') {
 	$role = 2;
-} else {
+} elseif ($_SESSION['role'] == 'dosen') {
 	$role = 3;
+} else {
+    $role = 4;
 }
 ?>
 <aside

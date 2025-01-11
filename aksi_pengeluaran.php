@@ -1,4 +1,6 @@
+
 <?php
+ob_start(); // Mulai output buffering
 session_start();
 include "includes/koneksi.php";
 
@@ -13,8 +15,15 @@ function clean_input($data) {
 
 // Validasi user sudah login
 if (!isset($_SESSION['id_user'])) {
-    echo "<script>window.alert('Silakan login terlebih dahulu');
-          window.location=('login.php')</script>";
+    echo "<script>
+        Swal.fire({
+            title: 'Gagal!',
+            text: 'Silakan login terlebih dahulu.',
+            icon: 'error'
+        }).then(() => {
+            window.location = 'login.php';
+        });
+    </script>";
     exit;
 }
 
@@ -30,20 +39,15 @@ if (isset($_GET['act'])) {
             $status = clean_input($_POST['status'] ?? 'pending');
 
             if (empty($tanggal) || empty($jumlah)) {
-                echo "<script>window.alert('Semua field harus diisi!');
-                      window.location=('main.php?module=pengeluaran')</script>";
-                exit;
-            }
-
-            if (!strtotime($tanggal)) {
-                echo "<script>window.alert('Format tanggal tidak valid!');
-                      window.location=('main.php?module=pengeluaran')</script>";
-                exit;
-            }
-
-            if (!is_numeric($jumlah)) {
-                echo "<script>window.alert('Jumlah harus berupa angka!');
-                      window.location=('main.php?module=pengeluaran')</script>";
+                echo "<script>
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Semua field harus diisi!',
+                        icon: 'error'
+                    }).then(() => {
+                        window.location = 'main.php?module=pengeluaran';
+                    });
+                </script>";
                 exit;
             }
 
@@ -54,11 +58,25 @@ if (isset($_GET['act'])) {
                 mysqli_stmt_bind_param($stmt, "ssdis", $tanggal, $catatan, $jumlah, $user, $status);
 
                 if (mysqli_stmt_execute($stmt)) {
-                    echo "<script>window.alert('Data Berhasil Ditambahkan');
-                          window.location=('main.php?module=pengeluaran')</script>";
+                    echo "<script>
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Data berhasil ditambahkan.',
+                            icon: 'success'
+                        }).then(() => {
+                            window.location = 'main.php?module=pengeluaran';
+                        });
+                    </script>";
                 } else {
-                    echo "<script>window.alert('Gagal menambahkan data: " . mysqli_error($con) . "');
-                          window.location=('main.php?module=pengeluaran')</script>";
+                    echo "<script>
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: 'Gagal menambahkan data: " . mysqli_error($con) . "',
+                            icon: 'error'
+                        }).then(() => {
+                            window.location = 'main.php?module=pengeluaran';
+                        });
+                    </script>";
                 }
             } else {
                 $id_pengeluaran = clean_input($_POST['id_pengeluaran']);
@@ -70,11 +88,25 @@ if (isset($_GET['act'])) {
                 mysqli_stmt_bind_param($stmt, "sssdis", $tanggal, $status, $catatan, $jumlah, $id_pengeluaran, $user);
 
                 if (mysqli_stmt_execute($stmt)) {
-                    echo "<script>window.alert('Data Berhasil Diubah');
-                          window.location=('main.php?module=pengeluaran')</script>";
+                    echo "<script>
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Data berhasil diubah.',
+                            icon: 'success'
+                        }).then(() => {
+                            window.location = 'main.php?module=pengeluaran';
+                        });
+                    </script>";
                 } else {
-                    echo "<script>window.alert('Gagal mengubah data: " . mysqli_error($con) . "');
-                          window.location=('main.php?module=pengeluaran')</script>";
+                    echo "<script>
+                        Swal.fire({
+                            title: 'Gagal!',
+                            text: 'Gagal mengubah data: " . mysqli_error($con) . "',
+                            icon: 'error'
+                        }).then(() => {
+                            window.location = 'main.php?module=pengeluaran';
+                        });
+                    </script>";
                 }
             }
             break;
@@ -83,8 +115,15 @@ if (isset($_GET['act'])) {
             $id_pengeluaran = clean_input($_GET['id'] ?? '');
 
             if (empty($id_pengeluaran)) {
-                echo "<script>window.alert('ID tidak valid!');
-                      window.location=('main.php?module=pengeluaran')</script>";
+                echo "<script>
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'ID tidak valid!',
+                        icon: 'error'
+                    }).then(() => {
+                        window.location = 'main.php?module=pengeluaran';
+                    });
+                </script>";
                 exit;
             }
 
@@ -95,11 +134,25 @@ if (isset($_GET['act'])) {
             mysqli_stmt_bind_param($stmt, "ii", $id_pengeluaran, $_SESSION['id_user']);
 
             if (mysqli_stmt_execute($stmt)) {
-                echo "<script>window.alert('Status Berhasil Diubah');
-                      window.location=('main.php?module=pengeluaran')</script>";
+                echo "<script>
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Data berhasil diubah.',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location = 'main.php?module=pengeluaran';
+                    });
+                </script>";
             } else {
-                echo "<script>window.alert('Gagal mengubah status: " . mysqli_error($con) . "');
-                      window.location=('main.php?module=pengeluaran')</script>";
+                echo "<script>
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Gagal mengubah status: " . mysqli_error($con) . "',
+                        icon: 'error'
+                    }).then(() => {
+                        window.location = 'main.php?module=pengeluaran';
+                    });
+                </script>";
             }
             break;
 
@@ -107,8 +160,15 @@ if (isset($_GET['act'])) {
             $id = clean_input($_GET['id'] ?? '');
 
             if (empty($id)) {
-                echo "<script>window.alert('ID tidak valid!');
-                      window.location=('main.php?module=pengeluaran')</script>";
+                echo "<script>
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'ID tidak valid!',
+                        icon: 'error'
+                    }).then(() => {
+                        window.location = 'main.php?module=pengeluaran';
+                    });
+                </script>";
                 exit;
             }
 
@@ -118,18 +178,70 @@ if (isset($_GET['act'])) {
             mysqli_stmt_bind_param($stmt, "ii", $id, $_SESSION['id_user']);
 
             if (mysqli_stmt_execute($stmt)) {
-                echo "<script>window.alert('Data Berhasil Dihapus');
-                      window.location=('main.php?module=pengeluaran')</script>";
+                echo "<script>
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Data berhasil dihapus.',
+                        icon: 'success'
+                    }).then(() => {
+                        window.location = 'main.php?module=pengeluaran';
+                    });
+                </script>";
             } else {
-                echo "<script>window.alert('Gagal menghapus data: " . mysqli_error($con) . "');
-                      window.location=('main.php?module=pengeluaran')</script>";
+                echo "<script>
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Gagal menghapus data: " . mysqli_error($con) . "',
+                        icon: 'error'
+                    }).then(() => {
+                        window.location = 'main.php?module=pengeluaran';
+                    });
+                </script>";
             }
             break;
 
         default:
-            echo "<script>window.alert('Aksi tidak valid!');
-                  window.location=('main.php?module=pengeluaran')</script>";
+            echo "<script>
+                Swal.fire({
+                    title: 'Gagal!',
+                    text: 'Aksi tidak valid!',
+                    icon: 'error'
+                }).then(() => {
+                    window.location = 'main.php?module=pengeluaran';
+                });
+            </script>";
     }
 } else {
-    echo "<script>window.location=('main.php?module=pengeluaran')</script>";
+    echo "<script>
+        Swal.fire({
+            title: 'Gagal!',
+            text: 'Tidak ada aksi yang diterima.',
+            icon: 'error'
+        }).then(() => {
+            window.location = 'main.php?module=pengeluaran';
+        });
+    </script>";
 }
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            Swal.fire({
+                title: 'Berhasil!',
+                text: 'Data berhasil di ubah.',
+                icon: 'success'
+            }).then(() => {
+                window.location = 'main.php?module=pengeluaran';
+            });
+        });
+    </script>
+</body>
+</html>
+<?php
+ob_end_flush(); // Akhiri output buffering
+?>

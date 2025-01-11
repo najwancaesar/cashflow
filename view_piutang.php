@@ -1,6 +1,6 @@
 <?php
 include "includes/koneksi.php";
-
+$userYangSedangLogin = $_SESSION['id_user'];
 ?>
 
 
@@ -20,7 +20,7 @@ include "includes/koneksi.php";
 				</div>
 				<div class="card-body px-0 pb-2">
 					<div class="text-end me-3">
-						<?php if ($_SESSION['role'] == 'admin' or $_SESSION['role'] == 'mahasiswa') : ?>
+						<?php if ($_SESSION['role'] == 'dosen' or $_SESSION['role'] == 'mahasiswa') : ?>
 							<button type="button" class="btn btn-secondary" data-bs-toggle="modal"
 								data-bs-target="#modalTambah">
 								<i class="material-icons opacity-10" translate="no">add</i> Tambah Transaksi
@@ -45,7 +45,7 @@ include "includes/koneksi.php";
 								</tr>
 							</thead>
 							<?php
-							$sql = mysqli_query($con, "select * from piutang inner join user where piutang.user = user.id_user");
+							$sql = mysqli_query($con, "select * from piutang join user on piutang.user = user.id_user where user.id_user = $userYangSedangLogin");
 							$no = 1;
 							while ($row = mysqli_fetch_array($sql)) {
 							?>
@@ -69,7 +69,7 @@ include "includes/koneksi.php";
 									</td>
 									<td class="align-middle">
 										<a href="aksi_piutang.php?&act=h&id=<?php echo $row['id_piutang'] ?>"
-											onclick="return confirm('Mau di hapus?')"
+											onclick="return confirm('Hapus?')"
 											class="text-secondary text-danger font-weight-bold text-xs">
 											<i class="material-icons opacity-10" translate="no">delete
 											</i>

@@ -3,11 +3,11 @@
 include "includes/koneksi.php";
 if(isset($_GET['act'])){
 	if($_GET['act'] == 't'){
-        $carikode = mysqli_query($con, "SELECT kode_user from tbl_user order by kode_user Desc limit 1");
+        $carikode = mysqli_query($con, "SELECT id_user from user order by id_user Desc limit 1");
         $datakode = mysqli_fetch_array($carikode);
         // jika $datakode
         if ($datakode) {
-        $nilaikode = (int) substr($datakode['kode_user'],3,3);
+        $nilaikode = (int) substr($datakode['id_user'],3,3);
         $kode = $nilaikode + 1;
         $kode_otomatis = "U".str_pad($kode, 3, "0", STR_PAD_LEFT);
         } else {
@@ -113,8 +113,8 @@ if(isset($_GET['act'])){
     <?php 
     }
     if($_GET['act'] == 'e'){
-    $q_pelayanan = mysqli_query($con, "select * from tbl_user  
-    where kode_user = '$_GET[id]'");
+    $q_pelayanan = mysqli_query($con, "select * from user  
+    where id_user = '$_GET[id]'");
     $pelayanan = mysqli_fetch_array($q_pelayanan);
     ?>
     <div class="data-table-area mg-b-15" style="min-height: 40em;">
@@ -251,7 +251,7 @@ if(isset($_GET['act'])){
                                 </thead>
                                 <tbody>
                                 <?php
-                                    $sql = mysqli_query($con,"select * from tbl_user");
+                                    $sql = mysqli_query($con,"select * from user");
                                     $no=1;
                                     while($row=mysqli_fetch_array($sql)){
                                     ?>
