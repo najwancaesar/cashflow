@@ -87,16 +87,17 @@ if($_GET['act'] == 'p'){
 
 if($_GET['act'] == 'a'){
 	$id		= $_GET['id'];
-	$cek = mysqli_query($con, "SELECT * FROM user where id_user = $id and is_active = '0'");
+	$cek = mysqli_query($con, "SELECT * FROM user where id_user = $id and is_active = '1'");
 	if(mysqli_num_rows($cek) > 0) {
 		mysqli_query($con, "UPDATE user SET is_active = '1' where id_user= $id");
-	}else{
-		mysqli_query($con, "UPDATE user SET is_active = '0' where id_user= $id");
 	}
+	// else{
+	// 	mysqli_query($con, "UPDATE user SET is_active = '0' where id_user= $id");
+	// 	echo "<script> window.alert"
+	// }
 
-				echo "<script>window.alert('Data User Berhasil Diaktifkan');
-						window.location=('main.php?module=pengguna')</script>";
-
+	// 			echo "<script>window.alert('Data User Berhasil Diaktifkan');
+	// 					window.location=('main.php?module=pengguna')</script>";
 }
 
 if($_GET['act'] == 'h'){

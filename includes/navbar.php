@@ -17,14 +17,13 @@
                         <i class="fa fa-user me-sm-1"></i>
                         <span class="d-sm-inline d-none"><?= $_SESSION['nama'] ?></span>
                     </a>
-
                     <ul class="dropdown-menu dropdown-menu-end px-2 py-3 me-sm-n4" aria-labelledby="dropdownMenuButton">
                         <li class="mb-2">
                             <a class="dropdown-item border-radius-md" href="main.php?module=profile">
                                 <div class="d-flex py-1">
                                     <div class="my-auto">
                                         <img src="assets/img/profil/<?= $_SESSION['foto'] ?>"
-                                            class="avatar avatar-sm  me-3 ">
+                                            class="avatar avatar-sm me-3 ">
                                     </div>
                                     <div class="d-flex flex-column justify-content-center">
                                         <h6 class="text-sm font-weight-normal mb-1">

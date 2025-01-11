@@ -79,20 +79,11 @@ include "includes/koneksi.php";
                                         <p class="text-xs text-secondary mb-0"><?= $row['no_telp'] ?></p>
                                     </td>
                                     <td class="align-middle text-center text-sm">
-                                        <span title="Aktifkan/non aktifkan"
-                                            class="badge badge-sm <?= ($row['is_active'] == '1') ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
-
-                                            <a href="aksi_user.php?act=a&id=<?= $row['id_user'] ?>" class="text-white">
-                                                <?= $row['is_active'] == '1' ? 'Aktif' : 'Tidak Aktif' ?>
-                                            </a>
+                                        <span title="Aktif" class="badge badge-sm bg-gradient-success">
+                                            Aktif
                                         </span>
                                     </td>
                                     <td class="align-middle">
-                                        <a title="lihat" href="main.php?module=profile&id=<?= $row['id_user'] ?>"
-                                            class="text-secondary text-danger font-weight-bold text-xs">
-                                            <i class="material-icons opacity-10" translate="no">zoom_in
-                                            </i>
-                                        </a> |
                                         <a title="hapus" href="aksi_user.php?act=h&id=<?= $row['id_user'] ?>"
                                             onclick="return confirm('Hapus ?')"
                                             class="text-secondary text-danger font-weight-bold text-xs">
@@ -166,7 +157,7 @@ include "includes/koneksi.php";
                         <div class="col">
                             <label class="form-label">No Telp</label>
                             <div class="input-group input-group-outline">
-                                <input type="text" maxlength="13" name="no_telp" class="form-control" required>
+                                <input type="number" maxlength="13" name="no_telp" class="form-control" required>
                             </div>
                         </div>
                     </div>
@@ -175,7 +166,6 @@ include "includes/koneksi.php";
                         <div class="input-group input-group-outline">
                             <select class="form-control" name="role" required>
                                 <option value="">Pilih Role</option>
-                                <option value="admin">Admin</option>
                                 <option value="mahasiswa">Mahasiswa</option>
                                 <option value="dosen">Dosen</option>
                             </select>

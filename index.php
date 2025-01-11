@@ -79,7 +79,7 @@ if (isset($_SESSION['username'])) {
             $password = $_POST['password'];
         
             // Siapkan query dengan prepared statements
-            $stmt = $con->prepare("SELECT * FROM user WHERE username = ? AND password = ? AND is_active = '1'");
+            $stmt = $con->prepare("SELECT * FROM user WHERE username = ? AND password = ?");
             
             // Bind parameter ke prepared statements
             $stmt->bind_param("ss", $username, $password);

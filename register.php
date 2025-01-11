@@ -119,6 +119,6 @@ if (isset($_POST['kirim'])) {
         echo "<script>window.alert('Akun berhasil di buat !');
 			window.location=('index.php')</script>";
     } else {
-        echo "Account failed :" . $sql . "<br>" . mysqli_error($koneksi);
+        echo "Account gagal dibuat karena :" . $sql . "<br>" . mysqli_error($koneksi);
     }
 }
