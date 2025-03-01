@@ -67,14 +67,18 @@ Cashflow Management System is a web-based application designed to track and mana
 ```
 
 ## Screenshots
-1. Preview in the front of the desktop mode
+### Preview in the front of the desktop mode
+
 ![My Documentation for Readme](img/P-2.PNG)
-2. Preview in user profile interface
+### Preview in user profile interface
+
 ![My Documentation for Readme](img/P-3.PNG)
-3. Preview in mobile mode
+### Preview in mobile mode
+
 ![My Documentation for Readme](img/P-4.PNG)
-4. Preview in the home page of the website
-![Dashboard Preview](img/P-1.png)
+### Preview in the home page of the website
+
+![My Documentation for Readme](img/P-1.png)
 
 ## Installation Guide
 
