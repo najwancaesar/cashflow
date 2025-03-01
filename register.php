@@ -113,12 +113,11 @@ if (isset($_POST['kirim'])) {
     $role = $_POST["role"];
 
 
-    $sql = "INSERT INTO user(username, nama, email, password, no_telp, role) VALUES ('$username','$nama','$email','$password','$no_telp','$role')";
-
+    $sql = "INSERT INTO user(username, nama, email, password, no_telp, role) VALUES ('$username','$nama','$email','$password',$no_telp,'$role')";
     if (mysqli_query($con, $sql)) {
         echo "<script>window.alert('Akun berhasil di buat !');
 			window.location=('index.php')</script>";
     } else {
-        echo "Account gagal dibuat karena :" . $sql . "<br>" . mysqli_error($koneksi);
+        echo "Account gagal dibuat karena :" . $sql . "<br>" . mysqli_error($con);
     }
 }

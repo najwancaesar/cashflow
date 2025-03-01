@@ -1,133 +1,140 @@
-<?php
-error_reporting(0);
-session_start();
-if (isset($_SESSION['username'])) {
-	echo "<script>window.location=(href='main.php?module=home')</script>";
-}
-?>
-
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <title> CashFlow Control</title>
-    <link rel="icon" type="image/png" href="assets/img/logocv.jpg">
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <link id="pagestyle" href="assets/css/material-dashboard.css?v=3.0.0" rel="stylesheet" />
-    <link rel="stylesheet" href="css/bootstrap.min.css">
-    <link rel="stylesheet" href="css/font-awesome.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="utf-8">
+  <title>CASHFLOWKIN</title>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <meta content="" name="keywords">
+  <meta content="" name="description">
 
+  <!-- Favicons -->
+  <link href="assets/img/logocv.jpg" rel="icon">
+  <link href="assets/img/logocv.jpg" rel="apple-touch-icon">
+
+  <!-- Bootstrap CSS File -->
+  <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Libraries CSS Files -->
+  <link href="lib/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+  <link href="lib/animate/animate.min.css" rel="stylesheet">
+  <link href="lib/ionicons/css/ionicons.min.css" rel="stylesheet">
+  <link href="lib/owlcarousel/assets/owl.carousel.min.css" rel="stylesheet">
+  <link href="lib/lightbox/css/lightbox.min.css" rel="stylesheet">
+
+  <!-- Main Stylesheet File -->
+  <link href="css/style-purple.css" rel="stylesheet">
+
+  <!-- =======================================================
+    Theme Name: DevFolio
+    Theme URL: https://bootstrapmade.com/devfolio-bootstrap-portfolio-html-template/
+    Author: BootstrapMade.com
+    License: https://bootstrapmade.com/license/
+  ======================================================= -->
 </head>
 
-<body>
-    <section style="padding: 2em 0;">
+<body id="page-top">
+
+  <!--/ Nav Star /-->
+  <nav class="navbar navbar-b navbar-trans navbar-expand-md fixed-top" id="mainNav">
+    <div class="container">
+      <a class="navbar-brand js-scroll" href="index.php">KIN</a>
+      <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarDefault"
+        aria-controls="navbarDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <div class="navbar-collapse collapse justify-content-end" id="navbarDefault">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link js-scroll active" href="index.php">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link js-scroll" href="login.php">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link js-scroll" href="#service">Services</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <!--/ Nav End /-->
+
+  <!--/ Intro Skew Star /-->
+  <div id="home" class="intro route bg-image" style="background-image: url(img/overlay-bg.jpg)">
+    <div class="overlay-itro"></div>
+    <div class="intro-content display-table">
+      <div class="table-cell">
         <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-md-6 text-center mb-5">
-                    <h2 class="heading-section">CashFlow Control</h2>
-                </div>
-            </div>
-            <div class="row justify-content-center">
-                <div class="col-md-6 col-lg-4">
-                    <div class="login-wrap py-5">
-                        <div class="img d-flex align-items-center justify-content-center"
-                            style="background-image:url(assets/img/logocv.jpg)">
-                        </div>
-                        <h3 class="text-center mb-0"></h3>
-                        <p class="text-center"></p>
-                        <form method="post">
-                            <div class="form-group">
-                                <div class="icon d-flex align-items-center justify-content-center"><span
-                                        class="fa fa-user"></span></div>
-                                <input type="text" name="username" class="form-control" placeholder="Username" required>
-                            </div>
-                            <div class="form-group">
-                                <div class="icon d-flex align-items-center justify-content-center"><span
-                                        class="fa fa-lock"></span></div>
-                                <input type="password" name="password" class="form-control" placeholder="Password"
-                                    required>
-                            </div>
-                            <div class="form-group">
-                                <button type="submit" name="kirim"
-                                    class="btn form-control btn-primary rounded submit px-3">LOGIN</button>
-                            </div>
-                            <div class="form-group">
-                                <h5 class="mb-0"> <a href="register.php"
-                                        class="text center link-primary link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">
-                                        Don't have an account?
-                                    </a>
-                                </h5>
-                            </div>
-                    </div>
-                    </form>
-                </div>
-            </div>
+          <h1 class="intro-title mb-4">CAHSFLOW</h1>
+          <p class="intro-subtitle">Manage Money and Make your finance better</p>
         </div>
+      </div>
+    </div>
+  </div>
+  <!--/ Section Services Star /-->
+  <section id="service" class="services-mf route">
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="title-box text-center">
+            <h3 class="title-a">
+              FEATURES
+            </h3>
+            <p class="subtitle-a">
+              FOR YOUR TRANSACTION AND CASHFLOW
+            </p>
+            <div class="line-mf"></div>
+          </div>
         </div>
-
-        <?php
-        // rentan sql injection
-		if (isset($_POST['kirim'])) {
-            include "includes/koneksi.php";
-        
-            $username = $_POST['username'];
-            $password = $_POST['password'];
-        
-            // Siapkan query dengan prepared statements
-            $stmt = $con->prepare("SELECT * FROM user WHERE username = ? AND password = ?");
-            
-            // Bind parameter ke prepared statements
-            $stmt->bind_param("ss", $username, $password);
-        
-            // Eksekusi query
-            $stmt->execute();
-        
-            // Ambil hasil
-            $result = $stmt->get_result();
-        
-            if ($result->num_rows > 0) {
-                $sesi = $result->fetch_assoc();
-                session_start();
-        
-                $_SESSION['nama']    = $sesi['nama'];
-                $_SESSION['id_user'] = $sesi['id_user'];
-                $_SESSION['role']    = $sesi['role'];
-                $_SESSION['foto']    = $sesi['foto'];
-        
-                echo "<script>window.location.href='main.php?module=home';</script>";
-            } else {
-                echo "<script>alert('Maaf akun anda belum di aktifkan atau username/password salah');</script>";
-            }
-        
-            // Tutup statement
-            $stmt->close();
-        }
-		?>
-
-    </section>
-    <script src="assets/js/core/popper.min.js"></script>
-    <script src="assets/js/core/bootstrap.min.js"></script>
-    <script src="assets/js/plugins/perfect-scrollbar.min.js"></script>
-    <script src="assets/js/plugins/smooth-scrollbar.min.js"></script>
-    <script>
-    var win = navigator.platform.indexOf('Win') > -1;
-    if (win && document.querySelector('#sidenav-scrollbar')) {
-        var options = {
-            damping: '0.5'
-        }
-        Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
-    }
-    </script>
-    <script src="assets/js/material-dashboard.min.js?v=3.0.0"></script>
-
-    <?php
-    include("./includes/footer.php");
-    ?>
+      </div>
+      <div class="row">
+        <div class="col-md-4">
+          <div class="service-box">
+            <div class="service-ico">
+              <span class="ico-circle"><i class="ion-monitor"></i></span>
+            </div>
+            <div class="service-content">
+              <h2 class="s-title">DAILY TRANSACTION RECORDING</h2>
+              <p class="s-description text-center">
+                Daily transaction recording refers to the practice of documenting all financial transactions that occur within a business or personal accounts on a daily basis, 
+                This includes purchases, sales, payments, receipts, and any other movement of money.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="service-box">
+            <div class="service-ico">
+              <span class="ico-circle"><i class="ion-android-phone-portrait"></i></span>
+            </div>
+            <div class="service-content">
+              <h2 class="s-title">  Accounts Receivable & Accounts Payable</h2>
+              <p class="s-description text-center">
+                Accounts payable refers to the money a business or individual owes to suppliers, vendors, or other creditors for goods or services received on credit.
+                Accounts receivable refers to the money owed to a business or individual by customers or other entities for goods or services provided on credit.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="service-box">
+            <div class="service-ico">
+              <span class="ico-circle"><i class="ion-stats-bars"></i></span>
+            </div>
+            <div class="service-content">
+              <h2 class="s-title"> Generating a Financial Report</h2>
+              <p class="s-description text-center">
+              
+                Generating a financial report refers to the process of compiling and presenting financial data in a structured and comprehensive format to provide insights into the financial performance and position of a business or individual.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!--/ Section Services End /-->
 </body>
-
 </html>

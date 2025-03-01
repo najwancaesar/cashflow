@@ -1,215 +1,181 @@
--- phpMyAdmin SQL Dump
--- version 5.2.0
--- https://www.phpmyadmin.net/
+-- MariaDB dump 10.19  Distrib 10.6.17-MariaDB, for Linux (x86_64)
 --
--- Host: 127.0.0.1
--- Waktu pembuatan: 05 Jan 2025 pada 06.35
--- Versi server: 10.4.25-MariaDB
--- Versi PHP: 7.4.30
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
-
+-- Host: localhost    Database: cashflow_transaksi
+-- ------------------------------------------------------
+-- Server version	10.6.17-MariaDB-cll-lve
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Database: `db_transaksi`
+-- Table structure for table `hutang`
 --
 
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `hutang`
---
-
+DROP TABLE IF EXISTS `hutang`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `hutang` (
-  `id_hutang` int(11) NOT NULL,
+  `id_hutang` int(11) NOT NULL AUTO_INCREMENT,
   `tanggal` date NOT NULL,
   `kreditur` varchar(100) NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
-  `user` varchar(30) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `user` varchar(30) NOT NULL,
+  `status` enum('pending','selesai') NOT NULL,
+  PRIMARY KEY (`id_hutang`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data untuk tabel `hutang`
+-- Dumping data for table `hutang`
 --
 
-INSERT INTO `hutang` (`id_hutang`, `tanggal`, `kreditur`, `catatan`, `jumlah`, `user`) VALUES
-(4, '2025-01-23', 'GACORTOTO888', 'Kalah di 5x lipat', 12000000, '1');
-
--- --------------------------------------------------------
+LOCK TABLES `hutang` WRITE;
+/*!40000 ALTER TABLE `hutang` DISABLE KEYS */;
+INSERT INTO `hutang` VALUES (8,'2025-01-11','fadlan','ok',90000,'32','pending'),(9,'2025-01-13','Bank Ganesha','Peminjaman untuk dana darurat\r\n',10000,'2','pending'),(10,'2025-01-13','ferdi','mixue',10000,'39','pending'),(13,'2025-01-15','myself','oke',15000,'40','pending'),(14,'2025-01-16','ok','tst',6555500,'41','pending'),(15,'2025-02-27','Sakila','peminjaman untuk beli kebutuhan di indomaret\r\n',50000,'52','pending');
+/*!40000 ALTER TABLE `hutang` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
--- Struktur dari tabel `pemasukan`
+-- Table structure for table `pemasukan`
 --
 
+DROP TABLE IF EXISTS `pemasukan`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pemasukan` (
-  `id_pemasukan` int(11) NOT NULL,
+  `id_pemasukan` int(11) NOT NULL AUTO_INCREMENT,
   `tanggal` date NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
   `user` varchar(30) NOT NULL,
-  `status` enum('pending','selesai') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `status` enum('pending','selesai') NOT NULL,
+  PRIMARY KEY (`id_pemasukan`)
+) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data untuk tabel `pemasukan`
+-- Dumping data for table `pemasukan`
 --
 
-INSERT INTO `pemasukan` (`id_pemasukan`, `tanggal`, `catatan`, `jumlah`, `user`, `status`) VALUES
-(11, '2025-01-15', 'gaji bulanan', 1000000, '1', 'selesai'),
-(12, '2025-01-05', 'rejeki hari ini', 70000, '1', 'selesai'),
-(13, '2025-01-05', 'asd', 200000, '1', 'selesai');
-
--- --------------------------------------------------------
+LOCK TABLES `pemasukan` WRITE;
+/*!40000 ALTER TABLE `pemasukan` DISABLE KEYS */;
+INSERT INTO `pemasukan` VALUES (11,'2025-01-15','gaji bulanan',1000000,'28','selesai'),(15,'2025-01-07','Restock gaji',200000,'27','selesai'),(17,'2025-01-09','test',100000,'28','pending'),(22,'2025-01-09','fsfs',121212,'30','selesai'),(28,'2025-01-11','ewfew',20000,'32','selesai'),(29,'2025-01-13','Uang kas',10000,'2','pending'),(31,'2025-01-13','oke',100000,'2','selesai'),(32,'2025-01-13','uang saku',500000,'39','selesai'),(33,'2024-11-14','jersey',150000,'39','selesai'),(34,'2025-01-13','uang kas',50000,'39','selesai'),(36,'2025-01-15','testing',400000,'40','pending'),(37,'2025-01-15','Gaji freelance',150000,'41','selesai'),(38,'2025-01-16','Nemu dikantong',1000000,'43','selesai'),(39,'2025-01-07','apani',1000000,'41','selesai'),(40,'2025-01-27','Gajian sampingan',50000000,'49','pending'),(41,'2025-01-25','duit',1000000,'50','selesai'),(42,'2025-01-29','duit',1000000,'51','selesai'),(43,'2025-02-27','Pemasukan hari ini uang jajan',20000,'52','selesai');
+/*!40000 ALTER TABLE `pemasukan` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
--- Struktur dari tabel `pengeluaran`
+-- Table structure for table `pengeluaran`
 --
 
+DROP TABLE IF EXISTS `pengeluaran`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pengeluaran` (
-  `id_pengeluaran` int(11) NOT NULL,
+  `id_pengeluaran` int(11) NOT NULL AUTO_INCREMENT,
   `tanggal` date NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
-  `user` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `user` int(11) NOT NULL,
+  `status` enum('pending','selesai') NOT NULL,
+  PRIMARY KEY (`id_pengeluaran`)
+) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data untuk tabel `pengeluaran`
+-- Dumping data for table `pengeluaran`
 --
 
-INSERT INTO `pengeluaran` (`id_pengeluaran`, `tanggal`, `catatan`, `jumlah`, `user`) VALUES
-(5, '2025-01-18', 'pengeluaran bulanan', 500000, 1);
-
--- --------------------------------------------------------
+LOCK TABLES `pengeluaran` WRITE;
+/*!40000 ALTER TABLE `pengeluaran` DISABLE KEYS */;
+INSERT INTO `pengeluaran` VALUES (22,'2025-01-11','oke',20000,32,'selesai'),(23,'2025-01-13','Kebutuhan bulanan',500000,2,'pending'),(24,'2025-01-13','makrab',180000,39,'selesai'),(25,'2025-01-15','Jajan mie goreng',15000,41,'selesai'),(26,'2025-01-16','okok',9000000,41,'pending'),(27,'2025-01-20','Jajan seblak',10000,49,'selesai'),(28,'2025-02-17','Beli perintilan rubicon',130000000,49,'pending'),(29,'2025-02-27','Pengeluaran untuk jajan di kantin',10000,52,'selesai');
+/*!40000 ALTER TABLE `pengeluaran` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
--- Struktur dari tabel `piutang`
+-- Table structure for table `piutang`
 --
 
+DROP TABLE IF EXISTS `piutang`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `piutang` (
-  `id_piutang` int(11) NOT NULL,
+  `id_piutang` int(11) NOT NULL AUTO_INCREMENT,
   `tanggal` date NOT NULL,
   `debitur` varchar(100) NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
-  `user` varchar(30) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `user` varchar(30) NOT NULL,
+  `status` enum('pending','selesai') NOT NULL,
+  PRIMARY KEY (`id_piutang`)
+) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data untuk tabel `piutang`
+-- Dumping data for table `piutang`
 --
 
-INSERT INTO `piutang` (`id_piutang`, `tanggal`, `debitur`, `catatan`, `jumlah`, `user`) VALUES
-(5, '2025-01-04', 'AZKA', 'kalah main slot', 2000000, '1');
-
--- --------------------------------------------------------
+LOCK TABLES `piutang` WRITE;
+/*!40000 ALTER TABLE `piutang` DISABLE KEYS */;
+INSERT INTO `piutang` VALUES (10,'2025-01-11','adad','ok',90000,'32','pending'),(11,'2025-01-13','bank bca','award winner',100000,'2','pending'),(12,'2025-01-13','tangguh','nasi bungkus',10000,'39','pending'),(14,'2025-01-15','tama','oke saja',100000,'40','pending'),(15,'2025-01-15','oooo','okkkkkkkkkkkkkk',800000,'40','pending'),(16,'2025-01-16','okk','okgtgyu',800000,'41','pending'),(17,'2025-01-31','select','omset',500000,'50','pending'),(18,'2025-02-27','Sakila','biaya operasional rumah sakit',100000,'52','pending');
+/*!40000 ALTER TABLE `piutang` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
--- Struktur dari tabel `user`
+-- Table structure for table `user`
 --
 
+DROP TABLE IF EXISTS `user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user` (
-  `id_user` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(20) NOT NULL,
   `nama` varchar(50) NOT NULL,
   `email` varchar(50) NOT NULL,
   `password` varchar(50) NOT NULL,
   `no_telp` varchar(13) NOT NULL,
-  `foto` varchar(255) NOT NULL,
+  `foto` varchar(255) NOT NULL DEFAULT 'default.png',
   `role` enum('admin','mahasiswa','dosen') NOT NULL,
   `create_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `is_active` enum('0','1') NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `is_active` enum('1') NOT NULL,
+  PRIMARY KEY (`id_user`)
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data untuk tabel `user`
+-- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`id_user`, `username`, `nama`, `email`, `password`, `no_telp`, `foto`, `role`, `create_at`, `is_active`) VALUES
-(1, 'admin', 'adminnya w', 'admin@gmail.com', '12345', '0823893244', '1658384572_images.jpg', 'admin', '2022-07-21 05:25:10', '1'),
-(2, 'popo', 'popo', 'popo@gmail.com', '12345', '082389324', 'team-5.jpg', 'mahasiswa', '2022-07-21 05:25:10', '1'),
-(3, 'gobi', 'gobi', 'gobi@gmail.com', '12345', '082295644497', '1658383819_images.jpg', 'dosen', '2022-07-21 05:25:10', '1'),
-(10, 'iben', 'ibnu', 'm.ibnuatho455@gmail.com', '12345', '8929301', '', 'mahasiswa', '2025-01-05 02:25:37', '1'),
-(11, 'keping', 'kevin', 'kepin@gmail.com', '12345', 'no_telp', '', 'mahasiswa', '2025-01-05 02:44:47', '1'),
-(16, 'najwan', 'najawan', 'najwan@gmail.com', '12345', '912401', '', 'dosen', '2025-01-05 04:16:19', '1');
+LOCK TABLES `user` WRITE;
+/*!40000 ALTER TABLE `user` DISABLE KEYS */;
+INSERT INTO `user` VALUES (1,'admin','Administrator','admin@gmail.com','12345','0823893244','1736232522_Js-removebg-preview.png','admin','2022-07-21 05:25:10','1'),(2,'Pak Ridwan','Pak Ridwan Arif Cahyono','Ridwan@gmail.com','12345','082389324','1736212833_Gajah.png','dosen','2022-07-21 05:25:10','1'),(3,'Pak Sandhika','Pak Sandhika Galih','Sandhika@gmail.com','12345','082295644497','1736212884_Information Technology 38.png','dosen','2022-07-21 05:25:10','1'),(52,'Kin123','Kevin Ibnu Najwan','kin123@gmail.com','123321','21839487263','1740621110_481a033e-bc58-472d-bb7f-374f32e671fd.jpg','dosen','2025-02-20 09:26:41','1'),(53,'tamu','tamu123','tamu@gmail.com','123','9899090990','default.png','dosen','2025-02-27 01:59:10','1');
+/*!40000 ALTER TABLE `user` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
--- Indexes for dumped tables
---
-
---
--- Indeks untuk tabel `hutang`
---
-ALTER TABLE `hutang`
-  ADD PRIMARY KEY (`id_hutang`);
-
---
--- Indeks untuk tabel `pemasukan`
---
-ALTER TABLE `pemasukan`
-  ADD PRIMARY KEY (`id_pemasukan`);
-
---
--- Indeks untuk tabel `pengeluaran`
---
-ALTER TABLE `pengeluaran`
-  ADD PRIMARY KEY (`id_pengeluaran`);
-
---
--- Indeks untuk tabel `piutang`
---
-ALTER TABLE `piutang`
-  ADD PRIMARY KEY (`id_piutang`);
-
---
--- Indeks untuk tabel `user`
---
-ALTER TABLE `user`
-  ADD PRIMARY KEY (`id_user`);
-
---
--- AUTO_INCREMENT untuk tabel yang dibuang
+-- Dumping events for database 'cashflow_transaksi'
 --
 
 --
--- AUTO_INCREMENT untuk tabel `hutang`
+-- Dumping routines for database 'cashflow_transaksi'
 --
-ALTER TABLE `hutang`
-  MODIFY `id_hutang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
---
--- AUTO_INCREMENT untuk tabel `pemasukan`
---
-ALTER TABLE `pemasukan`
-  MODIFY `id_pemasukan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
-
---
--- AUTO_INCREMENT untuk tabel `pengeluaran`
---
-ALTER TABLE `pengeluaran`
-  MODIFY `id_pengeluaran` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT untuk tabel `piutang`
---
-ALTER TABLE `piutang`
-  MODIFY `id_piutang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT untuk tabel `user`
---
-ALTER TABLE `user`
-  MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-COMMIT;
-
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2025-03-01 15:37:52

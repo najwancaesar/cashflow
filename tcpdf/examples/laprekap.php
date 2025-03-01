@@ -28,10 +28,10 @@ if (!in_array($tabel, $allowed_tables)) {
 
 // Query dimodifikasi untuk menambahkan filter user id
 $query = "SELECT $tabel.*, user.username 
-          FROM $tabel 
-          INNER JOIN user ON $tabel.user = user.id_user 
-          WHERE $tabel.user = ? 
-          AND $tabel.tanggal BETWEEN ? AND ?";
+FROM $tabel 
+INNER JOIN user ON $tabel.user = user.id_user 
+WHERE $tabel.user = ? 
+AND $tabel.tanggal BETWEEN ? AND ?";
 
 if ($tabel === 'pemasukan') {
     $query .= " AND $tabel.status = 'selesai'";
@@ -52,52 +52,64 @@ $user_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_user));
 
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Laporan <?= ucfirst($tabel) ?></title>
     <style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .logo {
+        margin-bottom: 20px;
+    }
+
+    .user-info {
+        text-align: left;
+        margin-bottom: 20px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    .total-row {
+        font-weight: bold;
+        background-color: #f9f9f9;
+    }
+
+    @media print {
+        .no-print {
+            display: none;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
+            padding: 0;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .logo {
-            margin-bottom: 20px;
-        }
-        .user-info {
-            text-align: left;
-            margin-bottom: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .total-row {
-            font-weight: bold;
-            background-color: #f9f9f9;
-        }
-        @media print {
-            .no-print {
-                display: none;
-            }
-            body {
-                padding: 0;
-            }
-        }
+    }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h2>CASHFLOW ITPGT</h2>
@@ -119,7 +131,7 @@ $user_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_user));
                 <th>Jumlah</th>
                 <th>Catatan</th>
                 <?php if($tabel == 'pemasukan'): ?>
-                    <th>Status</th>
+                <th>Status</th>
                 <?php endif; ?>
             </tr>
         </thead>
@@ -130,15 +142,15 @@ $user_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_user));
             while($row = mysqli_fetch_assoc($result)): 
                 $total += $row['jumlah'];
             ?>
-                <tr>
-                    <td><?= $no++ ?></td>
-                    <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
-                    <td align="right">Rp <?= number_format($row['jumlah'], 0, ',', '.') ?></td>
-                    <td><?= htmlspecialchars($row['catatan']) ?></td>
-                    <?php if($tabel == 'pemasukan'): ?>
-                        <td><?= $row['status'] ?></td>
-                    <?php endif; ?>
-                </tr>
+            <tr>
+                <td><?= $no++ ?></td>
+                <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
+                <td align="right">Rp <?= number_format($row['jumlah'], 0, ',', '.') ?></td>
+                <td><?= htmlspecialchars($row['catatan']) ?></td>
+                <?php if($tabel == 'pemasukan'): ?>
+                <td><?= $row['status'] ?></td>
+                <?php endif; ?>
+            </tr>
             <?php endwhile; ?>
             <tr class="total-row">
                 <td colspan="2">Total</td>
@@ -153,4 +165,5 @@ $user_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_user));
         <button onclick="window.close()">Tutup</button>
     </div>
 </body>
+
 </html>

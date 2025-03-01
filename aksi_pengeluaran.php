@@ -1,4 +1,3 @@
-
 <?php
 ob_start(); // Mulai output buffering
 session_start();
@@ -173,10 +172,9 @@ if (isset($_GET['act'])) {
             }
 
             $query = "DELETE FROM pengeluaran 
-                      WHERE id_pengeluaran = ? AND user = ?";
+            WHERE id_pengeluaran = ? AND user = ?";
             $stmt = mysqli_prepare($con, $query);
             mysqli_stmt_bind_param($stmt, "ii", $id, $_SESSION['id_user']);
-
             if (mysqli_stmt_execute($stmt)) {
                 echo "<script>
                     Swal.fire({
@@ -225,22 +223,25 @@ if (isset($_GET['act'])) {
 ?>
 <!DOCTYPE html>
 <html>
+
 <head>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            Swal.fire({
-                title: 'Berhasil!',
-                text: 'Data berhasil di ubah.',
-                icon: 'success'
-            }).then(() => {
-                window.location = 'main.php?module=pengeluaran';
-            });
+    document.addEventListener('DOMContentLoaded', function() {
+        Swal.fire({
+            title: 'Berhasil!',
+            text: 'Data berhasil di ubah.',
+            icon: 'success'
+        }).then(() => {
+            window.location = 'main.php?module=pengeluaran';
         });
+    });
     </script>
 </body>
+
 </html>
 <?php
 ob_end_flush(); // Akhiri output buffering
