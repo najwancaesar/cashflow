@@ -2,7 +2,7 @@
 
 ## Description
 
-Cashflow Management System is a web-based application designed to track and manage financial transactions, including income, expenses, debts, and receivables. This system provides an efficient way to monitor cash flow and generate financial reports.
+Cashflow Management System is a web-based application designed to track and manage financial transactions, including income, expenses, debts, and receivables. This system provides an efficient way to monitor cash flow and generate financial reports. This also allows you to create another sustainability to controlling your money cashflow management. This was just the beginning of one of my project that i made, even tho i know that this project's just a little bit only my study learner.
 
 ## Technologies Used
 
