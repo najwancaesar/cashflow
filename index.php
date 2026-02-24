@@ -67,7 +67,7 @@
     <div class="intro-content display-table">
       <div class="table-cell">
         <div class="container">
-          <h1 class="intro-title mb-4">CAHSFLOW</h1>
+          <h1 class="intro-title mb-4">CASHFLOW</h1>
           <p class="intro-subtitle">Manage Money and Make your finance better</p>
         </div>
       </div>
