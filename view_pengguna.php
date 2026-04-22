@@ -1,4 +1,18 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($_SESSION['id_user'])) {
+    header('Location: ./');
+    exit;
+}
+
+if (strtolower((string) ($_SESSION['role'] ?? '')) !== 'admin') {
+    header('Location: main.php?module=home');
+    exit;
+}
+
 include "includes/koneksi.php";
 ?>
 
@@ -85,7 +99,11 @@ include "includes/koneksi.php";
                                     </td>
                                     <td class="align-middle">
                                         <a title="hapus" href="aksi_user.php?act=h&id=<?= $row['id_user'] ?>"
-                                            onclick="return confirm('Hapus ?')"
+                                            data-confirm="true"
+                                            data-confirm-title="Hapus pengguna ini?"
+                                            data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
+                                            data-confirm-confirm-text="Ya, hapus"
+                                            data-confirm-cancel-text="Batal"
                                             class="text-secondary text-danger font-weight-bold text-xs">
                                             <i class="material-icons opacity-10" translate="no">delete
                                             </i>
@@ -161,15 +179,8 @@ include "includes/koneksi.php";
                             </div>
                         </div>
                     </div>
-                    <hr>
-                    <div class="row my-3">
-                        <div class="input-group input-group-outline">
-                            <select class="form-control" name="role" required>
-                                <option value="">Pilih Role</option>
-                                <option value="mahasiswa">Mahasiswa</option>
-                                <option value="dosen">Dosen</option>
-                            </select>
-                        </div>
+                    <div class="alert alert-light text-dark small mt-3 mb-0 mx-3" role="alert">
+                        Pengguna baru akan dibuat sebagai akun personal biasa.
                     </div>
                 </div>
                 <div class="modal-footer">

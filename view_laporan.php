@@ -103,7 +103,15 @@
     $('form').on('submit', function(e) {
         if (!$('#tanggal').val()) {
             e.preventDefault();
-            alert('Silakan pilih rentang tanggal terlebih dahulu');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Tanggal belum dipilih',
+                    text: 'Silakan pilih rentang tanggal terlebih dahulu.'
+                });
+            } else {
+                alert('Silakan pilih rentang tanggal terlebih dahulu');
+            }
         }
     });
 });

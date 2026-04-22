@@ -1,6 +1,6 @@
 -- MariaDB dump 10.19  Distrib 10.6.17-MariaDB, for Linux (x86_64)
 --
--- Host: localhost    Database: cashflow_transaksi
+-- Host: localhost    Database: cashflow
 -- ------------------------------------------------------
 -- Server version	10.6.17-MariaDB-cll-lve
 
@@ -28,7 +28,7 @@ CREATE TABLE `hutang` (
   `kreditur` varchar(100) NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
-  `user` varchar(30) NOT NULL,
+  `user` int(11) NOT NULL,
   `status` enum('pending','selesai') NOT NULL,
   PRIMARY KEY (`id_hutang`)
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -56,7 +56,7 @@ CREATE TABLE `pemasukan` (
   `tanggal` date NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
-  `user` varchar(30) NOT NULL,
+  `user` int(11) NOT NULL,
   `status` enum('pending','selesai') NOT NULL,
   PRIMARY KEY (`id_pemasukan`)
 ) ENGINE=InnoDB AUTO_INCREMENT=44 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -113,7 +113,7 @@ CREATE TABLE `piutang` (
   `debitur` varchar(100) NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
-  `user` varchar(30) NOT NULL,
+  `user` int(11) NOT NULL,
   `status` enum('pending','selesai') NOT NULL,
   PRIMARY KEY (`id_piutang`)
 ) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -141,12 +141,12 @@ CREATE TABLE `user` (
   `username` varchar(20) NOT NULL,
   `nama` varchar(50) NOT NULL,
   `email` varchar(50) NOT NULL,
-  `password` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
   `no_telp` varchar(13) NOT NULL,
   `foto` varchar(255) NOT NULL DEFAULT 'default.png',
-  `role` enum('admin','mahasiswa','dosen') NOT NULL,
+  `role` enum('admin','user') NOT NULL DEFAULT 'user',
   `create_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `is_active` enum('1') NOT NULL,
+  `is_active` enum('0','1') NOT NULL DEFAULT '1',
   PRIMARY KEY (`id_user`)
 ) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -157,16 +157,16 @@ CREATE TABLE `user` (
 
 LOCK TABLES `user` WRITE;
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'admin','Administrator','admin@gmail.com','12345','0823893244','1736232522_Js-removebg-preview.png','admin','2022-07-21 05:25:10','1'),(2,'Pak Ridwan','Pak Ridwan Arif Cahyono','Ridwan@gmail.com','12345','082389324','1736212833_Gajah.png','dosen','2022-07-21 05:25:10','1'),(3,'Pak Sandhika','Pak Sandhika Galih','Sandhika@gmail.com','12345','082295644497','1736212884_Information Technology 38.png','dosen','2022-07-21 05:25:10','1'),(52,'Kin123','Kevin Ibnu Najwan','kin123@gmail.com','123321','21839487263','1740621110_481a033e-bc58-472d-bb7f-374f32e671fd.jpg','dosen','2025-02-20 09:26:41','1'),(53,'tamu','tamu123','tamu@gmail.com','123','9899090990','default.png','dosen','2025-02-27 01:59:10','1');
+INSERT INTO `user` VALUES (1,'admin','Administrator','admin@gmail.com','$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e','0823893244','1736232522_Js-removebg-preview.png','admin','2022-07-21 05:25:10','1'),(2,'Pak Ridwan','Pak Ridwan Arif Cahyono','Ridwan@gmail.com','$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e','082389324','1736212833_Gajah.png','user','2022-07-21 05:25:10','1'),(3,'Pak Sandhika','Pak Sandhika Galih','Sandhika@gmail.com','$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e','082295644497','1736212884_Information Technology 38.png','user','2022-07-21 05:25:10','1'),(52,'Kin123','Kevin Ibnu Najwan','kin123@gmail.com','$2y$10$RiaOK08NnUOl0.ZL16EFNOGbV/yaqSt.4GWgl0SMZINMwnkIIdDKm','21839487263','1740621110_481a033e-bc58-472d-bb7f-374f32e671fd.jpg','user','2025-02-20 09:26:41','1'),(53,'tamu','tamu123','tamu@gmail.com','$2y$10$q3yj59LqG2R6ueUmuc868e0VwD3trfOqhCY4TmhOnrh81dPPYBJsq','9899090990','default.png','user','2025-02-27 01:59:10','1');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Dumping events for database 'cashflow_transaksi'
+-- Dumping events for database 'cashflow'
 --
 
 --
--- Dumping routines for database 'cashflow_transaksi'
+-- Dumping routines for database 'cashflow'
 --
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

@@ -3,7 +3,7 @@
 $server = 'localhost';
 $user = 'root';
 $password = '';
-$db = 'db_transaksi';
+$db = 'cashflow';
 
 
 
@@ -14,3 +14,5 @@ if ($con->connect_error) {
     die('Koneksi Database gagal :' . $con->connect_error);
 
 }
+
+$con->set_charset('utf8mb4');

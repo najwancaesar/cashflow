@@ -1,8 +1,8 @@
 <?php
-error_reporting(0);
 session_start();
-if (isset($_SESSION['username'])) {
-	echo "<script>window.location=(href='main.php?module=home')</script>";
+if (isset($_SESSION['nama'])) {
+    header('Location: main.php?module=home');
+    exit;
 }
 ?>
 
@@ -18,6 +18,7 @@ if (isset($_SESSION['username'])) {
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link id="pagestyle" href="assets/css/material-dashboard.css?v=3.0.0" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -71,43 +72,56 @@ if (isset($_SESSION['username'])) {
         </div>
 
         <?php
-        // rentan sql injection
-		if (isset($_POST['kirim'])) {
+        if (isset($_POST['kirim'])) {
             include "includes/koneksi.php";
-        
-            $username = $_POST['username'];
-            $password = $_POST['password'];
-        
-            // Siapkan query dengan prepared statements
-            $stmt = $con->prepare("SELECT * FROM user WHERE username = ? AND password = ?");
-            
-            // Bind parameter ke prepared statements
-            $stmt->bind_param("ss", $username, $password);
-        
-            // Eksekusi query
+
+            $username = trim($_POST['username'] ?? '');
+            $password = (string) ($_POST['password'] ?? '');
+
+            $activeStatus = '1';
+            $stmt = $con->prepare("SELECT * FROM user WHERE username = ? AND is_active = ? LIMIT 1");
+            $stmt->bind_param("ss", $username, $activeStatus);
             $stmt->execute();
-        
-            // Ambil hasil
             $result = $stmt->get_result();
-        
-            if ($result->num_rows > 0) {
+
+            if ($result && $result->num_rows > 0) {
                 $sesi = $result->fetch_assoc();
-                session_start();
-        
-                $_SESSION['nama']    = $sesi['nama'];
-                $_SESSION['id_user'] = $sesi['id_user'];
-                $_SESSION['role']    = $sesi['role'];
-                $_SESSION['foto']    = $sesi['foto'];
-        
-                echo "<script>window.location.href='main.php?module=home';</script>";
+                $storedPassword = (string) ($sesi['password'] ?? '');
+                $passwordValid = password_verify($password, $storedPassword);
+                $shouldUpgradePassword = false;
+
+                if (!$passwordValid && $storedPassword !== '' && hash_equals($storedPassword, $password)) {
+                    $passwordValid = true;
+                    $shouldUpgradePassword = true;
+                }
+
+                if ($passwordValid) {
+                    if ($shouldUpgradePassword || password_needs_rehash($storedPassword, PASSWORD_DEFAULT)) {
+                        $newHash = password_hash($password, PASSWORD_DEFAULT);
+                        $updateStmt = $con->prepare("UPDATE user SET password = ? WHERE id_user = ?");
+                        $updateStmt->bind_param("si", $newHash, $sesi['id_user']);
+                        $updateStmt->execute();
+                        $updateStmt->close();
+                    }
+
+                    session_regenerate_id(true);
+                    $_SESSION['username'] = $sesi['username'];
+                    $_SESSION['nama'] = $sesi['nama'];
+                    $_SESSION['id_user'] = $sesi['id_user'];
+                    $_SESSION['role'] = (($sesi['role'] ?? '') === 'admin') ? 'admin' : 'user';
+                    $_SESSION['foto'] = $sesi['foto'] ?: 'default.png';
+
+                    echo "<script>window.location.href='main.php?module=home';</script>";
+                } else {
+                    echo "<script>Swal.fire({icon:'error',title:'Login gagal',text:'Username atau password salah.'});</script>";
+                }
             } else {
-                echo "<script>alert('Maaf akun anda belum di aktifkan atau username/password salah');</script>";
+                echo "<script>Swal.fire({icon:'error',title:'Login gagal',text:'Username atau password salah.'});</script>";
             }
-        
-            // Tutup statement
+
             $stmt->close();
         }
-		?>
+        ?>
 
     </section>
     <script src="assets/js/core/popper.min.js"></script>

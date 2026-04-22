@@ -1,13 +1,6 @@
 <?php
-if ($_SESSION['role'] == 'Admin') {
-	$role = 1;
-} elseif ($_SESSION['role'] == 'mahasiswa') {
-	$role = 2;
-} elseif ($_SESSION['role'] == 'dosen') {
-	$role = 3;
-} else {
-    $role = 4;
-}
+$module = $_GET['module'] ?? 'home';
+$isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 ?>
 <aside
     class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3 bg-gradient-faded-info"
@@ -15,7 +8,7 @@ if ($_SESSION['role'] == 'Admin') {
     <div class="sidenav-header">
         <i class="fas fa-times p-3 cursor-pointer text-white opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
             aria-hidden="true" id="iconSidenav"></i>
-        <a class="navbar-brand m-0" href="main.php?module=dashboard">
+        <a class="navbar-brand m-0" href="main.php?module=home">
             <img src="assets/img/logocv.jpg" class="navbar-brand-img h-100" alt="main_logo">
             <span class="ms-1 font-weight-bold text-white" translate="no" style="font-size: 12px;">CashFlow
                 Control</span>
@@ -25,9 +18,9 @@ if ($_SESSION['role'] == 'Admin') {
     <div class="collapse navbar-collapse  w-auto h-auto max-height-vh-100" id="sidenav-collapse-main">
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($_GET['module'] == 'dashboard') {
+                <a class="nav-link text-white <?php if (in_array($module, ['home', 'dashboard'], true)) {
 													echo 'active bg-gradient-warning';
-												} ?>" href="main.php?module=dashboard">
+												} ?>" href="main.php?module=home">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="material-icons opacity-10" translate="no">table_view</i>
                     </div>
@@ -38,7 +31,7 @@ if ($_SESSION['role'] == 'Admin') {
                 <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">Transaksi</h6>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($_GET['module'] == 'pemasukan') {
+                <a class="nav-link text-white <?php if ($module == 'pemasukan') {
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=pemasukan">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -48,7 +41,7 @@ if ($_SESSION['role'] == 'Admin') {
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($_GET['module'] == 'pengeluaran') {
+                <a class="nav-link text-white <?php if ($module == 'pengeluaran') {
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=pengeluaran">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -58,7 +51,7 @@ if ($_SESSION['role'] == 'Admin') {
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($_GET['module'] == 'hutang') {
+                <a class="nav-link text-white <?php if ($module == 'hutang') {
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=hutang">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -68,7 +61,7 @@ if ($_SESSION['role'] == 'Admin') {
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($_GET['module'] == 'piutang') {
+                <a class="nav-link text-white <?php if ($module == 'piutang') {
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=piutang">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -81,7 +74,7 @@ if ($_SESSION['role'] == 'Admin') {
                 <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">Laporan</h6>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($_GET['module'] == 'laporan') {
+                <a class="nav-link text-white <?php if ($module == 'laporan') {
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=laporan">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -91,12 +84,12 @@ if ($_SESSION['role'] == 'Admin') {
                 </a>
             </li>
 
-            <?php if ($_SESSION['role'] == 'admin') { ?>
+            <?php if ($isAdmin) { ?>
             <li class="nav-item mt-3">
                 <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">Pengaturan</h6>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($_GET['module'] == 'pengguna' || $_GET['module'] == 'profile') {
+                <a class="nav-link text-white <?php if ($module == 'pengguna' || $module == 'profile') {
 														echo 'active bg-gradient-warning';
 													} ?>" href="main.php?module=pengguna">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">

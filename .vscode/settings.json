@@ -1,0 +1,7 @@
+{
+  "intelephense.files.exclude": [
+    "**/tcpdf/**",
+    "**/bower_components/**",
+    "**/assets/vendor/**"
+  ]
+}

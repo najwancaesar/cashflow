@@ -1,7 +1,8 @@
 <?php 
 session_start();
 if(!isset($_SESSION['nama'])){
-    echo "<script>window.location=(href='./')</script>";
+    header('Location: ./');
+    exit;
 }
 
 ?>
@@ -33,6 +34,7 @@ if(!isset($_SESSION['nama'])){
     <script src="assets/vendor/daterangepicker/moment.min.js"></script>
     <script src="assets/vendor/daterangepicker/daterangepicker.js"></script>
     <script src="assets/vendor/datatables/datatables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
     var win = navigator.platform.indexOf('Win') > -1;
@@ -49,7 +51,6 @@ if(!isset($_SESSION['nama'])){
     <script>
     $(document).on("click", ".btneditpemasukan", function() {
         $('#modalTambah').modal('show');
-
         $('#tanggal').val($(this).attr("data-tanggal"));
         $('#status').val($(this).attr("data-status"));
         $('#catatan').val($(this).attr("data-catatan"));
@@ -84,6 +85,62 @@ if(!isset($_SESSION['nama'])){
         $('#catatan').val($(this).attr("data-catatan"));
         $('#jumlah').val($(this).attr("data-jumlah"));
         $('#id_piutang').val($(this).attr("data-id"));
+    });
+
+    document.addEventListener('click', function(event) {
+        const trigger = event.target.closest('[data-confirm="true"]');
+
+        if (!trigger) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const title = trigger.getAttribute('data-confirm-title') || 'Lanjutkan aksi ini?';
+        const text = trigger.getAttribute('data-confirm-text') || 'Pastikan keputusan ini sudah benar.';
+        const icon = trigger.getAttribute('data-confirm-icon') || 'warning';
+        const confirmText = trigger.getAttribute('data-confirm-confirm-text') || 'Ya, lanjutkan';
+        const cancelText = trigger.getAttribute('data-confirm-cancel-text') || 'Batal';
+        const href = trigger.getAttribute('href');
+        const formSelector = trigger.getAttribute('data-confirm-form');
+
+        const continueAction = function() {
+            if (href) {
+                window.location.href = href;
+                return;
+            }
+
+            const form = formSelector ? document.querySelector(formSelector) : trigger.closest('form');
+
+            if (form) {
+                form.submit();
+            }
+        };
+
+        if (typeof Swal === 'undefined') {
+            const fallbackMessage = text ? title + "\n\n" + text : title;
+            if (window.confirm(fallbackMessage)) {
+                continueAction();
+            }
+            return;
+        }
+
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonText: confirmText,
+            cancelButtonText: cancelText,
+            confirmButtonColor: '#0ea5e9',
+            cancelButtonColor: '#94a3b8',
+            reverseButtons: true,
+            focusCancel: true
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                continueAction();
+            }
+        });
     });
     </script>
     <?php

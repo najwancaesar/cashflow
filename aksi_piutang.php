@@ -1,48 +1,61 @@
-<?php 
+<?php
+session_start();
 include "includes/koneksi.php";
+include "includes/sweetalert_helper.php";
+$act = $_GET['act'] ?? '';
+$user = (int) ($_SESSION['id_user'] ?? 0);
 
-if($_GET['act'] == 't'){
-	$id      		= $_POST['id_piutang'];
-	$tanggal      	= $_POST['tanggal'];
-	$catatan  		= $_POST['catatan'];
-	$debitur  		= $_POST['debitur'];
-	$jumlah         = $_POST['jumlah'];
-	$user         	= $_POST['user'];
+if (!$user) {
+	show_sweetalert_and_redirect('Login diperlukan', 'Silakan login terlebih dahulu.', 'warning', 'login.php');
+}
+
+if($act == 't'){
+	$id = (int) ($_POST['id_piutang'] ?? 0);
+	$tanggal = $_POST['tanggal'] ?? '';
+	$catatan = $_POST['catatan'] ?? '';
+	$debitur = $_POST['debitur'] ?? '';
+	$jumlah = (float) ($_POST['jumlah'] ?? 0);
 
 	if($_POST['id_piutang'] == ''){
-		$query = "INSERT into piutang(tanggal,catatan,debitur,jumlah,user) 
-		values('$tanggal','$catatan','$debitur','$jumlah','$user')";
-		$hasil = mysqli_query($con, $query);
+		$stmt = $con->prepare("INSERT INTO piutang(tanggal, catatan, debitur, jumlah, user) VALUES(?, ?, ?, ?, ?)");
+		$stmt->bind_param("sssdi", $tanggal, $catatan, $debitur, $jumlah, $user);
+		$stmt->execute();
+		$stmt->close();
 
-		echo "<script>window.alert('Data Berhasil Ditambahkan');
-						window.location=('main.php?module=piutang')</script>";
+		show_sweetalert_and_redirect('Berhasil', 'Data piutang berhasil ditambahkan.', 'success', 'main.php?module=piutang');
 	}else{
-		mysqli_query($con, "UPDATE piutang SET tanggal = '$tanggal', debitur = '$debitur', catatan = '$catatan', jumlah = '$jumlah' where id_piutang = '$id'");
+		$stmt = $con->prepare("UPDATE piutang SET tanggal = ?, debitur = ?, catatan = ?, jumlah = ? WHERE id_piutang = ? AND user = ?");
+		$stmt->bind_param("sssdii", $tanggal, $debitur, $catatan, $jumlah, $id, $user);
+		$stmt->execute();
+		$stmt->close();
 
-		echo "<script>window.alert('Data Berhasil Dirubah');
-						window.location=('main.php?module=piutang')</script>";
+		show_sweetalert_and_redirect('Berhasil', 'Data piutang berhasil diubah.', 'success', 'main.php?module=piutang');
 	}
 
 			
 }
 
-if($_GET['act'] == 'l'){
-	$id_piutang   = $_GET['id'];
+if($act == 'l'){
+	$id_piutang = (int) ($_GET['id'] ?? 0);
 		
-	mysqli_query($con, "UPDATE piutang SET status = 'selesai' where id_piutang = '$id_piutang'");
+	$stmt = $con->prepare("UPDATE piutang SET status = 'selesai' WHERE id_piutang = ? AND user = ?");
+	$stmt->bind_param("ii", $id_piutang, $user);
+	$stmt->execute();
+	$stmt->close();
 
-				echo "<script>window.alert('Data Berhasil Dirubah');
-						window.location=('main.php?module=piutang')</script>";
+	show_sweetalert_and_redirect('Berhasil', 'Status piutang berhasil diperbarui.', 'success', 'main.php?module=piutang');
 	
 }
 
-if($_GET['act'] == 'h'){
-$id		= $_GET['id'];
+if($act == 'h'){
+$id = (int) ($_GET['id'] ?? 0);
 
-		mysqli_query($con, "Delete from piutang where id_piutang = '$id'");
+		$stmt = $con->prepare("DELETE FROM piutang WHERE id_piutang = ? AND user = ?");
+		$stmt->bind_param("ii", $id, $user);
+		$stmt->execute();
+		$stmt->close();
 		
-		echo "<script>window.alert('Data Berhasil Dihapus');
-				window.location=('main.php?module=piutang')</script>";
+		show_sweetalert_and_redirect('Berhasil', 'Data piutang berhasil dihapus.', 'success', 'main.php?module=piutang');
 
 }
 

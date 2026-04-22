@@ -1,8 +1,8 @@
 <?php
-error_reporting(0);
 session_start();
-if (isset($_SESSION['username'])) {
-    echo "<script>window.location=(href='main.php?module=home')</script>";
+if (isset($_SESSION['nama'])) {
+    header('Location: main.php?module=home');
+    exit;
 }
 ?>
 
@@ -18,6 +18,7 @@ if (isset($_SESSION['username'])) {
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <link id="pagestyle" href="assets/css/material-dashboard.css?v=3.0.0" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="css/bootstrap.min.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -68,19 +69,12 @@ if (isset($_SESSION['username'])) {
                                 <input type="number" name="no_telp" class="form-control" placeholder="No.telepon"
                                     required>
                             </div>
-                            <div class="form-group" id="form-select">
-                                <select class="form-control" name="role" required>
-                                    <option value="" class="bg-success">Pilih Role</option>
-                                    <option value="mahasiswa" class="bg-secondary">Mahasiswa</option>
-                                    <option value="dosen" class="bg-secondary">Dosen</option>
-                                </select>
-                            </div>
                             <div class="form-group">
                                 <button type="submit" name="kirim"
                                     class="btn form-control btn-primary rounded submit px-3">register</button>
                             </div>
                             <div class="form-group">
-                                <h5 class="mb-0"> <a href="index.php" class="text-center link-primary
+                                <h5 class="mb-0"> <a href="login.php" class="text-center link-primary
                                         link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover">
                                         I already have an account !
                                     </a>
@@ -97,27 +91,46 @@ if (isset($_SESSION['username'])) {
     include("./includes/footer.php");
     ?>
 </body>
-<style>
-#form-select {
-    color: black;
-}
-</style>
 <?php
 if (isset($_POST['kirim'])) {
     include "includes/koneksi.php";
-    $username = $_POST["username"];
-    $nama = $_POST["nama"];
-    $email = $_POST["email"];
-    $password = $_POST["password"];
-    $no_telp = $_POST["no_telp"];
-    $role = $_POST["role"];
+    $username = trim($_POST["username"] ?? '');
+    $nama = trim($_POST["nama"] ?? '');
+    $email = trim($_POST["email"] ?? '');
+    $password = (string) ($_POST["password"] ?? '');
+    $no_telp = trim($_POST["no_telp"] ?? '');
+    $role = 'user';
+    $foto = 'default.png';
+    $is_active = '1';
 
+    $cekStmt = $con->prepare("SELECT id_user FROM user WHERE username = ? OR email = ? LIMIT 1");
+    $cekStmt->bind_param("ss", $username, $email);
+    $cekStmt->execute();
+    $cekResult = $cekStmt->get_result();
 
-    $sql = "INSERT INTO user(username, nama, email, password, no_telp, role) VALUES ('$username','$nama','$email','$password',$no_telp,'$role')";
-    if (mysqli_query($con, $sql)) {
-        echo "<script>window.alert('Akun berhasil di buat !');
-			window.location=('index.php')</script>";
+    if ($cekResult && $cekResult->num_rows > 0) {
+        echo "<script>Swal.fire({icon:'warning',title:'Pendaftaran ditolak',text:'Username atau email sudah terdaftar.'});</script>";
     } else {
-        echo "Account gagal dibuat karena :" . $sql . "<br>" . mysqli_error($con);
+        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $con->prepare("INSERT INTO user(username, nama, email, password, no_telp, role, foto, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssssssss", $username, $nama, $email, $hashedPassword, $no_telp, $role, $foto, $is_active);
+
+        if ($stmt->execute()) {
+            echo "<script>
+                Swal.fire({
+                    icon:'success',
+                    title:'Akun berhasil dibuat',
+                    text:'Silakan login untuk mulai menggunakan aplikasi.'
+                }).then(function () {
+                    window.location.href='login.php';
+                });
+            </script>";
+        } else {
+            echo "<script>Swal.fire({icon:'error',title:'Pendaftaran gagal',text:'Akun gagal dibuat. Silakan coba lagi.'});</script>";
+        }
+
+        $stmt->close();
     }
+
+    $cekStmt->close();
 }

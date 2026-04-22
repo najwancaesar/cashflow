@@ -1,4 +1,12 @@
 <?php
+// LEGACY NON-ACTIVE VIEW:
+// File ini dipertahankan sebagai arsip implementasi lama dan tidak dipakai
+// dalam routing aktif aplikasi cashflow.
+if (basename((string) ($_SERVER['PHP_SELF'] ?? '')) === 'view_datauser.php') {
+    header('Location: main.php?module=home');
+    exit;
+}
+
 include "includes/koneksi.php";
 if(isset($_GET['act'])){
 	if($_GET['act'] == 't'){

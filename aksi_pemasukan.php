@@ -1,5 +1,7 @@
 <?php
+session_start();
 include "includes/koneksi.php";
+include "includes/sweetalert_helper.php";
 
 // Fungsi untuk membersihkan input
 function clean_input($data) {
@@ -10,14 +12,18 @@ function clean_input($data) {
     return mysqli_real_escape_string($con, $data);
 }
 
-if ($_GET['act'] == 't') {
+if (!isset($_SESSION['id_user'])) {
+    show_sweetalert_and_redirect('Login diperlukan', 'Silakan login terlebih dahulu.', 'warning', 'login.php');
+}
+
+$act = $_GET['act'] ?? '';
+
+if ($act == 't') {
     $tanggal = clean_input($_POST['tanggal']);
     $catatan = clean_input($_POST['catatan']);
     $jumlah = clean_input($_POST['jumlah']);
-    $user = clean_input($_POST['user']);
+    $user = (int) $_SESSION['id_user'];
     $status = clean_input($_POST['status']);
-    // $aksi = clean_input($_POST['aksi']);
-    $idUser = clean_input($_POST['user']);
 
     if ($_POST['id_pemasukan'] == '') {
         $query = "INSERT INTO pemasukan(tanggal, catatan, status, jumlah, user) 
@@ -58,12 +64,12 @@ if ($_GET['act'] == 't') {
             <?php
         }
     } else {
-        $id_pemasukan = clean_input($_POST['id_pemasukan']);
+        $id_pemasukan = (int) clean_input($_POST['id_pemasukan']);
         $query = "UPDATE pemasukan 
                  SET tanggal = ?, status = ?, catatan = ?, jumlah = ? 
-                 WHERE id_pemasukan = ?";
+                 WHERE id_pemasukan = ? AND user = ?";
         $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "sssdi", $tanggal, $status, $catatan, $jumlah, $id_pemasukan);
+        mysqli_stmt_bind_param($stmt, "sssdii", $tanggal, $status, $catatan, $jumlah, $id_pemasukan, $user);
         $hasil = mysqli_stmt_execute($stmt);
 
         if ($hasil) {
@@ -100,11 +106,11 @@ if ($_GET['act'] == 't') {
     }
 }
 
-if ($_GET['act'] == 'l') {
-    $id_pemasukan = clean_input($_GET['id']);
-    $query = "UPDATE pemasukan SET status = 'selesai' WHERE id_pemasukan = ?";
+if ($act == 'l') {
+    $id_pemasukan = (int) clean_input($_GET['id']);
+    $query = "UPDATE pemasukan SET status = 'selesai' WHERE id_pemasukan = ? AND user = ?";
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "i", $id_pemasukan);
+    mysqli_stmt_bind_param($stmt, "ii", $id_pemasukan, $user);
     $hasil = mysqli_stmt_execute($stmt);
 
     if ($hasil) {
@@ -140,11 +146,11 @@ if ($_GET['act'] == 'l') {
     }
 }
 
-if ($_GET['act'] == 'h') {
-    $id = clean_input($_GET['id']);
-    $query = "DELETE FROM pemasukan WHERE id_pemasukan = ?";
+if ($act == 'h') {
+    $id = (int) clean_input($_GET['id']);
+    $query = "DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ?";
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "i", $id);
+    mysqli_stmt_bind_param($stmt, "ii", $id, $user);
     $hasil = mysqli_stmt_execute($stmt);
 
     if ($hasil) {

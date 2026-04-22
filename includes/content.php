@@ -2,6 +2,7 @@
 // Daftar modul yang diizinkan
 $allowedModules = [
     'home' => "view_home.php",
+    'dashboard' => "view_home.php",
     'pemasukan' => "view_pemasukan.php",
     'pengeluaran' => "view_pengeluaran.php",
     'hutang' => "view_hutang.php",
@@ -11,22 +12,37 @@ $allowedModules = [
     'profile' => "view_profile.php",
 ];
 
+$adminOnlyModules = ['pengguna'];
+
 // Jika session nama tidak ada, arahkan ke login
 if (!isset($_SESSION['nama'])) {
-    if (isset($_GET['module']) && $_GET['module'] == 'login') {
-        include "view_login.php";
-    } else {
-        echo "<script>window.location=(href='./')</script>";
-    }
+    echo "<script>window.location.href='./';</script>";
     exit;
 }
 
 // Dapatkan role user
-$role = $_SESSION['role'] ?? null;
+$role = strtolower((string) ($_SESSION['role'] ?? ''));
+$isAdmin = $role === 'admin';
 
 // Cek apakah module valid
 $module = $_GET['module'] ?? 'home';
-if (array_key_exists($module, $allowedModules)) {
+if (in_array($module, $adminOnlyModules, true) && !$isAdmin) {
+    echo "<script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Akses ditolak',
+                    text: 'Modul pengguna hanya bisa diakses oleh admin.'
+                }).then(function () {
+                    window.location.href = 'main.php?module=home';
+                });
+            } else {
+                window.location.href = 'main.php?module=home';
+            }
+        });
+    </script>";
+} elseif (array_key_exists($module, $allowedModules)) {
     include $allowedModules[$module];
 } else {
     include "view_home.php";

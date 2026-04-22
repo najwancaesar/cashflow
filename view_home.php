@@ -1,102 +1,246 @@
 <?php
 include "includes/koneksi.php";
+
+function fetch_single_value($con, $sql, $types = '', $params = [])
+{
+    $stmt = $con->prepare($sql);
+    if ($types !== '' && !empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_row() : null;
+    $stmt->close();
+
+    return $row[0] ?? 0;
+}
+
+function fetch_all_rows($con, $sql, $types = '', $params = [])
+{
+    $stmt = $con->prepare($sql);
+    if ($types !== '' && !empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $rows = [];
+
+    while ($result && ($row = $result->fetch_assoc())) {
+        $rows[] = $row;
+    }
+
+    $stmt->close();
+
+    return $rows;
+}
+
+function fetch_monthly_sum_series($con, $table, $userId, $year)
+{
+    $allowedTables = ['pemasukan', 'pengeluaran'];
+    if (!in_array($table, $allowedTables, true)) {
+        return array_fill(0, 12, 0);
+    }
+
+    $series = array_fill(0, 12, 0);
+    $sql = "SELECT MONTH(tanggal) AS month_number, COALESCE(SUM(jumlah), 0) AS total
+            FROM {$table}
+            WHERE user = ? AND YEAR(tanggal) = ?
+            GROUP BY MONTH(tanggal)";
+    $stmt = $con->prepare($sql);
+    $stmt->bind_param("ii", $userId, $year);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    while ($row = $result->fetch_assoc()) {
+        $monthIndex = (int) ($row['month_number'] ?? 0) - 1;
+        if ($monthIndex >= 0 && $monthIndex < 12) {
+            $series[$monthIndex] = (float) ($row['total'] ?? 0);
+        }
+    }
+
+    $stmt->close();
+
+    return $series;
+}
+
+function fetch_monthly_transaction_count_series($con, $userId, $year)
+{
+    $series = array_fill(0, 12, 0);
+    $tables = ['pemasukan', 'pengeluaran'];
+
+    foreach ($tables as $table) {
+        $sql = "SELECT MONTH(tanggal) AS month_number, COUNT(*) AS total
+                FROM {$table}
+                WHERE user = ? AND YEAR(tanggal) = ?
+                GROUP BY MONTH(tanggal)";
+        $stmt = $con->prepare($sql);
+        $stmt->bind_param("ii", $userId, $year);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_assoc()) {
+            $monthIndex = (int) ($row['month_number'] ?? 0) - 1;
+            if ($monthIndex >= 0 && $monthIndex < 12) {
+                $series[$monthIndex] += (int) ($row['total'] ?? 0);
+            }
+        }
+
+        $stmt->close();
+    }
+
+    return $series;
+}
+
 $tglSekarang = date('Y-m-d');
-$bulansekarang = date('m', strtotime($tglSekarang));
-$tahunsekarang = date('Y', strtotime($tglSekarang));
-$kemarin = date('Y-m-d', strtotime('yesterday'));
-$bulanLalu = date('Y-m-d', strtotime('last month'));
-$userYangSedangLogin = $_SESSION["id_user"];
+$bulansekarang = (int) date('m', strtotime($tglSekarang));
+$tahunsekarang = (int) date('Y', strtotime($tglSekarang));
+$userYangSedangLogin = (int) ($_SESSION["id_user"] ?? 0);
 
-$q_pendapatan = mysqli_query($con, "select sum(jumlah) as pendapatan_sekarang from pemasukan where date(tanggal) = '$tglSekarang' and user =$userYangSedangLogin");
-$pendapatan = mysqli_fetch_array($q_pendapatan);
-
-$q_pengeluaran = mysqli_query($con, "select sum(jumlah) as pengeluaran_sekarang from pengeluaran where date(tanggal) = '$tglSekarang' and user =$userYangSedangLogin");
-$pengeluaran = mysqli_fetch_array($q_pengeluaran);
-
-
-$q_transaksi = mysqli_query($con, "select sum(jumlah) as transaksi_sekarang from pemasukan where date(tanggal) = '$tglSekarang' and user=$userYangSedangLogin");
-$transaksi = mysqli_fetch_array($q_transaksi);
-
-$q_tpemasukan = mysqli_query($con, "select * from pemasukan where date(tanggal) = '$tglSekarang' and user=$userYangSedangLogin");
-$tpemasukan = mysqli_num_rows($q_tpemasukan);
-
-$q_tpengeluaran = mysqli_query($con, "select * from pengeluaran where date(tanggal) = '$tglSekarang' and user=$userYangSedangLogin");
-$tpengeluaran = mysqli_num_rows($q_tpengeluaran);
-
-$transaksi_hariini = $tpemasukan + $tpengeluaran;
-
-$q_tpemasukan = mysqli_query($con, "select * from pemasukan where status = 'pending' and user=$userYangSedangLogin");
-$tpemasukan_pending = mysqli_num_rows($q_tpemasukan);
-
-
-// bulan
-
-$q_pendapatan_bulan = mysqli_query($con, "select sum(jumlah) as pendapatan_bulan 
-from pemasukan where MONTH(tanggal) = '$bulansekarang' and YEAR(tanggal) = '$tahunsekarang ' and user=$userYangSedangLogin");
-$pendapatan_bulan = mysqli_fetch_array($q_pendapatan_bulan);
-
-$q_pengeluaran = mysqli_query($con, "select sum(jumlah) as pengeluaran_bulan from pengeluaran where MONTH(tanggal) = '$bulansekarang' and YEAR(tanggal) = '$tahunsekarang ' and user=$userYangSedangLogin ");
-$pengeluaran_bulan = mysqli_fetch_array($q_pengeluaran);
-
-$q_tpemasukan_bulan = mysqli_query($con, "select * from pemasukan where MONTH(tanggal) = '$bulansekarang' and YEAR(tanggal) = '$tahunsekarang ' and user=$userYangSedangLogin");
-$tpemasukan_bulan = mysqli_num_rows($q_tpemasukan_bulan);
-
-$q_tpengeluaran_bulan = mysqli_query($con, "select * from pengeluaran where MONTH(tanggal) = '$bulansekarang' and YEAR(tanggal) = '$tahunsekarang ' and user=$userYangSedangLogin");
-$tpengeluaran_bulan = mysqli_num_rows($q_tpengeluaran_bulan);
-
-$transaksi_bulan = $tpemasukan_bulan + $tpengeluaran_bulan;
-
-// user
-$q_user = mysqli_query($con, "select * from user ");
-$user = mysqli_num_rows($q_user);
-
-
-
-// Memeriksa apakah 'id_user' ada dalam session
-if (isset($_SESSION['id_user'])) {
-    $id_user = $_SESSION['id_user']; // Mendapatkan ID user dari session
-} else {
-    // Jika tidak ada, beri pesan error atau arahkan ke halaman login
+if ($userYangSedangLogin <= 0) {
     die("User tidak terdeteksi dalam session.");
 }
 
-// Menyesuaikan query untuk hanya menampilkan data untuk pengguna yang sedang aktif
-$q_pemasukan_terbaru = mysqli_query($con, "
-    SELECT * 
+$pendapatan = [
+    'pendapatan_sekarang' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM pemasukan WHERE tanggal = ? AND user = ?",
+        "si",
+        [$tglSekarang, $userYangSedangLogin]
+    ),
+];
+
+$pengeluaran = [
+    'pengeluaran_sekarang' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM pengeluaran WHERE tanggal = ? AND user = ?",
+        "si",
+        [$tglSekarang, $userYangSedangLogin]
+    ),
+];
+
+$tpemasukan = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM pemasukan WHERE tanggal = ? AND user = ?",
+    "si",
+    [$tglSekarang, $userYangSedangLogin]
+);
+
+$tpengeluaran = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM pengeluaran WHERE tanggal = ? AND user = ?",
+    "si",
+    [$tglSekarang, $userYangSedangLogin]
+);
+
+$transaksi_hariini = $tpemasukan + $tpengeluaran;
+
+$tpemasukan_pending = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM pemasukan WHERE status = ? AND user = ?",
+    "si",
+    ['pending', $userYangSedangLogin]
+);
+
+$pendapatan_bulan = [
+    'pendapatan_bulan' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM pemasukan WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+        "iii",
+        [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
+    ),
+];
+
+$pengeluaran_bulan = [
+    'pengeluaran_bulan' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM pengeluaran WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+        "iii",
+        [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
+    ),
+];
+
+$tpemasukan_bulan = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM pemasukan WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+    "iii",
+    [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
+);
+
+$tpengeluaran_bulan = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM pengeluaran WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+    "iii",
+    [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
+);
+
+$transaksi_bulan = $tpemasukan_bulan + $tpengeluaran_bulan;
+$user = (int) fetch_single_value($con, "SELECT COUNT(*) FROM user");
+
+$q_pemasukan_terbaru = fetch_all_rows(
+    $con,
+    "SELECT pemasukan.*, user.nama
     FROM pemasukan
     INNER JOIN user ON pemasukan.user = user.id_user
-    WHERE pemasukan.user = '$id_user' 
+    WHERE pemasukan.user = ?
     ORDER BY id_pemasukan DESC
-    LIMIT 5
-");
+    LIMIT 5",
+    "i",
+    [$userYangSedangLogin]
+);
 
-
-$q_pengeluaran_terbaru = mysqli_query($con, "
-    SELECT * 
+$q_pengeluaran_terbaru = fetch_all_rows(
+    $con,
+    "SELECT pengeluaran.*, user.nama
     FROM pengeluaran
     INNER JOIN user ON pengeluaran.user = user.id_user
-    WHERE pengeluaran.user = '$id_user'  -- Menambahkan filter untuk user yang aktif
+    WHERE pengeluaran.user = ?
     ORDER BY id_pengeluaran DESC
-    LIMIT 5
-");
+    LIMIT 5",
+    "i",
+    [$userYangSedangLogin]
+);
 
+$hutang = [
+    'utang_sekarang' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM hutang WHERE tanggal = ? AND user = ?",
+        "si",
+        [$tglSekarang, $userYangSedangLogin]
+    ),
+];
 
+$piutang = [
+    'piutang_sekarang' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM piutang WHERE tanggal = ? AND user = ?",
+        "si",
+        [$tglSekarang, $userYangSedangLogin]
+    ),
+];
 
-$q_hutang = mysqli_query($con, "select sum(jumlah) as utang_sekarang from pemasukan where date(tanggal) = '$tglSekarang' and user=$userYangSedangLogin");
-$hutang = mysqli_fetch_array($q_hutang);
+$utang_bulan = [
+    'utang_bulan' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM hutang WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+        "iii",
+        [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
+    ),
+];
 
-$q_piutang = mysqli_query($con, "select sum(jumlah) as piutang_sekarang from piutang where date(tanggal) = '$tglSekarang' and user=$userYangSedangLogin");
-$piutang = mysqli_fetch_array($q_piutang);
+$piutang_bulan = [
+    'piutang_bulan' => fetch_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0) FROM piutang WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+        "iii",
+        [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
+    ),
+];
 
-
-// bulan
-
-$q_utang_bulan = mysqli_query($con, "select sum(jumlah) as utang_bulan 
-from hutang where MONTH(tanggal) = '$bulansekarang' and YEAR(tanggal) = '$tahunsekarang ' and user=$userYangSedangLogin");
-$utang_bulan = mysqli_fetch_array($q_utang_bulan);
-
-$q_piutang = mysqli_query($con, "select sum(jumlah) as piutang_bulan from piutang where MONTH(tanggal) = '$bulansekarang' and YEAR(tanggal) = '$tahunsekarang ' and user=$userYangSedangLogin ");
-$piutang_bulan = mysqli_fetch_array($q_piutang);
+$chart = [
+    'cpdt' => fetch_monthly_sum_series($con, 'pemasukan', $userYangSedangLogin, $tahunsekarang),
+    'cpgt' => fetch_monthly_sum_series($con, 'pengeluaran', $userYangSedangLogin, $tahunsekarang),
+    'ctt' => fetch_monthly_transaction_count_series($con, $userYangSedangLogin, $tahunsekarang),
+];
 
 ?>
 
@@ -111,7 +255,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pendapatan Hari Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format($pendapatan['pendapatan_sekarang']) ?></h4>
+                        <h4 class="mb-0">Rp. <?= number_format((float) ($pendapatan['pendapatan_sekarang'] ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -128,7 +272,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pengeluaran Hari Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format($pengeluaran['pengeluaran_sekarang']) ?></h4>
+                        <h4 class="mb-0">Rp. <?= number_format((float) ($pengeluaran['pengeluaran_sekarang'] ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -145,7 +289,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Transaksi Hari Ini</p>
-                        <h4 class="mb-0"><?= number_format($transaksi_hariini) ?></h4>
+                        <h4 class="mb-0"><?= number_format((float) ($transaksi_hariini ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -162,7 +306,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pending</p>
-                        <h4 class="mb-0"><?= number_format($tpemasukan_pending) ?></h4>
+                        <h4 class="mb-0"><?= number_format((float) ($tpemasukan_pending ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -181,7 +325,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pendapatan Bulan Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format($pendapatan_bulan['pendapatan_bulan']) ?></h4>
+                        <h4 class="mb-0">Rp. <?= number_format((float) ($pendapatan_bulan['pendapatan_bulan'] ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -198,7 +342,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pengeluaran Bulan Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format($pengeluaran_bulan['pengeluaran_bulan']) ?></h4>
+                        <h4 class="mb-0">Rp. <?= number_format((float) ($pengeluaran_bulan['pengeluaran_bulan'] ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -215,7 +359,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Transaksi Bulan Ini</p>
-                        <h4 class="mb-0"><?= number_format($transaksi_bulan) ?></h4>
+                        <h4 class="mb-0"><?= number_format((float) ($transaksi_bulan ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -232,7 +376,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pengguna</p>
-                        <h4 class="mb-0"><?= number_format($user) ?></h4>
+                        <h4 class="mb-0"><?= number_format((float) ($user ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -252,7 +396,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Utang Bulan Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format($utang_bulan['utang_bulan']) ?></h4>
+                        <h4 class="mb-0">Rp. <?= number_format((float) ($utang_bulan['utang_bulan'] ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -269,7 +413,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Piutang Bulan Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format($piutang_bulan['piutang_bulan']) ?></h4>
+                        <h4 class="mb-0">Rp. <?= number_format((float) ($piutang_bulan['piutang_bulan'] ?? 0)) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -310,7 +454,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = mysqli_fetch_array($q_pemasukan_terbaru)) { ?>
+                            <?php foreach ($q_pemasukan_terbaru as $row) { ?>
                             <tr>
                                 <td class="align-middle text-center text-sm">
                                     <span
@@ -331,7 +475,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                                     <p class="text-xs text-secondary mb-0"><?= $row['catatan'] ?></p>
                                 </td>
                                 <td>
-                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format($row['jumlah']) ?>
+                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
                                 <td>
@@ -374,7 +518,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = mysqli_fetch_array($q_pengeluaran_terbaru)) { ?>
+                            <?php foreach ($q_pengeluaran_terbaru as $row) { ?>
                             <tr>
                                 <td class="align-middle text-center text-sm">
                                     <span
@@ -395,7 +539,7 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
                                     <p class="text-xs text-secondary mb-0"><?= $row['catatan'] ?></p>
                                 </td>
                                 <td>
-                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format($row['jumlah']) ?>
+                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
                                 <td>
@@ -413,7 +557,9 @@ $piutang_bulan = mysqli_fetch_array($q_piutang);
 
 <script>
 $(document).ready(function() {
-    var ctx1 = document.getElementById("chart-pendapatan").getContext("2d");
+    var pendapatanCanvas = document.getElementById("chart-pendapatan");
+    if (pendapatanCanvas) {
+    var ctx1 = pendapatanCanvas.getContext("2d");
 
     new Chart(ctx1, {
         type: "line",
@@ -497,8 +643,11 @@ $(document).ready(function() {
             },
         },
     });
+    }
 
-    var ctx2 = document.getElementById("chart-pengeluaran").getContext("2d");
+    var pengeluaranCanvas = document.getElementById("chart-pengeluaran");
+    if (pengeluaranCanvas) {
+    var ctx2 = pengeluaranCanvas.getContext("2d");
 
     new Chart(ctx2, {
         type: "line",
@@ -581,8 +730,11 @@ $(document).ready(function() {
             },
         },
     });
+    }
 
-    var ctx3 = document.getElementById("chart-transaksi").getContext("2d");
+    var transaksiCanvas = document.getElementById("chart-transaksi");
+    if (transaksiCanvas) {
+    var ctx3 = transaksiCanvas.getContext("2d");
 
     new Chart(ctx3, {
         type: "bar",
@@ -663,6 +815,7 @@ $(document).ready(function() {
             },
         },
     });
+    }
 
 })
 </script>

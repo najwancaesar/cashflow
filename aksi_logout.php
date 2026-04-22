@@ -1,10 +1,9 @@
 <?php
 session_start();
-unset($_SESSION['nama']);
-unset($_SESSION['role']);
-unset($_SESSION['id_user']);
-unset($_SESSION['foto']);
+include "includes/sweetalert_helper.php";
+$_SESSION = [];
+session_unset();
+session_destroy();
 
-echo "<script>window.alert('Terimakasih atas kunjunganya');
-            window.location=(href='./')</script>";
+show_sweetalert_and_redirect('Sampai jumpa', 'Terima kasih sudah menggunakan CashFlow Control.', 'success', './');
 ?>

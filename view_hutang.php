@@ -20,12 +20,10 @@ $userYangSedangLogin = $_SESSION['id_user'];
                 </div>
                 <div class="card-body px-0 pb-2">
                     <div class="text-end me-3">
-                        <?php if ($_SESSION['role'] == 'dosen' or $_SESSION['role'] == 'mahasiswa') : ?>
                         <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
                             data-bs-target="#modalTambah">
                             <i class="material-icons opacity-10" translate="no">add</i> Tambah Transaksi
                         </button>
-                        <?php endif ?>
                     </div>
                     <div class="table-responsive p-4 mx-2">
                         <table class="table align-items-center mb-0" id="datatable">
@@ -58,7 +56,7 @@ $userYangSedangLogin = $_SESSION['id_user'];
                                     <p class="text-xs text-secondary mb-0"><?= $row['kreditur'] ?></p>
                                 </td>
                                 <td>
-                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format($row['jumlah']) ?>
+                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
                                 <td>
@@ -69,20 +67,25 @@ $userYangSedangLogin = $_SESSION['id_user'];
                                 </td>
                                 <td class="align-middle">
                                     <a href="aksi_hutang.php?&act=h&id=<?php echo $row['id_hutang'] ?>"
-                                        onclick="return confirm('Hapus ?')"
+                                        data-confirm="true"
+                                        data-confirm-title="Hapus data utang ini?"
+                                        data-confirm-text="Data utang yang dihapus tidak bisa dikembalikan."
+                                        data-confirm-confirm-text="Ya, hapus"
+                                        data-confirm-cancel-text="Batal"
                                         class="text-secondary text-danger font-weight-bold text-xs">
                                         <i class="material-icons opacity-10" translate="no">delete
                                         </i>
+                                    </a>
 
-                                        <a type="submit" data-id="<?php echo $row['id_hutang'] ?>"
-                                            data-tanggal="<?php echo $row['tanggal'] ?>"
-                                            data-kreditur="<?php echo $row['kreditur'] ?>"
-                                            data-catatan="<?php echo $row['catatan'] ?>"
-                                            data-jumlah="<?php echo $row['jumlah'] ?>"
-                                            class="text-secondary text-warning font-weight-bold text-xs btnedithutang">
-                                            <i class="material-icons fa fa edit" translate="no">edit
-                                            </i>
-                                        </a>
+                                    <a type="submit" data-id="<?php echo $row['id_hutang'] ?>"
+                                        data-tanggal="<?php echo $row['tanggal'] ?>"
+                                        data-kreditur="<?php echo $row['kreditur'] ?>"
+                                        data-catatan="<?php echo $row['catatan'] ?>"
+                                        data-jumlah="<?php echo $row['jumlah'] ?>"
+                                        class="text-secondary text-warning font-weight-bold text-xs btnedithutang">
+                                        <i class="material-icons fa fa edit" translate="no">edit
+                                        </i>
+                                    </a>
                                 </td>
                             </tr>
 
