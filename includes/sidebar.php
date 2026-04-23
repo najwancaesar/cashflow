@@ -15,7 +15,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
         </a>
     </div>
     <hr class="horizontal light mt-0 mb-2">
-    <div class="collapse navbar-collapse  w-auto h-auto max-height-vh-100" id="sidenav-collapse-main">
+    <div class="collapse navbar-collapse w-auto h-auto" id="sidenav-collapse-main">
         <ul class="navbar-nav">
             <li class="nav-item">
                 <a class="nav-link text-white <?php if (in_array($module, ['home', 'dashboard'], true)) {
@@ -27,6 +27,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
                     <span class="nav-link-text ms-1">Dashboard</span>
                 </a>
             </li>
+            <?php if (!$isAdmin) { ?>
             <li class="nav-item mt-3">
                 <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">Transaksi</h6>
             </li>
@@ -48,6 +49,16 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
                         <i class="material-icons opacity-10" translate="no">receipt_long</i>
                     </div>
                     <span class="nav-link-text ms-1">Pengeluaran</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-white <?php if ($module == 'kategori') {
+													echo 'active bg-gradient-warning';
+												} ?>" href="main.php?module=kategori">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="material-icons opacity-10" translate="no">category</i>
+                    </div>
+                    <span class="nav-link-text ms-1">Kategori</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -83,13 +94,14 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
                     <span class="nav-link-text ms-1">Cetak Laporan</span>
                 </a>
             </li>
+            <?php } ?>
 
             <?php if ($isAdmin) { ?>
             <li class="nav-item mt-3">
-                <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">Pengaturan</h6>
+                <h6 class="ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8">Admin</h6>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-white <?php if ($module == 'pengguna' || $module == 'profile') {
+                <a class="nav-link text-white <?php if ($module == 'pengguna') {
 														echo 'active bg-gradient-warning';
 													} ?>" href="main.php?module=pengguna">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">

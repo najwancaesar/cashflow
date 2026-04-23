@@ -1,186 +1,227 @@
 <?php
 include "includes/koneksi.php";
-$userYangSedangLogin = $_SESSION['id_user'];
+
+$userYangSedangLogin = (int) $_SESSION['id_user'];
+
+if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
+    echo "<script>window.location.href='main.php?module=home';</script>";
+    exit;
+}
+
+$kategoriPengeluaran = [];
+$kategoriQuery = "SELECT id_kategori, nama_kategori
+                  FROM kategori
+                  WHERE user_id = ? AND tipe_kategori = 'pengeluaran'
+                  ORDER BY nama_kategori ASC";
+$kategoriStmt = mysqli_prepare($con, $kategoriQuery);
+mysqli_stmt_bind_param($kategoriStmt, "i", $userYangSedangLogin);
+mysqli_stmt_execute($kategoriStmt);
+$kategoriResult = mysqli_stmt_get_result($kategoriStmt);
+
+while ($kategori = mysqli_fetch_assoc($kategoriResult)) {
+    $kategoriPengeluaran[] = $kategori;
+}
+
+mysqli_stmt_close($kategoriStmt);
+
+$transaksiQuery = "SELECT pengeluaran.*, user.nama, kategori.nama_kategori
+                   FROM pengeluaran
+                   INNER JOIN user ON pengeluaran.user = user.id_user
+                   LEFT JOIN kategori
+                       ON pengeluaran.id_kategori = kategori.id_kategori
+                      AND kategori.user_id = pengeluaran.user
+                      AND kategori.tipe_kategori = 'pengeluaran'
+                   WHERE user.id_user = ?
+                   ORDER BY pengeluaran.tanggal DESC, pengeluaran.id_pengeluaran DESC";
+$transaksiStmt = mysqli_prepare($con, $transaksiQuery);
+mysqli_stmt_bind_param($transaksiStmt, "i", $userYangSedangLogin);
+mysqli_stmt_execute($transaksiStmt);
+$transaksiResult = mysqli_stmt_get_result($transaksiStmt);
 ?>
 
-
 <div class="container-fluid py-4">
-	<div class="row justify-content-end">
-		<div class="col-6">
-		</div>
-	</div>
-	<div class="row">
-		<div class="col-12">
+    <div class="row justify-content-end">
+        <div class="col-6">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
 
-			<div class="card my-4">
-				<div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
-					<div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3">
-						<h6 class="text-white text-capitalize ps-3">pengeluaran</h6>
-					</div>
-				</div>
-				<div class="card-body px-0 pb-2">
-					<div class="text-end me-3">
-						<button type="button" class="btn btn-secondary" data-bs-toggle="modal"
-							data-bs-target="#modalTambah">
-							<i class="material-icons opacity-10" translate="no">add</i> Tambah Transaksi
-						</button>
-					</div>
-					<div class="table-responsive p-4 mx-2">
-						<table class="table align-items-center mb-0" id="datatable">
-							<thead>
-								<tr>
-									<th>
-										Tanggal</th>
-									<th>
-										Catatan
-									</th>
-									<th>
-										Jumlah pengeluaran</th>
-									<th>
-										User</th>
-									<th>
-										Status
-									</th>
-									<th></th>
-								</tr>
-							</thead>
-							<?php
-							$sql = mysqli_query($con, "select * from pengeluaran join user on pengeluaran.user = user.id_user where user.id_user = $userYangSedangLogin");
-							$no = 1;
-							while ($row = mysqli_fetch_array($sql)) {
-							?>
+            <div class="card my-4">
+                <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3">
+                        <h6 class="text-white text-capitalize ps-3">Pengeluaran</h6>
+                    </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <div class="text-end me-3">
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
+                            data-bs-target="#modalTambah">
+                            <i class="material-icons opacity-10" translate="no">add</i> Tambah Transaksi
+                        </button>
+                    </div>
+                    <div class="table-responsive p-4 mx-2">
+                        <table class="table align-items-center mb-0" id="datatable">
+                            <thead>
+                                <tr>
+                                    <th>Tanggal</th>
+                                    <th>Catatan</th>
+                                    <th>Kategori</th>
+                                    <th>Jumlah Pengeluaran</th>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php while ($row = mysqli_fetch_assoc($transaksiResult)) { ?>
+                                    <tr>
+                                        <td class="align-middle text-center">
+                                            <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
+                                        </td>
+                                        <td>
+                                            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
+                                        </td>
+                                        <td>
+                                            <p class="text-xs text-secondary mb-0">
+                                                <?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?>
+                                            </p>
+                                        </td>
+                                        <td>
+                                            <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></p>
+                                        </td>
+                                        <td>
+                                            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama']) ?></p>
+                                        </td>
+                                        <td class="align-middle text-center text-sm">
+                                            <span
+                                                class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
+                                                <?php if ($row['status'] == 'selesai'): ?>
+                                                    <?= htmlspecialchars($row['status']) ?>
+                                                <?php else : ?>
+                                                    <a href="aksi_pengeluaran.php?act=l&id=<?= (int) $row['id_pengeluaran'] ?>"
+                                                        class="text-white">
+                                                        <?= htmlspecialchars($row['status']) ?>
+                                                    </a>
+                                                <?php endif ?>
+                                            </span>
+                                        </td>
+                                        <td class="align-middle">
+                                            <a href="aksi_pengeluaran.php?&act=h&id=<?= (int) $row['id_pengeluaran'] ?>"
+                                                data-confirm="true"
+                                                data-confirm-title="Hapus pengeluaran ini?"
+                                                data-confirm-text="Data pengeluaran yang dihapus tidak bisa dikembalikan."
+                                                data-confirm-confirm-text="Ya, hapus"
+                                                data-confirm-cancel-text="Batal"
+                                                class="text-secondary text-danger font-weight-bold text-xs">
+                                                <i class="material-icons opacity-10" translate="no">delete</i>
+                                            </a>
 
-								<tr>
-									<td class="align-middle text-center">
-										<span class="text-secondary text-xs font-weight-bold"><?= $row['tanggal'] ?></span>
-									</td>
-									<td>
-										<p class="text-xs text-secondary mb-0"><?= $row['catatan'] ?></p>
-									</td>
-									<td>
-										<p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
-										</p>
-									</td>
-									<td>
-										<p class="text-xs text-secondary mb-0"><?= $row['nama'] ?></p>
-									</td>
-									<td class="align-middle text-center text-sm">
-                                        <span
-                                            class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
-                                            <?php if ($row['status'] == 'selesai'): ?>
-                                                <?= $row['status'] ?>
-                                            <?php else : ?>
-                                                <a href="aksi_pengeluaran.php?act=l&id=<?php echo $row['id_pengeluaran'] ?>"
-                                                    class="text-white">
-                                                    <?= $row['status'] ?>
-                                                </a>
-                                            <?php endif ?>
-                                        </span>
-									</td>
-									<td class="align-middle">
-										<a href="aksi_pengeluaran.php?&act=h&id=<?php echo $row['id_pengeluaran'] ?>"
-											data-confirm="true"
-											data-confirm-title="Hapus pengeluaran ini?"
-											data-confirm-text="Data pengeluaran yang dihapus tidak bisa dikembalikan."
-											data-confirm-confirm-text="Ya, hapus"
-											data-confirm-cancel-text="Batal"
-											class="text-secondary text-danger font-weight-bold text-xs">
-											<i class="material-icons opacity-10" translate="no">delete
-											</i>
-										</a>
-
-										<a type="submit"
-											data-id="<?php echo $row['id_pengeluaran'] ?>"
-											data-tanggal="<?php echo $row['tanggal'] ?>"
-                                            data-status="<?php echo $row['status'] ?>"
-											data-catatan="<?php echo $row['catatan'] ?>"
-											data-jumlah="<?php echo $row['jumlah'] ?>"
-											class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
-											<i class="material-icons fa fa edit" translate="no">edit
-											</i>
-										</a>
-									</td>
-								</tr>
-
-							<?php
-								$no++;
-							}
-							?>
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+                                            <a type="submit"
+                                                data-id="<?= (int) $row['id_pengeluaran'] ?>"
+                                                data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES) ?>"
+                                                data-status="<?= htmlspecialchars($row['status'], ENT_QUOTES) ?>"
+                                                data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES) ?>"
+                                                data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
+                                                data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
+                                                class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
+                                                <i class="material-icons fa fa edit" translate="no">edit</i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Modal Simpan -->
+<?php mysqli_stmt_close($transaksiStmt); ?>
+
 <div class="modal fade" id="modalTambah" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-	aria-labelledby="staticBackdropLabel" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered modal-sm">
-		<div class="modal-content">
-			<form action="aksi_pengeluaran.php?act=t" method="post">
-				<div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
-					<div
-						class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
-						<h6 class="modal-title text-white text-capitalize ps-3">pengeluaran</h6>
-						<button type="button" class="btn-close me-2" data-bs-dismiss="modal"
-							aria-label="Close"></button>
-					</div>
-				</div>
-				<div class="modal-body">
-					<div class="row">
-						<label class="form-label">Tanggal</label>
-						<div class="input-group input-group-outline">
-							<input type="date" name="tanggal" id="tanggal" class="form-control" required>
-							<input type="hidden" value="<?= $_SESSION['id_user'] ?>" name="user">
-							<input type="hidden" name="id_pengeluaran" id="id_pengeluaran" class="form-control">
-						</div>
-					</div>
-					<div class="row my-3">
-						<label>Catatan</label>
-						<div class="input-group input-group-outline">
-							<textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3"></textarea>
-						</div>
-					</div>
-					<div class="row my-3">
-						<label>Jumlah pengeluaran</label>
-						<div class="input-group input-group-outline">
-							<input type="number" name="jumlah" id="jumlah" required class="form-control">
-						</div>
-					</div>
-					<div class="row my-3">
-						<div class="input-group input-group-outline">
-							<select class="form-control" name="status" id="status" required>
-								<option value="">Pilih Status</option>
-								<option value="selesai">Selesai</option>
-								<option value="pending">Pending</option>
-							</select>
-						</div>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-					<button type="submit" name="simpan" class="btn btn-info">Simpan</button>
-				</div>
-			</form>
-		</div>
-	</div>
+    aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <form action="aksi_pengeluaran.php?act=t" method="post">
+                <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div
+                        class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
+                        <h6 class="modal-title text-white text-capitalize ps-3">Pengeluaran</h6>
+                        <button type="button" class="btn-close me-2" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <label class="form-label">Tanggal</label>
+                        <div class="input-group input-group-outline">
+                            <input type="date" name="tanggal" id="tanggal" class="form-control" required>
+                            <input type="hidden" value="<?= (int) $_SESSION['id_user'] ?>" name="user">
+                            <input type="hidden" name="id_pengeluaran" id="id_pengeluaran" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label>Catatan</label>
+                        <div class="input-group input-group-outline">
+                            <textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label>Kategori</label>
+                        <div class="input-group input-group-outline">
+                            <select class="form-control" name="id_kategori" id="id_kategori">
+                                <option value="">Belum dikategorikan</option>
+                                <?php foreach ($kategoriPengeluaran as $kategori) { ?>
+                                    <option value="<?= (int) $kategori['id_kategori'] ?>">
+                                        <?= htmlspecialchars($kategori['nama_kategori']) ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                        <?php if (empty($kategoriPengeluaran)) { ?>
+                            <small class="text-secondary px-2 mt-1">Belum ada kategori pengeluaran. Tambahkan lewat menu Kategori.</small>
+                        <?php } ?>
+                    </div>
+                    <div class="row my-3">
+                        <label>Jumlah Pengeluaran</label>
+                        <div class="input-group input-group-outline">
+                            <input type="text" name="jumlah" id="jumlah" required class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 250.000">
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <div class="input-group input-group-outline">
+                            <select class="form-control" name="status" id="status" required>
+                                <option value="">Pilih Status</option>
+                                <option value="selesai">Selesai</option>
+                                <option value="pending">Pending</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="simpan" class="btn btn-info">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
-	$(document).ready(function() {
-		$('#datatable').DataTable({
-			language: {
-				"paginate": {
-					"first": "&laquo",
-					"last": "&raquo",
-					"next": "&gt",
-					"previous": "&lt"
-				},
-			},
-			dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
-		});
-	});
+    $(document).ready(function() {
+        $('#datatable').DataTable({
+            language: {
+                "paginate": {
+                    "first": "&laquo",
+                    "last": "&raquo",
+                    "next": "&gt",
+                    "previous": "&lt"
+                },
+            },
+            dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+        });
+    });
 </script>

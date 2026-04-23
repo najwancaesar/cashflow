@@ -1,6 +1,11 @@
 <?php
 include "includes/koneksi.php";
 $userYangSedangLogin = $_SESSION['id_user'];
+
+if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
+    echo "<script>window.location.href='main.php?module=home';</script>";
+    exit;
+}
 ?>
 
 
@@ -135,7 +140,7 @@ $userYangSedangLogin = $_SESSION['id_user'];
 					<div class="row my-3">
 						<label>Jumlah piutang</label>
 						<div class="input-group input-group-outline">
-							<input type="number" name="jumlah" id="jumlah" required class="form-control">
+							<input type="text" name="jumlah" id="jumlah" required class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 750.000">
 						</div>
 					</div>
 					<div class="row my-3">

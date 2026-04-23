@@ -1,11 +1,34 @@
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="footer">
-                <div class="bg-transparent text-center py-2">Copyright © <span style="color: orangered;">KIN</span>
-                    2025
-                </div>
-            </div>
-        </div>
+<footer class="app-footer">
+    <div class="app-footer__inner">
+        &copy; 2026 CashFlow Control
     </div>
-</div>
+</footer>
+
+<style>
+.app-footer {
+    width: 100%;
+    padding: 0 1rem 1.25rem;
+}
+
+.app-footer__inner {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 0.8rem 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    color: #64748b;
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.auth-page .app-footer {
+    position: relative;
+    z-index: 1;
+    margin-top: -1rem;
+}
+
+.landing-page .app-footer {
+    padding-bottom: 1.5rem;
+}
+</style>

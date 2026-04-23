@@ -2,6 +2,7 @@
 session_start();
 include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
+include "includes/default_categories.php";
 
 $act = $_GET['act'] ?? '';
 $currentUserId = (int) ($_SESSION['id_user'] ?? 0);
@@ -29,6 +30,11 @@ function require_account_owner($targetUserId, $currentUserId)
     }
 }
 
+function clean_text($value)
+{
+    return trim((string) $value);
+}
+
 function username_or_email_exists($con, $username, $email, $excludeUserId = 0)
 {
     if ($excludeUserId > 0) {
@@ -47,44 +53,179 @@ function username_or_email_exists($con, $username, $email, $excludeUserId = 0)
     return $exists;
 }
 
-require_authenticated_user($currentUserId);
+function fetch_user_by_id($con, $userId)
+{
+    $stmt = $con->prepare("SELECT * FROM user WHERE id_user = ? LIMIT 1");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
 
-if ($act == 't') {
-    require_admin_user($isAdmin);
-
-    if (($_POST['konfirmasi_password'] ?? '') == ($_POST['password'] ?? '')) {
-        $username = trim($_POST['username'] ?? '');
-        $nama = trim($_POST['nama'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $no_telp = trim($_POST['no_telp'] ?? '');
-        $password = password_hash((string) $_POST['password'], PASSWORD_DEFAULT);
-        $role = 'user';
-        $foto = 'default.png';
-        $is_active = '1';
-
-        if (username_or_email_exists($con, $username, $email)) {
-            show_sweetalert_and_redirect('Data sudah dipakai', 'Username atau email sudah terdaftar.', 'warning', 'main.php?module=pengguna');
-        }
-
-        $stmt = $con->prepare("INSERT INTO user(username, nama, email, no_telp, role, password, foto, is_active) VALUES(?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssss", $username, $nama, $email, $no_telp, $role, $password, $foto, $is_active);
-        $stmt->execute();
-        $stmt->close();
-
-        show_sweetalert_and_redirect('Berhasil', 'Pengguna baru berhasil ditambahkan.', 'success', 'main.php?module=pengguna');
-    }
-
-    show_sweetalert_and_redirect('Konfirmasi gagal', 'Password dan konfirmasi password tidak sesuai.', 'error', 'main.php?module=pengguna');
+    return $user ?: null;
 }
 
-if ($act == 'e') {
+function validate_role_value($role)
+{
+    return in_array($role, ['admin', 'user'], true);
+}
+
+function validate_active_value($status)
+{
+    return in_array($status, ['0', '1'], true);
+}
+
+function block_admin_self_management($targetUserId, $currentUserId, $redirect)
+{
+    if ($targetUserId === $currentUserId) {
+        show_sweetalert_and_redirect('Aksi dibatasi', 'Gunakan halaman profil pribadi untuk mengelola akun admin Anda sendiri.', 'warning', $redirect);
+    }
+}
+
+require_authenticated_user($currentUserId);
+
+if ($act === 't') {
+    require_admin_user($isAdmin);
+
+    $username = clean_text($_POST['username'] ?? '');
+    $nama = clean_text($_POST['nama'] ?? '');
+    $email = clean_text($_POST['email'] ?? '');
+    $no_telp = clean_text($_POST['no_telp'] ?? '');
+    $passwordRaw = (string) ($_POST['password'] ?? '');
+    $passwordConfirm = (string) ($_POST['konfirmasi_password'] ?? '');
+    $role = strtolower(clean_text($_POST['role'] ?? 'user'));
+    $isActive = clean_text($_POST['is_active'] ?? '1');
+    $foto = 'default.png';
+
+    if ($username === '' || $nama === '' || $email === '' || $no_telp === '' || $passwordRaw === '') {
+        show_sweetalert_and_redirect('Data belum lengkap', 'Semua field user wajib diisi.', 'warning', 'main.php?module=pengguna');
+    }
+
+    if ($passwordRaw !== $passwordConfirm) {
+        show_sweetalert_and_redirect('Konfirmasi gagal', 'Password dan konfirmasi password tidak sesuai.', 'error', 'main.php?module=pengguna');
+    }
+
+    if (!validate_role_value($role) || !validate_active_value($isActive)) {
+        show_sweetalert_and_redirect('Data tidak valid', 'Role atau status akun tidak valid.', 'error', 'main.php?module=pengguna');
+    }
+
+    if (username_or_email_exists($con, $username, $email)) {
+        show_sweetalert_and_redirect('Data sudah dipakai', 'Username atau email sudah terdaftar.', 'warning', 'main.php?module=pengguna');
+    }
+
+    $password = password_hash($passwordRaw, PASSWORD_DEFAULT);
+    $stmt = $con->prepare("INSERT INTO user(username, nama, email, no_telp, role, password, foto, is_active, last_profile_update_at) VALUES(?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt->bind_param("ssssssss", $username, $nama, $email, $no_telp, $role, $password, $foto, $isActive);
+    $stmt->execute();
+    $newUserId = (int) $stmt->insert_id;
+    $stmt->close();
+
+    if ($role === 'user') {
+        seed_default_categories_for_user($con, $newUserId);
+    }
+
+    show_sweetalert_and_redirect('Berhasil', 'Pengguna baru berhasil ditambahkan.', 'success', 'main.php?module=pengguna');
+}
+
+if ($act === 'u') {
+    require_admin_user($isAdmin);
+
+    $targetUserId = (int) ($_POST['id_user'] ?? 0);
+    block_admin_self_management($targetUserId, $currentUserId, 'main.php?module=pengguna');
+
+    $targetUser = fetch_user_by_id($con, $targetUserId);
+    if (!$targetUser) {
+        show_sweetalert_and_redirect('User tidak ditemukan', 'Data user yang ingin diubah tidak ditemukan.', 'error', 'main.php?module=pengguna');
+    }
+
+    $username = clean_text($_POST['username'] ?? '');
+    $nama = clean_text($_POST['nama'] ?? '');
+    $email = clean_text($_POST['email'] ?? '');
+    $no_telp = clean_text($_POST['no_telp'] ?? '');
+    $role = strtolower(clean_text($_POST['role'] ?? 'user'));
+    $isActive = clean_text($_POST['is_active'] ?? '1');
+
+    if ($username === '' || $nama === '' || $email === '' || $no_telp === '') {
+        show_sweetalert_and_redirect('Data belum lengkap', 'Semua field edit user wajib diisi.', 'warning', 'main.php?module=pengguna');
+    }
+
+    if (!validate_role_value($role) || !validate_active_value($isActive)) {
+        show_sweetalert_and_redirect('Data tidak valid', 'Role atau status akun tidak valid.', 'error', 'main.php?module=pengguna');
+    }
+
+    if (username_or_email_exists($con, $username, $email, $targetUserId)) {
+        show_sweetalert_and_redirect('Data sudah dipakai', 'Username atau email sudah digunakan akun lain.', 'warning', 'main.php?module=pengguna');
+    }
+
+    $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ?, role = ?, is_active = ?, last_profile_update_at = NOW() WHERE id_user = ?");
+    $stmt->bind_param("ssssssi", $username, $nama, $email, $no_telp, $role, $isActive, $targetUserId);
+    $stmt->execute();
+    $stmt->close();
+
+    show_sweetalert_and_redirect('Berhasil', 'Data user berhasil diperbarui.', 'success', "main.php?module=pengguna&detail={$targetUserId}");
+}
+
+if ($act === 's') {
+    require_admin_user($isAdmin);
+
+    $targetUserId = (int) ($_GET['id'] ?? 0);
+    $isActive = clean_text($_GET['value'] ?? '');
+    block_admin_self_management($targetUserId, $currentUserId, 'main.php?module=pengguna');
+
+    if ($targetUserId <= 0 || !validate_active_value($isActive)) {
+        show_sweetalert_and_redirect('Data tidak valid', 'Permintaan status akun tidak valid.', 'error', 'main.php?module=pengguna');
+    }
+
+    if (!fetch_user_by_id($con, $targetUserId)) {
+        show_sweetalert_and_redirect('User tidak ditemukan', 'User yang ingin diubah tidak ditemukan.', 'error', 'main.php?module=pengguna');
+    }
+
+    $stmt = $con->prepare("UPDATE user SET is_active = ?, last_profile_update_at = NOW() WHERE id_user = ?");
+    $stmt->bind_param("si", $isActive, $targetUserId);
+    $stmt->execute();
+    $stmt->close();
+
+    show_sweetalert_and_redirect('Berhasil', 'Status akun berhasil diperbarui.', 'success', "main.php?module=pengguna&detail={$targetUserId}");
+}
+
+if ($act === 'r') {
+    require_admin_user($isAdmin);
+
+    $targetUserId = (int) ($_POST['id_user'] ?? 0);
+    block_admin_self_management($targetUserId, $currentUserId, 'main.php?module=pengguna');
+
+    $passwordBaru = (string) ($_POST['password_baru'] ?? '');
+    $konfirmasi = (string) ($_POST['konfirmasi_password'] ?? '');
+
+    if ($passwordBaru === '' || $konfirmasi === '') {
+        show_sweetalert_and_redirect('Data belum lengkap', 'Password baru dan konfirmasi wajib diisi.', 'warning', 'main.php?module=pengguna');
+    }
+
+    if ($passwordBaru !== $konfirmasi) {
+        show_sweetalert_and_redirect('Konfirmasi gagal', 'Password baru dan konfirmasi password tidak sesuai.', 'error', 'main.php?module=pengguna');
+    }
+
+    if (!fetch_user_by_id($con, $targetUserId)) {
+        show_sweetalert_and_redirect('User tidak ditemukan', 'User yang ingin direset password-nya tidak ditemukan.', 'error', 'main.php?module=pengguna');
+    }
+
+    $passwordHash = password_hash($passwordBaru, PASSWORD_DEFAULT);
+    $stmt = $con->prepare("UPDATE user SET password = ?, last_profile_update_at = NOW() WHERE id_user = ?");
+    $stmt->bind_param("si", $passwordHash, $targetUserId);
+    $stmt->execute();
+    $stmt->close();
+
+    show_sweetalert_and_redirect('Berhasil', 'Password user berhasil direset.', 'success', "main.php?module=pengguna&detail={$targetUserId}");
+}
+
+if ($act === 'e') {
     $id_user = (int) ($_POST['id_user'] ?? 0);
     require_account_owner($id_user, $currentUserId);
 
-    $username = trim($_POST['username'] ?? '');
-    $nama = trim($_POST['nama'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $no_telp = trim($_POST['no_telp'] ?? '');
+    $username = clean_text($_POST['username'] ?? '');
+    $nama = clean_text($_POST['nama'] ?? '');
+    $email = clean_text($_POST['email'] ?? '');
+    $no_telp = clean_text($_POST['no_telp'] ?? '');
 
     if (username_or_email_exists($con, $username, $email, $id_user)) {
         show_sweetalert_and_redirect('Data sudah dipakai', 'Username atau email sudah digunakan akun lain.', 'warning', "main.php?module=profile&id=$id_user");
@@ -106,7 +247,7 @@ if ($act == 'e') {
             $namafile = time() . "_" . $foto;
             move_uploaded_file($lokasi, "assets/img/profil/" . $namafile);
 
-            $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ?, foto = ? WHERE id_user = ?");
+            $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ?, foto = ?, last_profile_update_at = NOW() WHERE id_user = ?");
             $stmt->bind_param("sssssi", $username, $nama, $email, $no_telp, $namafile, $id_user);
             $stmt->execute();
             $stmt->close();
@@ -119,7 +260,7 @@ if ($act == 'e') {
         }
     }
 
-    $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ? WHERE id_user = ?");
+    $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ?, last_profile_update_at = NOW() WHERE id_user = ?");
     $stmt->bind_param("ssssi", $username, $nama, $email, $no_telp, $id_user);
     $stmt->execute();
     $stmt->close();
@@ -130,14 +271,14 @@ if ($act == 'e') {
     show_sweetalert_and_redirect('Berhasil', 'Profil berhasil diperbarui.', 'success', "main.php?module=profile&id=$id_user");
 }
 
-if ($act == 'p') {
+if ($act === 'p') {
     $id_user = (int) ($_POST['id_user'] ?? 0);
     require_account_owner($id_user, $currentUserId);
 
     if (($_POST['password_baru'] ?? '') == ($_POST['konfirmasi_password'] ?? '')) {
         $password = password_hash((string) $_POST['password_baru'], PASSWORD_DEFAULT);
 
-        $stmt = $con->prepare("UPDATE user SET password = ? WHERE id_user = ?");
+        $stmt = $con->prepare("UPDATE user SET password = ?, last_profile_update_at = NOW() WHERE id_user = ?");
         $stmt->bind_param("si", $password, $id_user);
         $stmt->execute();
         $stmt->close();
@@ -148,34 +289,18 @@ if ($act == 'p') {
     show_sweetalert_and_redirect('Konfirmasi gagal', 'Password baru dan konfirmasi password tidak sesuai.', 'error', "main.php?module=profile&id=$id_user");
 }
 
-if ($act == 'a') {
+if ($act === 'h') {
     require_admin_user($isAdmin);
 
-    $id = (int) ($_GET['id'] ?? 0);
-    $statusAktif = '1';
-    $stmt = $con->prepare("SELECT id_user FROM user WHERE id_user = ? AND is_active = ? LIMIT 1");
-    $stmt->bind_param("is", $id, $statusAktif);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $stmt->close();
+    $targetUserId = (int) ($_GET['id'] ?? 0);
+    block_admin_self_management($targetUserId, $currentUserId, 'main.php?module=pengguna');
 
-    if ($result && $result->num_rows > 0) {
-        $stmt = $con->prepare("UPDATE user SET is_active = ? WHERE id_user = ?");
-        $stmt->bind_param("si", $statusAktif, $id);
-        $stmt->execute();
-        $stmt->close();
+    if ($targetUserId <= 0 || !fetch_user_by_id($con, $targetUserId)) {
+        show_sweetalert_and_redirect('User tidak ditemukan', 'Pengguna yang ingin dihapus tidak ditemukan.', 'error', 'main.php?module=pengguna');
     }
 
-    show_sweetalert_and_redirect('Berhasil', 'Status pengguna berhasil diperbarui.', 'success', 'main.php?module=pengguna');
-}
-
-if ($act == 'h') {
-    require_admin_user($isAdmin);
-
-    $id = (int) ($_GET['id'] ?? 0);
-
     $stmt = $con->prepare("DELETE FROM user WHERE id_user = ?");
-    $stmt->bind_param("i", $id);
+    $stmt->bind_param("i", $targetUserId);
     $stmt->execute();
     $stmt->close();
 
@@ -183,5 +308,4 @@ if ($act == 'h') {
 }
 
 show_sweetalert_and_redirect('Aksi tidak valid', 'Permintaan yang Anda kirim tidak dikenali.', 'error', 'main.php?module=home');
-
 ?>

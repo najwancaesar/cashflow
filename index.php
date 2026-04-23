@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="lib/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+  <link href="assets/css/landing-enhance.css" rel="stylesheet">
   <style>
     :root{--bg:#f4f9f7;--surface:#fff;--surface-2:#f8fbff;--text:#0f172a;--muted:#617082;--line:rgba(15,23,42,.08);--green:#0f9f74;--green-deep:#0c7b5b;--blue:#1d77ff;--shadow-lg:0 24px 60px rgba(15,23,42,.12);--shadow-md:0 16px 36px rgba(15,23,42,.08);--shadow-sm:0 10px 24px rgba(15,23,42,.06)}
     html{scroll-behavior:smooth}
@@ -41,13 +42,13 @@
     .btn-glass{background:rgba(255,255,255,.84);border-color:var(--line);color:var(--text)}
     .btn-glass:hover{text-decoration:none;color:var(--text);background:#fff}
     .hero{padding:44px 0 86px;position:relative;overflow:hidden}
-    .hero-copy{padding-top:28px}
+    .hero-copy{padding-top:0}
     .hero-actions,.hero-proof{display:flex;gap:14px;flex-wrap:wrap}
     .hero-actions{margin-top:32px}
     .hero-proof{margin-top:26px}
     .proof-chip{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.84);border:1px solid var(--line);box-shadow:var(--shadow-sm);font-weight:600;color:var(--muted)}
     .proof-chip i{color:var(--green)}
-    .hero-visual{margin-top:44px;position:relative}
+    .hero-visual{margin-top:0;position:relative}
     .dashboard{padding:24px;border-radius:30px;background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(245,249,255,.98));border:1px solid var(--line);box-shadow:var(--shadow-lg)}
     .dashboard-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
     .dashboard-title{font-size:1rem;font-weight:800}
@@ -124,12 +125,12 @@
     @media (max-width:767.98px){.nav-shell{padding:12px 14px}.nav-actions{margin-top:12px}.nav-actions a,.hero-actions a{width:100%}.stats,.features,.benefits{grid-template-columns:1fr}.dashboard,.preview-panel,.contact-card,.contact-form{padding:22px;border-radius:24px}.stat-card,.feature-card,.benefit-card{padding:22px}.proof-chip{width:100%}}
   </style>
 </head>
-<body>
+<body class="landing-page">
   <nav class="navbar navbar-expand-lg site-navbar">
     <div class="container">
       <div class="nav-shell w-100">
         <a class="brand" href="#home">
-          <span class="brand-mark"><i class="fa fa-line-chart"></i></span>
+          <span class="brand-mark brand-logo"><img src="assets/img/logocv.jpg" alt="CashFlow Control"></span>
           <span>CashFlow Control</span>
         </a>
         <button class="navbar-toggler border-0 p-0" type="button" data-toggle="collapse" data-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
@@ -154,14 +155,14 @@
   <main>
     <section class="hero" id="home">
       <div class="container">
-        <div class="row align-items-center">
+        <div class="row align-items-start hero-layout">
           <div class="col-lg-6">
             <div class="hero-copy">
               <span class="eyebrow">Modern Finance Workspace</span>
-              <h1 class="display-title">Cashflow yang rapi membuat keputusan finansial terasa jauh lebih pasti.</h1>
-              <p class="lead-copy">CashFlow Control membantu kamu mencatat pemasukan, pengeluaran, memantau saldo, melihat laporan, mengelola kategori transaksi, dan membaca analisis cashflow dalam satu pengalaman yang terasa premium, bersih, dan profesional.</p>
+              <h1 class="display-title">Kelola cashflow pribadi dengan dashboard yang rapi dan mudah dibaca.</h1>
+              <p class="lead-copy">CashFlow Control membantu kamu mencatat pemasukan, pengeluaran, utang, piutang, kategori, dan laporan dalam satu workspace yang bersih, modern, dan fokus pada data yang benar-benar kamu punya.</p>
               <div class="hero-actions">
-                <a href="register.php" class="btn-solid">Coba Sekarang <i class="fa fa-long-arrow-right"></i></a>
+                <a href="register.php" class="btn-solid">Mulai Catat Cashflow <i class="fa fa-long-arrow-right"></i></a>
                 <a href="#preview" class="btn-glass">Lihat Dashboard</a>
               </div>
               <div class="hero-proof">
@@ -194,7 +195,33 @@
                   <div class="mock-card insight-card">
                     <small>Trend Cashflow</small>
                     <h4 class="mt-2 mb-0">Performa 30 Hari</h4>
-                    <div class="bars"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+                    <div class="trend-chart" aria-label="Grafik tren cashflow 30 hari">
+                      <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
+                        <defs>
+                          <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stop-color="#1d77ff" stop-opacity="0.22"/>
+                            <stop offset="100%" stop-color="#0f9f74" stop-opacity="0.04"/>
+                          </linearGradient>
+                          <linearGradient id="trendStroke" x1="0" x2="1" y1="0" y2="0">
+                            <stop offset="0%" stop-color="#1d77ff"/>
+                            <stop offset="100%" stop-color="#0f9f74"/>
+                          </linearGradient>
+                        </defs>
+                        <path class="trend-area" d="M0,120 C34,104 52,84 84,92 C118,102 132,62 164,70 C196,78 210,42 242,48 C274,54 292,32 320,40 L320,160 L0,160 Z"></path>
+                        <path class="trend-line" d="M0,120 C34,104 52,84 84,92 C118,102 132,62 164,70 C196,78 210,42 242,48 C274,54 292,32 320,40"></path>
+                        <g class="trend-points">
+                          <circle cx="0" cy="120" r="4"></circle>
+                          <circle cx="84" cy="92" r="4"></circle>
+                          <circle cx="164" cy="70" r="4"></circle>
+                          <circle cx="242" cy="48" r="4"></circle>
+                          <circle cx="320" cy="40" r="4"></circle>
+                        </g>
+                      </svg>
+                      <div class="trend-caption">
+                        <span>Stabil naik</span>
+                        <strong>+18,4%</strong>
+                      </div>
+                    </div>
                   </div>
                   <div class="mock-card transaction-card">
                     <small>Aktivitas Terbaru</small>
@@ -214,6 +241,10 @@
                         </div>
                         <div class="expense">- Rp 860.000</div>
                       </div>
+                      <div class="floating-note inline-note fade d3">
+                        <strong>Insight cepat</strong>
+                        <small>Kondisi saldo, kategori aktif, dan laporan cashflow bisa dibaca tanpa berpindah-pindah halaman.</small>
+                      </div>
                     </div>
                   </div>
                   <div class="mock-card mini-card">
@@ -223,10 +254,6 @@
                     <p class="mt-3 mb-0">Kategori transaksi membantu kamu melihat pola pengeluaran terbesar lebih cepat.</p>
                   </div>
                 </div>
-              </div>
-              <div class="floating-note fade d3">
-                <strong>Insight cepat</strong>
-                <small>Kondisi saldo, kategori aktif, dan laporan cashflow bisa dibaca tanpa berpindah-pindah halaman.</small>
               </div>
             </div>
           </div>
@@ -254,7 +281,7 @@
           <div class="feature-card fade d1"><span class="feature-icon"><i class="fa fa-plus-circle"></i></span><h4>Mencatat Pemasukan</h4><p class="muted-copy">Input transaksi pemasukan dengan cepat, beri catatan, dan simpan histori secara terstruktur.</p></div>
           <div class="feature-card fade d2"><span class="feature-icon"><i class="fa fa-credit-card"></i></span><h4>Mencatat Pengeluaran</h4><p class="muted-copy">Lacak biaya operasional, kebutuhan rutin, dan pengeluaran penting agar arus kas tetap sehat.</p></div>
           <div class="feature-card fade d3"><span class="feature-icon"><i class="fa fa-tags"></i></span><h4>Mengelola Kategori</h4><p class="muted-copy">Kelompokkan transaksi agar pola pengeluaran dan sumber pemasukan lebih mudah dibaca.</p></div>
-          <div class="feature-card fade d1"><span class="feature-icon"><i class="fa fa-wallet"></i></span><h4>Memantau Saldo</h4><p class="muted-copy">Lihat posisi saldo aktif secara cepat dan pahami perubahan kondisi keuangan setiap saat.</p></div>
+          <div class="feature-card fade d1"><span class="feature-icon"><i class="fa fa-money"></i></span><h4>Memantau Saldo</h4><p class="muted-copy">Lihat posisi saldo aktif secara cepat dan pahami perubahan kondisi keuangan setiap saat.</p></div>
           <div class="feature-card fade d2"><span class="feature-icon"><i class="fa fa-file-text-o"></i></span><h4>Melihat Laporan</h4><p class="muted-copy">Tinjau rekap pemasukan dan pengeluaran dalam periode tertentu tanpa repot merapikan manual.</p></div>
           <div class="feature-card fade d3"><span class="feature-icon"><i class="fa fa-line-chart"></i></span><h4>Analisis Cashflow</h4><p class="muted-copy">Temukan tren, bulan terkuat, dan area pemborosan dengan tampilan yang lebih mudah dipahami.</p></div>
         </div>
@@ -294,16 +321,25 @@
               <div class="chart-shell">
                 <div class="chart-card">
                   <strong>Arus Kas Mingguan</strong>
-                  <div class="line-chart">
+                  <div class="line-chart line-chart-enhanced">
                     <svg viewBox="0 0 600 220" preserveAspectRatio="none" aria-hidden="true">
                       <defs>
                         <linearGradient id="fillArea" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stop-color="rgba(29,119,255,.24)"></stop>
                           <stop offset="100%" stop-color="rgba(29,119,255,.02)"></stop>
                         </linearGradient>
+                        <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#1d77ff" flood-opacity=".18"></feDropShadow>
+                        </filter>
                       </defs>
-                      <path d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96 L600,220 L0,220 Z" fill="url(#fillArea)"></path>
-                      <path d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96" fill="none" stroke="#1d77ff" stroke-width="5" stroke-linecap="round"></path>
+                      <path class="line-area" d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96 L600,220 L0,220 Z" fill="url(#fillArea)"></path>
+                      <path class="line-curve" d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96" fill="none" stroke="#1d77ff" stroke-width="5" stroke-linecap="round" filter="url(#lineGlow)"></path>
+                      <g class="line-points">
+                        <circle cx="150" cy="82" r="5"></circle>
+                        <circle cx="300" cy="112" r="5"></circle>
+                        <circle cx="450" cy="50" r="5"></circle>
+                        <circle cx="600" cy="96" r="5"></circle>
+                      </g>
                     </svg>
                   </div>
                 </div>
@@ -378,25 +414,7 @@
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-shell">
-        <div>
-          <a class="brand" href="#home">
-            <span class="brand-mark"><i class="fa fa-line-chart"></i></span>
-            <span>CashFlow Control</span>
-          </a>
-          <div class="muted-copy" style="margin-top:8px;">Landing page modern untuk aplikasi cashflow yang bersih, profesional, dan meyakinkan.</div>
-        </div>
-        <div class="footer-nav">
-          <a href="#home">Home</a>
-          <a href="#contact">Contact</a>
-          <a href="login.php">Login</a>
-          <a href="register.php">Register</a>
-        </div>
-      </div>
-    </div>
-  </footer>
+  <?php include "includes/footer.php"; ?>
   <script src="js/vendor/jquery-1.11.3.min.js"></script>
   <script src="lib/bootstrap/js/bootstrap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -416,5 +434,6 @@
       }
     });
   </script>
+  <script src="assets/js/landing-enhance.js"></script>
 </body>
 </html>
