@@ -29,7 +29,7 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
             <div class="col-auto">
                 <div class="avatar avatar-xl position-relative">
                     <?php if($user['foto'] == ''): ?>
-                    <i class="material-icons text-lg position-relative text-info">person</i>
+                    <i class="fa fa-user-circle text-lg position-relative text-info" aria-hidden="true"></i>
                     <?php else : ?>
                     <img src="assets/img/profil/<?= $user['foto'] ?>" alt="profile_image"
                         class="w-100 border-radius-lg shadow-sm">
@@ -50,21 +50,21 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
                 <div class="row mb-2">
                     <a class="mb-0 px-0 py-1 active btn" data-bs-toggle="tab" href="javascript:;" role="tab"
                         aria-selected="true">
-                        <i class="material-icons text-lg position-relative">person</i>
+                        <i class="fa fa-user-circle text-lg position-relative" aria-hidden="true"></i>
                         <span class="ms-1">Profil</span>
                     </a>
                 </div>
                 <div class="row mb-2">
                     <button class="mb-0 px-0 py-1 btn btn-warning" data-bs-toggle="modal"
                         data-bs-target="#modalEditProfil">
-                        <i class="material-icons text-lg position-relative">edit</i>
+                        <i class="fa fa-pencil text-lg position-relative" aria-hidden="true"></i>
                         <span class="ms-1">Ubah Profil</span>
                     </button>
                 </div>
                 <div class="row mb-2">
                     <button class="mb-0 px-0 py-1 btn btn-danger" data-bs-toggle="modal"
                         data-bs-target="#modalEditPassword">
-                        <i class="material-icons text-lg position-relative">lock</i>
+                        <i class="fa fa-lock text-lg position-relative" aria-hidden="true"></i>
                         <span class="ms-1">Ganti Password</span>
                     </button>
                 </div>

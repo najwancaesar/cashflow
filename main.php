@@ -11,6 +11,7 @@ if(!isset($_SESSION['nama'])){
 
 <head>
     <?php include "includes/header.php" ?>
+    <link href="assets/css/app-responsive.css" rel="stylesheet" />
 </head>
 
 <body class="g-sidenav-show bg-gray-200">
@@ -69,6 +70,7 @@ if(!isset($_SESSION['nama'])){
     </script>
     <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
     <script src="assets/js/material-dashboard.min.js?v=3.0.0"></script>
+    <script src="assets/js/app-ui-fixes.js"></script>
 
     <script>
     function getNominalDigits(value) {

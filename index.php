@@ -193,8 +193,13 @@
                     </div>
                   </div>
                   <div class="mock-card insight-card">
-                    <small>Trend Cashflow</small>
-                    <h4 class="mt-2 mb-0">Performa 30 Hari</h4>
+                    <div class="trend-card-top">
+                      <div>
+                        <small>Trend Cashflow</small>
+                        <h4 class="mt-2 mb-0">Performa 30 Hari</h4>
+                      </div>
+                      <span class="trend-badge">+18,4%</span>
+                    </div>
                     <div class="trend-chart" aria-label="Grafik tren cashflow 30 hari">
                       <svg viewBox="0 0 320 160" preserveAspectRatio="none" aria-hidden="true">
                         <defs>
@@ -217,10 +222,6 @@
                           <circle cx="320" cy="40" r="4"></circle>
                         </g>
                       </svg>
-                      <div class="trend-caption">
-                        <span>Stabil naik</span>
-                        <strong>+18,4%</strong>
-                      </div>
                     </div>
                   </div>
                   <div class="mock-card transaction-card">

@@ -95,7 +95,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                         <div class="row align-items-center">
                             <div class="col-md-2 text-center mb-3 mb-md-0">
                                 <?php if ($detailUser['foto'] === 'default.png' || $detailUser['foto'] === '') { ?>
-                                    <i class="material-icons text-info" style="font-size: 64px;" translate="no">person</i>
+                                    <i class="fa fa-user-circle text-info" style="font-size: 64px;" aria-hidden="true"></i>
                                 <?php } else { ?>
                                     <img src="assets/img/profil/<?= htmlspecialchars($detailUser['foto']) ?>" class="avatar avatar-xxl shadow" alt="foto-user">
                                 <?php } ?>
@@ -178,7 +178,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                     <div class="text-end me-3">
                         <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
                             data-bs-target="#modalTambah">
-                            <i class="material-icons opacity-10" translate="no">add</i> Tambah Pengguna
+                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Pengguna
                         </button>
                     </div>
                     <div class="table-responsive p-4">
@@ -203,7 +203,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                     <tr>
                                         <td class="align-middle text-center">
                                             <?php if (($row['foto'] ?? '') === '' || ($row['foto'] ?? '') === 'default.png') { ?>
-                                                <i class="material-icons opacity-10" translate="no">person</i>
+                                                <i class="fa fa-user-circle" aria-hidden="true"></i>
                                             <?php } else { ?>
                                                 <img src="assets/img/profil/<?= htmlspecialchars($row['foto']) ?>" class="avatar avatar-sm" alt="foto-user">
                                             <?php } ?>
@@ -231,7 +231,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                         </td>
                                         <td class="align-middle">
                                             <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2">
-                                                <i class="material-icons opacity-10" translate="no">visibility</i>
+                                                <i class="fa fa-eye" aria-hidden="true"></i>
                                             </a>
                                             <?php if (!$isSelf) { ?>
                                                 <a type="button"
@@ -243,7 +243,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                     data-no_telp="<?= htmlspecialchars($row['no_telp'], ENT_QUOTES) ?>"
                                                     data-role="<?= htmlspecialchars($row['role'], ENT_QUOTES) ?>"
                                                     data-is_active="<?= htmlspecialchars($row['is_active'], ENT_QUOTES) ?>">
-                                                    <i class="material-icons opacity-10" translate="no">edit</i>
+                                                    <i class="fa fa-pencil" aria-hidden="true"></i>
                                                 </a>
 
                                                 <a href="aksi_user.php?act=s&id=<?= (int) $row['id_user'] ?>&value=<?= $isActive ? '0' : '1' ?>"
@@ -253,14 +253,14 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                     data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
                                                     data-confirm-cancel-text="Batal"
                                                     class="text-secondary <?= $isActive ? 'text-secondary' : 'text-success' ?> font-weight-bold text-xs me-2">
-                                                    <i class="material-icons opacity-10" translate="no"><?= $isActive ? 'toggle_off' : 'toggle_on' ?></i>
+                                                    <i class="fa <?= $isActive ? 'fa-toggle-off' : 'fa-toggle-on' ?>" aria-hidden="true"></i>
                                                 </a>
 
                                                 <a type="button"
                                                     class="text-secondary text-info font-weight-bold text-xs me-2 btnresetpassworduser"
                                                     data-id="<?= (int) $row['id_user'] ?>"
                                                     data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>">
-                                                    <i class="material-icons opacity-10" translate="no">lock_reset</i>
+                                                    <i class="fa fa-key" aria-hidden="true"></i>
                                                 </a>
 
                                                 <a title="hapus" href="aksi_user.php?act=h&id=<?= (int) $row['id_user'] ?>"
@@ -270,7 +270,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                     data-confirm-confirm-text="Ya, hapus"
                                                     data-confirm-cancel-text="Batal"
                                                     class="text-secondary text-danger font-weight-bold text-xs">
-                                                    <i class="material-icons opacity-10" translate="no">delete</i>
+                                                    <i class="fa fa-trash" aria-hidden="true"></i>
                                                 </a>
                                             <?php } else { ?>
                                                 <span class="text-xs text-secondary">Kelola akun sendiri lewat Profil</span>

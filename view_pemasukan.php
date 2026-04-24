@@ -57,7 +57,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                     <div class="text-end me-3">
                         <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
                             data-bs-target="#modalTambah">
-                            <i class="material-icons opacity-10" translate="no">add</i> Tambah Transaksi
+                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
                         </button>
                     </div>
                     <div class="table-responsive p-4 mx-2">
@@ -114,7 +114,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                                 data-confirm-confirm-text="Ya, hapus"
                                                 data-confirm-cancel-text="Batal"
                                                 class="text-secondary text-danger font-weight-bold text-xs">
-                                                <i class="material-icons opacity-10" translate="no">delete</i>
+                                                <i class="fa fa-trash" aria-hidden="true"></i>
                                             </a>
 
                                             <a type="submit"
@@ -125,7 +125,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                                 data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
                                                 data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
                                                 class="text-secondary text-warning font-weight-bold text-xs btneditpemasukan">
-                                                <i class="material-icons fa fa edit" translate="no">edit</i>
+                                                <i class="fa fa-pencil" aria-hidden="true"></i>
                                             </a>
                                         </td>
                                     </tr>

@@ -31,4 +31,16 @@
 .landing-page .app-footer {
     padding-bottom: 1.5rem;
 }
+
+@media (max-width: 575.98px) {
+    .app-footer {
+        padding-right: 0.75rem;
+        padding-bottom: 1rem;
+        padding-left: 0.75rem;
+    }
+
+    .auth-page .app-footer {
+        margin-top: 0;
+    }
+}
 </style>

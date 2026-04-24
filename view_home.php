@@ -173,8 +173,8 @@ if ($isAdmin) {
             <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
                 <div class="card dashboard-stat-card">
                     <div class="card-header p-3 pt-2">
-                        <div class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                            <i class="material-icons opacity-10" translate="no">groups</i>
+                        <div class="icon icon-lg icon-shape cashflow-icon-user text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-users" aria-hidden="true"></i>
                         </div>
                         <div class="text-end pt-1">
                             <p class="text-sm mb-0 text-capitalize">Total User</p>
@@ -189,7 +189,7 @@ if ($isAdmin) {
                 <div class="card dashboard-stat-card">
                     <div class="card-header p-3 pt-2">
                         <div class="icon icon-lg icon-shape bg-gradient-success shadow-success text-center border-radius-xl mt-n4 position-absolute">
-                            <i class="material-icons opacity-10" translate="no">verified_user</i>
+                            <i class="fa fa-user-circle" aria-hidden="true"></i>
                         </div>
                         <div class="text-end pt-1">
                             <p class="text-sm mb-0 text-capitalize">User Aktif</p>
@@ -203,8 +203,8 @@ if ($isAdmin) {
             <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
                 <div class="card dashboard-stat-card">
                     <div class="card-header p-3 pt-2">
-                        <div class="icon icon-lg icon-shape bg-gradient-warning shadow-warning text-center border-radius-xl mt-n4 position-absolute">
-                            <i class="material-icons opacity-10" translate="no">person_off</i>
+                        <div class="icon icon-lg icon-shape cashflow-icon-pending text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-minus-circle" aria-hidden="true"></i>
                         </div>
                         <div class="text-end pt-1">
                             <p class="text-sm mb-0 text-capitalize">User Nonaktif</p>
@@ -218,8 +218,8 @@ if ($isAdmin) {
             <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
                 <div class="card dashboard-stat-card">
                     <div class="card-header p-3 pt-2">
-                        <div class="icon icon-lg icon-shape bg-gradient-dark shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                            <i class="material-icons opacity-10" translate="no">admin_panel_settings</i>
+                        <div class="icon icon-lg icon-shape cashflow-icon-user text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-user-circle" aria-hidden="true"></i>
                         </div>
                         <div class="text-end pt-1">
                             <p class="text-sm mb-0 text-capitalize">Total Admin</p>
@@ -236,8 +236,8 @@ if ($isAdmin) {
             <div class="col-xl-4 col-sm-6 mb-xl-0 mb-4">
                 <div class="card dashboard-stat-card h-100">
                     <div class="card-header p-3 pt-2">
-                        <div class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                            <i class="material-icons opacity-10" translate="no">person_add</i>
+                        <div class="icon icon-lg icon-shape cashflow-icon-user text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-users" aria-hidden="true"></i>
                         </div>
                         <div class="text-end pt-1">
                             <p class="text-sm mb-0 text-capitalize">User Baru Bulan Ini</p>
@@ -253,8 +253,8 @@ if ($isAdmin) {
             <div class="col-xl-8 col-sm-6">
                 <div class="card dashboard-stat-card h-100">
                     <div class="card-header p-3 pt-2">
-                        <div class="icon icon-lg icon-shape bg-gradient-primary shadow-primary text-center border-radius-xl mt-n4 position-absolute">
-                            <i class="material-icons opacity-10" translate="no">schedule</i>
+                        <div class="icon icon-lg icon-shape cashflow-icon-pending text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-clock-o" aria-hidden="true"></i>
                         </div>
                         <div class="text-end pt-1">
                             <p class="text-sm mb-0 text-capitalize">Last Login User</p>
@@ -636,8 +636,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">table_view</i>
+                        class="icon icon-lg icon-shape cashflow-icon-income text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-arrow-circle-down" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pendapatan Hari Ini</p>
@@ -653,8 +653,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">receipt</i>
+                        class="icon icon-lg icon-shape cashflow-icon-expense text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-arrow-circle-up" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pengeluaran Hari Ini</p>
@@ -670,8 +670,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-success text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">notes</i>
+                        class="icon icon-lg icon-shape cashflow-icon-report text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-exchange" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Transaksi Hari Ini</p>
@@ -687,8 +687,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">autorenew</i>
+                        class="icon icon-lg icon-shape cashflow-icon-pending text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-clock-o" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pending</p>
@@ -706,8 +706,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">table_view</i>
+                        class="icon icon-lg icon-shape cashflow-icon-income text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-money" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pendapatan Bulan Ini</p>
@@ -723,8 +723,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">receipt</i>
+                        class="icon icon-lg icon-shape cashflow-icon-expense text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-credit-card" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pengeluaran Bulan Ini</p>
@@ -740,8 +740,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-success text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">notes</i>
+                        class="icon icon-lg icon-shape cashflow-icon-report text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-list-alt" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Transaksi Bulan Ini</p>
@@ -757,8 +757,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">person</i>
+                        class="icon icon-lg icon-shape cashflow-icon-user text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-users" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pengguna</p>
@@ -777,8 +777,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card h-100 dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">category</i>
+                        class="icon icon-lg icon-shape cashflow-icon-category text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-tags" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Kategori Aktif</p>
@@ -795,8 +795,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card h-100 dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-success shadow-success text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">trending_up</i>
+                        class="icon icon-lg icon-shape cashflow-icon-income text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-line-chart" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Top Kategori Pemasukan</p>
@@ -819,8 +819,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card h-100 dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-danger shadow-danger text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">trending_down</i>
+                        class="icon icon-lg icon-shape cashflow-icon-expense text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-pie-chart" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Top Kategori Pengeluaran</p>
@@ -851,7 +851,7 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                 <div class="card-body p-3">
                     <?php if (empty($kategori_pemasukan_breakdown)) { ?>
                         <div class="border border-radius-lg p-4 text-center">
-                            <i class="material-icons text-secondary mb-2" translate="no">insights</i>
+                            <i class="fa fa-line-chart text-secondary mb-2" aria-hidden="true"></i>
                             <p class="text-sm text-secondary mb-1">Belum ada data kategori pemasukan untuk bulan ini.</p>
                             <p class="text-xs text-secondary mb-0">Transaksi akan muncul di sini setelah Anda menambahkan pemasukan.</p>
                         </div>
@@ -883,7 +883,7 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                 <div class="card-body p-3">
                     <?php if (empty($kategori_pengeluaran_breakdown)) { ?>
                         <div class="border border-radius-lg p-4 text-center">
-                            <i class="material-icons text-secondary mb-2" translate="no">pie_chart</i>
+                            <i class="fa fa-pie-chart text-secondary mb-2" aria-hidden="true"></i>
                             <p class="text-sm text-secondary mb-1">Belum ada data kategori pengeluaran untuk bulan ini.</p>
                             <p class="text-xs text-secondary mb-0">Transaksi akan muncul di sini setelah Anda menambahkan pengeluaran.</p>
                         </div>
@@ -913,8 +913,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-dark text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">table_view</i>
+                        class="icon icon-lg icon-shape cashflow-icon-debt text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-minus-circle" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Utang Bulan Ini</p>
@@ -930,8 +930,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape bg-gradient-info shadow-info text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="material-icons opacity-10" translate="no">receipt</i>
+                        class="icon icon-lg icon-shape cashflow-icon-receivable text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-handshake-o" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Piutang Bulan Ini</p>

@@ -1,11 +1,40 @@
 .landing-page {
     position: relative;
     min-height: 100vh;
+    width: 100%;
     overflow-x: hidden;
     background:
         radial-gradient(circle at 12% 10%, rgba(29, 119, 255, 0.08), transparent 25%),
         radial-gradient(circle at 86% 8%, rgba(15, 159, 116, 0.08), transparent 24%),
         linear-gradient(180deg, #fbfffd 0%, #f5f8fc 48%, #f8fafc 100%);
+}
+
+.landing-page * {
+    box-sizing: border-box;
+}
+
+.landing-page img,
+.landing-page svg {
+    max-width: 100%;
+}
+
+.landing-page .navbar-collapse {
+    min-width: 0;
+}
+
+.landing-page .navbar-toggler {
+    display: none;
+}
+
+.landing-page .brand {
+    min-width: 0;
+}
+
+.landing-page .brand > span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .landing-page::before {
@@ -215,6 +244,31 @@
     grid-area: insight;
     grid-column: auto !important;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.trend-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.trend-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.52rem 0.78rem;
+    border: 1px solid rgba(29, 119, 255, 0.1);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.84);
+    color: var(--blue);
+    font-size: 0.78rem;
+    font-weight: 800;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .transaction-card {
@@ -307,8 +361,8 @@
 
 .trend-chart {
     position: relative;
-    min-height: 172px;
-    margin-top: 18px;
+    min-height: 206px;
+    margin-top: 4px;
     overflow: hidden;
     border: 1px solid rgba(29, 119, 255, 0.08);
     border-radius: 22px;
@@ -322,17 +376,19 @@
 .trend-chart::before {
     content: "";
     position: absolute;
-    inset: 12px;
+    inset: 14px;
     border-radius: 18px;
-    background: linear-gradient(90deg, rgba(29, 119, 255, 0.04), transparent 42%, rgba(15, 159, 116, 0.05));
+    background:
+        linear-gradient(90deg, rgba(29, 119, 255, 0.04), transparent 42%, rgba(15, 159, 116, 0.05)),
+        repeating-linear-gradient(to right, rgba(15, 23, 42, 0.04) 0, rgba(15, 23, 42, 0.04) 1px, transparent 1px, transparent 70px);
     pointer-events: none;
 }
 
 .trend-chart svg {
     position: absolute;
-    inset: 12px 14px 42px;
+    inset: 16px 14px;
     width: calc(100% - 28px);
-    height: calc(100% - 56px);
+    height: calc(100% - 32px);
     overflow: visible;
 }
 
@@ -365,25 +421,6 @@
 .trend-points circle:hover {
     transform: scale(1.18);
     stroke: var(--green);
-}
-
-.trend-caption {
-    position: absolute;
-    right: 16px;
-    bottom: 13px;
-    left: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    color: var(--muted);
-    font-size: 0.88rem;
-    font-weight: 700;
-}
-
-.trend-caption strong {
-    color: var(--green-deep);
-    font-size: 1rem;
 }
 
 @keyframes trend-draw {
@@ -547,26 +584,35 @@
 }
 
 @media (max-width: 1199.98px) {
-    .hero-copy {
+    .landing-page .hero-copy {
         max-width: 100%;
     }
 }
 
 @media (max-width: 991.98px) {
-    .section {
+    .landing-page .nav-shell {
+        flex-wrap: wrap;
+    }
+
+    .landing-page .navbar-collapse {
+        flex: 1 0 100%;
+        width: 100%;
+    }
+
+    .landing-page .section {
         padding-top: 80px;
         padding-bottom: 80px;
     }
 
-    .hero {
+    .landing-page .hero {
         padding-top: 34px;
     }
 
-    .hero-visual {
+    .landing-page .hero-visual {
         padding-bottom: 0;
     }
 
-    .mock-grid {
+    .landing-page .mock-grid {
         grid-template-columns: 1fr;
         grid-template-areas:
             "balance"
@@ -575,41 +621,525 @@
             "mini";
     }
 
-    .balance-card,
-    .insight-card,
-    .transaction-card,
-    .mini-card {
+    .landing-page .balance-card,
+    .landing-page .insight-card,
+    .landing-page .transaction-card,
+    .landing-page .mini-card {
         grid-column: auto !important;
     }
 
-    .floating-note {
+    .landing-page .floating-note {
         position: static;
         width: 100%;
         margin-top: 18px;
     }
 
-    .trend-chart {
-        min-height: 160px;
-    }
-}
-
-@media (max-width: 767.98px) {
-    .section {
-        padding-top: 68px;
-        padding-bottom: 68px;
+    .landing-page .trend-chart {
+        min-height: 186px;
     }
 
-    .dashboard-head {
-        flex-direction: column;
-    }
-
-    .transaction {
+    .landing-page .preview-top {
         align-items: flex-start;
         flex-direction: column;
     }
 
-    .footer-shell.footer-minimal {
+    .landing-page .preview-tabs {
+        width: 100%;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .landing-page .navbar-collapse {
+        display: flex !important;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        height: auto !important;
+        margin-top: 10px;
+        padding-top: 10px;
+        padding-right: 0;
+        padding-left: 0;
+        border-top: 1px solid rgba(15, 23, 42, 0.07);
+        overflow: visible !important;
+    }
+
+    .landing-page .navbar-nav {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px;
+        float: none;
+        margin: 0;
+    }
+
+    .landing-page .navbar-nav > li {
+        float: none;
+    }
+
+    .landing-page .site-navbar .nav-link {
+        padding: 9px 12px;
+    }
+
+    .landing-page .nav-actions {
+        flex: 0 0 auto;
+        flex-wrap: nowrap;
+        margin-top: 0;
+    }
+
+    .landing-page .nav-actions a {
+        width: auto;
+        min-height: 44px;
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .landing-page .site-navbar {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .landing-page .nav-shell {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 20px;
+    }
+
+    .landing-page .brand {
+        flex: 1 1 calc(100% - 56px);
+        max-width: calc(100% - 56px);
+        gap: 10px;
+        font-size: 0.95rem;
+        line-height: 1.2;
+    }
+
+    .landing-page .brand-mark {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        border-radius: 13px;
+    }
+
+    .landing-page .navbar-toggler {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        margin-left: auto;
+        outline: 0;
+    }
+
+    .landing-page .navbar-toggler:focus {
+        outline: 0;
+        box-shadow: 0 0 0 4px rgba(29, 119, 255, 0.1);
+    }
+
+    .landing-page .navbar-collapse {
+        flex: 1 0 100%;
+        width: 100%;
+        max-width: 100%;
+        margin-top: 8px;
+        padding-right: 0;
+        padding-left: 0;
+        overflow: hidden;
+    }
+
+    .landing-page .navbar-collapse.in,
+    .landing-page .navbar-collapse.collapsing {
+        overflow: hidden;
+    }
+
+    .landing-page .navbar-nav {
+        width: 100%;
+        margin: 0;
+        padding: 10px 0 4px;
+        border-top: 1px solid rgba(15, 23, 42, 0.07);
+    }
+
+    .landing-page .navbar-nav .nav-item {
+        width: 100%;
+        float: none;
+    }
+
+    .landing-page .site-navbar .nav-link {
+        width: 100%;
+        padding: 11px 12px;
+        border-radius: 12px;
+        line-height: 1.35;
+    }
+
+    .landing-page .nav-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .landing-page .nav-actions a {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .landing-page .section {
+        padding-top: 68px;
+        padding-bottom: 68px;
+    }
+
+    .landing-page .dashboard-head {
+        flex-direction: column;
+    }
+
+    .landing-page .transaction {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .landing-page .transaction-main {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .landing-page .transaction-main > div {
+        min-width: 0;
+    }
+
+    .landing-page .transaction strong,
+    .landing-page .transaction small {
+        overflow-wrap: anywhere;
+    }
+
+    .landing-page .income,
+    .landing-page .expense {
+        width: 100%;
+        text-align: left;
+    }
+
+    .landing-page .footer-shell.footer-minimal {
         padding: 22px 20px;
+    }
+
+    .landing-page .trend-card-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .landing-page .feature-card,
+    .landing-page .benefit-card,
+    .landing-page .stat-card {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .landing-page .container {
+        width: 100%;
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .landing-page .site-navbar {
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .landing-page .nav-shell {
+        border-radius: 18px;
+        padding: 10px 12px;
+    }
+
+    .landing-page .brand {
+        font-size: 0.9rem;
+    }
+
+    .landing-page .brand-mark {
+        width: 38px;
+        min-width: 38px;
+        height: 38px;
+        border-radius: 12px;
+    }
+
+    .landing-page .hero {
+        padding-top: 18px;
+        padding-bottom: 54px;
+    }
+
+    .landing-page .display-title {
+        font-size: clamp(2rem, 11vw, 2.65rem);
+        line-height: 1.08;
+        letter-spacing: -0.048em;
+    }
+
+    .landing-page .lead-copy {
+        font-size: 1rem;
+        line-height: 1.75;
+    }
+
+    .landing-page .hero-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 24px;
+    }
+
+    .landing-page .hero-actions a,
+    .landing-page .btn-solid,
+    .landing-page .btn-glass,
+    .landing-page .btn-soft {
+        width: 100%;
+        min-height: 48px;
+        padding-right: 16px;
+        padding-left: 16px;
+        text-align: center;
+    }
+
+    .landing-page .hero-proof {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .landing-page .proof-chip {
+        align-items: flex-start;
+        line-height: 1.55;
+    }
+
+    .landing-page .dashboard,
+    .landing-page .mock-card,
+    .landing-page .preview-panel,
+    .landing-page .contact-card,
+    .landing-page .contact-form {
+        border-radius: 22px;
+    }
+
+    .landing-page .dashboard {
+        padding: 16px;
+    }
+
+    .landing-page .dashboard-head {
+        margin-bottom: 16px;
+    }
+
+    .landing-page .dashboard-title {
+        font-size: 0.95rem;
+    }
+
+    .landing-page .dashboard-subtitle {
+        font-size: 0.86rem;
+        line-height: 1.6;
+    }
+
+    .landing-page .badge-live {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .landing-page .mock-grid {
+        gap: 14px;
+    }
+
+    .landing-page .mock-card {
+        padding: 16px;
+    }
+
+    .landing-page .balance-amount {
+        font-size: clamp(1.65rem, 9vw, 2rem);
+        line-height: 1.12;
+        overflow-wrap: anywhere;
+    }
+
+    .landing-page .metric-pills {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .landing-page .metric-pill {
+        flex-basis: auto;
+        padding: 12px 14px;
+    }
+
+    .landing-page .transaction {
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .landing-page .transaction .income,
+    .landing-page .transaction .expense {
+        width: 100%;
+        text-align: left;
+    }
+
+    .landing-page .trend-chart {
+        min-height: 162px;
+    }
+
+    .landing-page .stats,
+    .landing-page .features,
+    .landing-page .benefits {
+        gap: 14px;
+    }
+
+    .landing-page .section-title {
+        font-size: clamp(1.75rem, 9vw, 2.3rem);
+        line-height: 1.12;
+        letter-spacing: -0.04em;
+    }
+
+    .landing-page .stat-card,
+    .landing-page .feature-card,
+    .landing-page .benefit-card {
+        padding: 18px;
+        border-radius: 22px;
+    }
+
+    .landing-page .feature-icon,
+    .landing-page .benefit-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        margin-bottom: 14px;
+    }
+
+    .landing-page .preview-metrics {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .landing-page .preview-surface,
+    .landing-page .chart-card,
+    .landing-page .summary-card {
+        padding: 16px;
+        border-radius: 20px;
+    }
+
+    .landing-page .preview-tabs {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .landing-page .preview-tab {
+        width: 100%;
+        text-align: center;
+    }
+
+    .landing-page .line-chart {
+        height: 180px;
+    }
+
+    .landing-page .contact-shell {
+        gap: 18px;
+    }
+
+    .landing-page .contact-card,
+    .landing-page .contact-form {
+        padding: 18px;
+    }
+
+    .landing-page .contact-item {
+        gap: 12px;
+        padding: 14px;
+        overflow-wrap: anywhere;
+    }
+
+    .landing-page .contact-item i {
+        width: 40px;
+        min-width: 40px;
+        height: 40px;
+        border-radius: 14px;
+    }
+
+    .landing-page .form-row {
+        margin-right: 0;
+        margin-left: 0;
+    }
+
+    .landing-page .form-row > .form-group {
+        width: 100%;
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .landing-page .contact-form .btn-solid {
+        width: 100%;
+    }
+
+    .landing-page .footer-shell.footer-minimal {
+        padding: 18px 12px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 340px) {
+    .landing-page .container {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .landing-page .nav-shell {
+        padding: 9px 10px;
+        border-radius: 16px;
+    }
+
+    .landing-page .brand {
+        flex-basis: calc(100% - 50px);
+        max-width: calc(100% - 50px);
+        gap: 8px;
+        font-size: 0.82rem;
+    }
+
+    .landing-page .brand-mark {
+        width: 34px;
+        min-width: 34px;
+        height: 34px;
+        border-radius: 11px;
+    }
+
+    .landing-page .navbar-toggler {
+        flex-basis: 40px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .landing-page .navbar-toggler span {
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 12px !important;
+    }
+
+    .landing-page .display-title {
+        font-size: 1.9rem;
+    }
+
+    .landing-page .dashboard,
+    .landing-page .mock-card,
+    .landing-page .preview-panel,
+    .landing-page .contact-card,
+    .landing-page .contact-form {
+        padding: 14px;
+        border-radius: 18px;
+    }
+
+    .landing-page .transaction {
+        padding: 11px;
+    }
+
+    .landing-page .transaction-icon {
+        width: 38px;
+        min-width: 38px;
+        height: 38px;
+        border-radius: 13px;
     }
 }
 

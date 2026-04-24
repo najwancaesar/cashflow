@@ -17,14 +17,33 @@ function parse_report_date_range($dateRange)
         return null;
     }
 
-    $tglAwal = date('Y-m-d', strtotime($dates[0]));
-    $tglAkhir = date('Y-m-d', strtotime($dates[1]));
+    $timestampAwal = strtotime(trim($dates[0]));
+    $timestampAkhir = strtotime(trim($dates[1]));
 
-    if (!$tglAwal || !$tglAkhir) {
+    if ($timestampAwal === false || $timestampAkhir === false) {
         return null;
     }
 
+    $tglAwal = date('Y-m-d', $timestampAwal);
+    $tglAkhir = date('Y-m-d', $timestampAkhir);
+
     return [$tglAwal, $tglAkhir];
+}
+
+function report_escape($value)
+{
+    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+}
+
+function build_report_filename($table, $tglAwal, $tglAkhir, $extension)
+{
+    return sprintf(
+        'cashflow-%s-%s-sampai-%s.%s',
+        strtolower((string) $table),
+        $tglAwal,
+        $tglAkhir,
+        $extension
+    );
 }
 
 $id_user = (int) $_SESSION['id_user'];
@@ -38,9 +57,15 @@ if ($dateRange === null) {
 
 $tabel = $_POST['tabel'] ?? 'pemasukan';
 $allowed_tables = ['pemasukan', 'pengeluaran', 'hutang', 'piutang'];
+$output = $_POST['output'] ?? 'print';
+$allowedOutputs = ['print', 'pdf', 'csv'];
 
 if (!in_array($tabel, $allowed_tables, true)) {
     die("Tabel tidak valid");
+}
+
+if (!in_array($output, $allowedOutputs, true)) {
+    $output = 'print';
 }
 
 $supportsKategori = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
@@ -184,6 +209,197 @@ $jumlahTransaksi = count($reportRows);
 $tanggalCetak = date('d M Y H:i');
 $jenisLaporan = ucfirst($tabel);
 $labelKategoriRingkas = $supportsKategori ? $selectedKategoriLabel : 'Tidak menggunakan kategori';
+$periodeLabel = date('d M Y', strtotime($tgl_awal)) . ' s/d ' . date('d M Y', strtotime($tgl_akhir));
+
+if ($output === 'csv') {
+    $filename = build_report_filename($tabel, $tgl_awal, $tgl_akhir, 'csv');
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
+    $csvOutput = fopen('php://output', 'w');
+    fprintf($csvOutput, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+    fputcsv($csvOutput, ['CashFlow Control'], ';');
+    fputcsv($csvOutput, ['Jenis Laporan', $jenisLaporan], ';');
+    fputcsv($csvOutput, ['Periode', $periodeLabel], ';');
+    fputcsv($csvOutput, ['Kategori', $labelKategoriRingkas], ';');
+    fputcsv($csvOutput, ['Jumlah Transaksi', (string) $jumlahTransaksi], ';');
+    fputcsv($csvOutput, ['Total Nominal', (string) $total], ';');
+    fputcsv($csvOutput, [], ';');
+
+    $headers = ['No', 'Tanggal'];
+    if ($supportsKategori) {
+        $headers[] = 'Kategori';
+    }
+    $headers[] = 'Jumlah';
+    $headers[] = 'Catatan';
+    if ($tabel === 'pemasukan') {
+        $headers[] = 'Status';
+    }
+
+    fputcsv($csvOutput, $headers, ';');
+
+    foreach ($reportRows as $index => $row) {
+        $line = [
+            $index + 1,
+            date('d M Y', strtotime($row['tanggal'])),
+        ];
+
+        if ($supportsKategori) {
+            $line[] = $row['nama_kategori'] ?? 'Belum dikategorikan';
+        }
+
+        $line[] = (string) ((float) ($row['jumlah'] ?? 0));
+        $line[] = trim((string) ($row['catatan'] ?? '-'));
+
+        if ($tabel === 'pemasukan') {
+            $line[] = $row['status'] ?? '-';
+        }
+
+        fputcsv($csvOutput, $line, ';');
+    }
+
+    if ($supportsKategori && !empty($summaryRows)) {
+        fputcsv($csvOutput, [], ';');
+        fputcsv($csvOutput, ['Rekap Total Per Kategori'], ';');
+        fputcsv($csvOutput, ['Kategori', 'Jumlah Transaksi', 'Total'], ';');
+
+        foreach ($summaryRows as $row) {
+            fputcsv($csvOutput, [
+                $row['nama_kategori'] ?? 'Belum dikategorikan',
+                (string) ((int) ($row['total_transaksi'] ?? 0)),
+                (string) ((float) ($row['total_jumlah'] ?? 0)),
+            ], ';');
+        }
+    }
+
+    fclose($csvOutput);
+    exit;
+}
+
+if ($output === 'pdf') {
+    require_once(__DIR__ . '/tcpdf_include.php');
+
+    $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+    $pdf->SetCreator('CashFlow Control');
+    $pdf->SetAuthor('CashFlow Control');
+    $pdf->SetTitle('Laporan ' . $jenisLaporan);
+    $pdf->setPrintHeader(false);
+    $pdf->setPrintFooter(false);
+    $pdf->SetMargins(12, 12, 12);
+    $pdf->SetAutoPageBreak(true, 12);
+    $pdf->AddPage();
+    $pdf->SetFont('helvetica', '', 10);
+
+    $pdfHtml = '
+    <style>
+        h1, h2, h3, p { margin: 0; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #d1d5db; padding: 6px 8px; }
+        th { background-color: #f3f4f6; font-weight: bold; }
+        .meta-table td { border: none; padding: 2px 0; }
+        .summary-table td { border: 1px solid #dbeafe; background-color: #f8fbff; padding: 8px; }
+        .muted { color: #64748b; font-size: 11px; }
+        .right { text-align: right; }
+        .center { text-align: center; }
+        .total-row td { font-weight: bold; background-color: #f9fafb; }
+        .spacer { height: 10px; }
+    </style>
+    <h1 style="font-size:20px;">CashFlow Control</h1>
+    <p class="muted">Laporan transaksi pribadi dari sistem internal</p>
+    <div class="spacer"></div>
+    <h2 style="font-size:16px;">Laporan ' . report_escape($jenisLaporan) . '</h2>
+    <div class="spacer"></div>
+    <table class="meta-table">
+        <tr><td width="110">Periode</td><td>: ' . report_escape($periodeLabel) . '</td></tr>
+        <tr><td width="110">Dicetak pada</td><td>: ' . report_escape($tanggalCetak) . '</td></tr>
+        <tr><td width="110">Dicetak oleh</td><td>: ' . report_escape($user_data['nama'] ?? $user_data['username'] ?? '-') . ' (' . report_escape($user_data['username'] ?? '-') . ')</td></tr>
+    </table>
+    <div class="spacer"></div>
+    <table class="summary-table">
+        <tr>
+            <td width="20%"><strong>Jenis</strong><br>' . report_escape($jenisLaporan) . '</td>
+            <td width="26%"><strong>Periode</strong><br>' . report_escape($periodeLabel) . '</td>
+            <td width="22%"><strong>Kategori</strong><br>' . report_escape($labelKategoriRingkas) . '</td>
+            <td width="14%"><strong>Transaksi</strong><br>' . number_format((float) $jumlahTransaksi, 0, ',', '.') . '</td>
+            <td width="18%"><strong>Total</strong><br>Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+        </tr>
+    </table>
+    <div class="spacer"></div>';
+
+    if (empty($reportRows)) {
+        $pdfHtml .= '<p>Tidak ada data laporan untuk filter yang dipilih.</p>';
+    } else {
+        $pdfHtml .= '<table><thead><tr>
+            <th width="5%" class="center">No</th>
+            <th width="12%">Tanggal</th>';
+
+        if ($supportsKategori) {
+            $pdfHtml .= '<th width="18%">Kategori</th>';
+        }
+
+        $pdfHtml .= '<th width="15%">Jumlah</th>
+            <th width="' . ($supportsKategori ? ($tabel === 'pemasukan' ? '38%' : '50%') : ($tabel === 'pemasukan' ? '50%' : '62%')) . '">Catatan</th>';
+
+        if ($tabel === 'pemasukan') {
+            $pdfHtml .= '<th width="12%">Status</th>';
+        }
+
+        $pdfHtml .= '</tr></thead><tbody>';
+
+        foreach ($reportRows as $index => $row) {
+            $pdfHtml .= '<tr>
+                <td class="center">' . ($index + 1) . '</td>
+                <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>';
+
+            if ($supportsKategori) {
+                $pdfHtml .= '<td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>';
+            }
+
+            $pdfHtml .= '<td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
+                <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>';
+
+            if ($tabel === 'pemasukan') {
+                $pdfHtml .= '<td>' . report_escape($row['status'] ?? '-') . '</td>';
+            }
+
+            $pdfHtml .= '</tr>';
+        }
+
+        $pdfHtml .= '<tr class="total-row">
+            <td colspan="' . ($supportsKategori ? '3' : '2') . '">Total</td>
+            <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+            <td colspan="' . ($tabel === 'pemasukan' ? '2' : '1') . '"></td>
+        </tr>';
+        $pdfHtml .= '</tbody></table>';
+
+        if ($supportsKategori && !empty($summaryRows)) {
+            $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:13px;">Rekap Total Per Kategori</h3><div class="spacer"></div>';
+            $pdfHtml .= '<table><thead><tr>
+                <th width="50%">Kategori</th>
+                <th width="20%">Jumlah Transaksi</th>
+                <th width="30%">Total</th>
+            </tr></thead><tbody>';
+
+            foreach ($summaryRows as $row) {
+                $pdfHtml .= '<tr>
+                    <td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>
+                    <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                    <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
+                </tr>';
+            }
+
+            $pdfHtml .= '</tbody></table>';
+        }
+    }
+
+    $pdf->writeHTML($pdfHtml, true, false, true, false, '');
+    $pdf->Output(build_report_filename($tabel, $tgl_awal, $tgl_akhir, 'pdf'), 'D');
+    exit;
+}
 ?>
 
 <!DOCTYPE html>

@@ -1,0 +1,717 @@
+/* Responsive layer for the internal dashboard pages. */
+html {
+    overflow-x: hidden;
+}
+
+body.g-sidenav-show {
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.app-main-content {
+    overflow-x: clip;
+}
+
+.app-main-content .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.app-main-content .table-responsive .table {
+    margin-bottom: 0;
+}
+
+.app-main-content .btn,
+.app-main-content .form-control,
+.app-main-content select.form-control {
+    touch-action: manipulation;
+}
+
+.app-main-content .icon.icon-shape {
+    display: grid !important;
+    place-items: center !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+}
+
+.app-main-content .icon.icon-shape > i,
+.app-main-content .icon.icon-shape > .material-icons,
+.app-main-content .btn > i,
+.app-main-content .btn > .material-icons {
+    display: inline-flex !important;
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+    transform: none !important;
+}
+
+.app-main-content .icon.icon-shape > .fa {
+    color: #fff;
+    font-size: 1.15rem;
+    opacity: 0.96;
+}
+
+.sidenav .nav-link .fa {
+    width: 1.15rem;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.cashflow-icon-income {
+    background-image: linear-gradient(195deg, #2dce89, #20c997) !important;
+    box-shadow: 0 8px 18px rgba(45, 206, 137, 0.24) !important;
+}
+
+.cashflow-icon-expense {
+    background-image: linear-gradient(195deg, #fb6340, #f5365c) !important;
+    box-shadow: 0 8px 18px rgba(245, 54, 92, 0.22) !important;
+}
+
+.cashflow-icon-category {
+    background-image: linear-gradient(195deg, #8b5cf6, #6366f1) !important;
+    box-shadow: 0 8px 18px rgba(99, 102, 241, 0.24) !important;
+}
+
+.cashflow-icon-debt {
+    background-image: linear-gradient(195deg, #f59e0b, #fb8c00) !important;
+    box-shadow: 0 8px 18px rgba(245, 158, 11, 0.24) !important;
+}
+
+.cashflow-icon-receivable {
+    background-image: linear-gradient(195deg, #11cdef, #1171ef) !important;
+    box-shadow: 0 8px 18px rgba(17, 205, 239, 0.22) !important;
+}
+
+.cashflow-icon-report {
+    background-image: linear-gradient(195deg, #5e72e4, #1a73e8) !important;
+    box-shadow: 0 8px 18px rgba(94, 114, 228, 0.22) !important;
+}
+
+.cashflow-icon-pending {
+    background-image: linear-gradient(195deg, #fbbf24, #fb8c00) !important;
+    box-shadow: 0 8px 18px rgba(251, 191, 36, 0.24) !important;
+}
+
+.cashflow-icon-user {
+    background-image: linear-gradient(195deg, #64748b, #344767) !important;
+    box-shadow: 0 8px 18px rgba(52, 71, 103, 0.2) !important;
+}
+
+.app-main-content .dashboard-stat-card .card-header {
+    min-height: 76px;
+}
+
+.app-main-content .dashboard-stat-card .card-header .text-end.pt-1 {
+    min-height: 2.75rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 3.5rem;
+}
+
+.app-main-content .dashboard-stat-card h4,
+.app-main-content .dashboard-stat-card h5 {
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.app-main-content .dashboard-stat-card .text-sm {
+    line-height: 1.35;
+}
+
+.cashflow-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 1.5rem 1rem;
+}
+
+.cashflow-table-controls {
+    display: grid !important;
+    grid-template-columns: auto minmax(260px, 1fr);
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+    margin: 0 !important;
+}
+
+.cashflow-table-controls .dataTables_length,
+.cashflow-table-controls .input-group,
+.cashflow-table-controls .dataTables_filter {
+    width: 100%;
+    margin: 0 !important;
+}
+
+.cashflow-table-controls .dataTables_length label {
+    display: grid;
+    grid-template-columns: auto minmax(4.75rem, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0;
+    color: #64748b;
+    font-size: 0.85rem;
+    white-space: normal;
+}
+
+.cashflow-table-controls .dataTables_length select {
+    min-width: 4.5rem;
+    min-height: 42px;
+    border-color: rgba(123, 128, 154, 0.32);
+    border-radius: 0.65rem;
+    background-color: #fff;
+}
+
+.cashflow-table-controls .input-group {
+    max-width: none;
+    justify-content: flex-end !important;
+    margin-left: auto !important;
+}
+
+.cashflow-table-controls .dataTables_filter label {
+    display: grid !important;
+    grid-template-columns: auto minmax(220px, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    margin-bottom: 0;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: normal !important;
+}
+
+.cashflow-table-controls .dataTables_filter input {
+    width: 100% !important;
+    min-width: 0;
+    min-height: 46px;
+    margin-left: 0 !important;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid rgba(123, 128, 154, 0.28);
+    border-radius: 0.8rem;
+    background-color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cashflow-table-controls .dataTables_filter input:focus {
+    border-color: rgba(26, 115, 232, 0.4);
+    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.09);
+    outline: none;
+}
+
+.cashflow-table-action {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    text-align: right !important;
+}
+
+.cashflow-table-action .btn {
+    margin-bottom: 0;
+    min-height: 46px;
+    border-radius: 0.8rem;
+    box-shadow: 0 10px 20px rgba(52, 71, 103, 0.14);
+}
+
+.cashflow-table-action .material-icons {
+    font-size: 1rem;
+}
+
+.app-main-content .table-responsive .dataTables_wrapper > .d-flex:first-child {
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 1199.98px) {
+    body.g-sidenav-show .app-main-content {
+        width: 100%;
+        margin-left: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    .sidenav.fixed-start {
+        width: min(17.125rem, calc(100vw - 1.5rem));
+        max-height: calc(100vh - 1.5rem);
+        margin: 0.75rem !important;
+        border-radius: 1rem !important;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sidenav .sidenav-header {
+        min-height: auto;
+        height: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .sidenav .navbar-nav .nav-link {
+        min-height: 44px;
+        margin-right: 0.75rem;
+        margin-left: 0.75rem;
+    }
+
+    .navbar-main {
+        margin-right: 0.75rem !important;
+        margin-left: 0.75rem !important;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .app-main-content .container-fluid.py-4,
+    .app-main-content .container-fluid.px-2,
+    .app-main-content .container-fluid.px-md-4 {
+        padding-right: 1rem !important;
+        padding-left: 1rem !important;
+    }
+
+    .app-main-content .card-header.position-relative.mx-3 {
+        margin-right: 1rem !important;
+        margin-left: 1rem !important;
+    }
+
+    .app-main-content .table-responsive.p-4,
+    .app-main-content .table-responsive.p-0 {
+        padding-right: 1rem !important;
+        padding-left: 1rem !important;
+    }
+
+    .app-main-content .table-responsive.mx-2 {
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    .app-main-content .chart {
+        min-height: 230px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .navbar-main .container-fluid {
+        padding-right: 0.75rem !important;
+        padding-left: 0.75rem !important;
+        gap: 0.75rem;
+    }
+
+    .navbar-main .breadcrumb {
+        margin-bottom: 0.15rem;
+        white-space: normal;
+    }
+
+    .navbar-main h6 {
+        max-width: 58vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .app-main-content .btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+    }
+
+    .app-main-content .btn-sm {
+        min-height: 38px;
+        padding-right: 0.8rem;
+        padding-left: 0.8rem;
+    }
+
+    .app-main-content .form-control,
+    .app-main-content select.form-control,
+    .app-main-content textarea.form-control {
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .app-main-content textarea.form-control {
+        min-height: 96px;
+    }
+
+    .app-main-content .input-group.input-group-outline {
+        width: 100%;
+    }
+
+    .app-main-content .modal-dialog {
+        max-width: calc(100% - 1.5rem);
+        margin: 0.75rem auto;
+    }
+
+    .app-main-content .modal-content {
+        max-height: calc(100vh - 1.5rem);
+        overflow: hidden;
+        border-radius: 1rem;
+    }
+
+    .app-main-content .modal-body {
+        max-height: calc(100vh - 12.5rem);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 1rem;
+    }
+
+    .app-main-content .modal-footer {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        padding: 0.75rem 1rem 1rem;
+    }
+
+    .app-main-content .modal-footer .btn {
+        flex: 1 1 100%;
+        margin: 0 !important;
+    }
+
+    .app-main-content div.dataTables_wrapper > .d-flex {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.75rem;
+    }
+
+    .app-main-content div.dataTables_wrapper .dataTables_length,
+    .app-main-content div.dataTables_wrapper .dataTables_filter,
+    .app-main-content div.dataTables_wrapper .dataTables_info,
+    .app-main-content div.dataTables_wrapper .dataTables_paginate {
+        width: 100%;
+        text-align: left;
+    }
+
+    .app-main-content div.dataTables_wrapper .dataTables_length label,
+    .app-main-content div.dataTables_wrapper .dataTables_filter label {
+        display: block;
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .app-main-content div.dataTables_wrapper .dataTables_filter .input-group,
+    .app-main-content div.dataTables_wrapper .dataTables_filter input,
+    .app-main-content div.dataTables_wrapper .dataTables_length select {
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .app-main-content div.dataTables_wrapper .input-group.justify-content-end {
+        justify-content: flex-start !important;
+        margin-right: 0 !important;
+    }
+
+    .app-main-content div.dataTables_wrapper .dataTables_paginate .pagination {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
+    .cashflow-table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding: 0 1rem 1rem;
+    }
+
+    .cashflow-table-controls {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        width: 100%;
+    }
+
+    .cashflow-table-controls .dataTables_length label,
+    .cashflow-table-controls .dataTables_filter label {
+        width: 100%;
+    }
+
+    .cashflow-table-controls .dataTables_filter label {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
+    }
+
+    .cashflow-table-controls .dataTables_length label {
+        display: grid !important;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .cashflow-table-controls .input-group {
+        max-width: none;
+        width: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    .cashflow-table-controls .dataTables_filter input,
+    .cashflow-table-controls .dataTables_length select {
+        min-width: 0;
+        width: 100% !important;
+    }
+
+    .cashflow-table-action,
+    .cashflow-table-action .btn {
+        width: 100%;
+    }
+
+    .app-main-content .table-responsive .table {
+        min-width: 760px;
+    }
+
+    .app-main-content .table-responsive .table th,
+    .app-main-content .table-responsive .table td {
+        padding: 0.7rem 0.75rem;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .app-main-content .table-responsive .table td p,
+    .app-main-content .table-responsive .table td .text-sm {
+        white-space: normal;
+    }
+
+    .app-main-content .table td.align-middle > a {
+        display: inline-flex;
+        min-width: 36px;
+        min-height: 36px;
+        align-items: center;
+        justify-content: center;
+        padding: 0.35rem;
+        border-radius: 0.5rem;
+    }
+
+    .app-main-content .dashboard-stat-card .card-header {
+        display: grid !important;
+        grid-template-columns: 46px minmax(0, 1fr);
+        min-height: auto !important;
+        align-items: center !important;
+        gap: 0.85rem;
+        padding: 1rem !important;
+    }
+
+    .app-main-content .dashboard-stat-card .icon.icon-lg,
+    .app-main-content .dashboard-stat-card .icon.icon-shape {
+        position: static !important;
+        top: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        left: auto !important;
+        display: inline-flex !important;
+        width: 46px !important;
+        min-width: 46px !important;
+        height: 46px !important;
+        margin: 0 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 0.85rem !important;
+        transform: none !important;
+    }
+
+    .app-main-content .dashboard-stat-card .icon.icon-lg i,
+    .app-main-content .dashboard-stat-card .icon.icon-shape i {
+        display: inline-flex !important;
+        width: 100%;
+        height: 100%;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem !important;
+        line-height: 1 !important;
+    }
+
+    .app-main-content .dashboard-stat-card .text-end {
+        min-width: 0;
+        width: 100%;
+        min-height: 0;
+        display: block;
+        padding-top: 0 !important;
+        padding-left: 0 !important;
+        text-align: left !important;
+    }
+
+    .app-main-content .dashboard-stat-card .text-sm {
+        margin-bottom: 0.2rem;
+        font-size: 0.78rem !important;
+        line-height: 1.45;
+        white-space: normal;
+    }
+
+    .app-main-content .dashboard-stat-card h4,
+    .app-main-content .dashboard-stat-card h5 {
+        margin-top: 0;
+        font-size: 1rem !important;
+        line-height: 1.32;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .app-main-content .card-body .row > [class*="col-"] {
+        margin-bottom: 0.75rem;
+    }
+
+    .app-main-content .card-body .row > [class*="col-"]:last-child {
+        margin-bottom: 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .app-main-content .container-fluid.py-4 {
+        padding-top: 1rem !important;
+        padding-right: 0.75rem !important;
+        padding-left: 0.75rem !important;
+    }
+
+    .navbar-main {
+        margin-top: 0.75rem !important;
+        margin-right: 0.5rem !important;
+        margin-left: 0.5rem !important;
+    }
+
+    .navbar-main h6 {
+        max-width: 52vw;
+        font-size: 0.9rem;
+    }
+
+    .app-main-content .card {
+        border-radius: 0.9rem;
+    }
+
+    .app-main-content .card.my-4 {
+        margin-top: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .app-main-content .card-header .bg-gradient-info,
+    .app-main-content .card-header .bg-gradient-primary,
+    .app-main-content .card-header .bg-gradient-success,
+    .app-main-content .card-header .bg-gradient-warning,
+    .app-main-content .card-header .bg-gradient-danger {
+        border-radius: 0.85rem !important;
+        padding-top: 1rem !important;
+        padding-bottom: 0.85rem !important;
+    }
+
+    .app-main-content .card-header h6 {
+        padding-right: 1rem !important;
+        padding-left: 1rem !important;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .app-main-content .card-body > .text-end {
+        margin-right: 0 !important;
+        padding-right: 0.75rem;
+        padding-left: 0.75rem;
+        text-align: left !important;
+    }
+
+    .app-main-content .card-body > .text-end.cashflow-table-action {
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .app-main-content .card-body > .text-end .btn {
+        width: 100%;
+    }
+
+    .app-main-content .table-responsive.p-4,
+    .app-main-content .table-responsive.p-0 {
+        padding: 0.75rem !important;
+    }
+
+    .app-main-content .table-responsive {
+        margin-right: 0;
+        margin-left: 0;
+        border-top: 1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .app-main-content .table-responsive .table {
+        min-width: 680px;
+    }
+
+    .app-main-content .table-responsive .table th,
+    .app-main-content .table-responsive .table td {
+        font-size: 0.78rem;
+    }
+
+    .app-main-content .dashboard-stat-card .card-header {
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 0.75rem;
+        padding: 0.95rem !important;
+    }
+
+    .app-main-content .dashboard-stat-card .icon.icon-lg,
+    .app-main-content .dashboard-stat-card .icon.icon-shape {
+        width: 44px !important;
+        min-width: 44px !important;
+        height: 44px !important;
+        border-radius: 0.8rem !important;
+    }
+
+    .app-main-content .dashboard-stat-card .icon.icon-lg i,
+    .app-main-content .dashboard-stat-card .icon.icon-shape i {
+        font-size: 1.2rem !important;
+        line-height: 1 !important;
+    }
+
+    .app-main-content .dashboard-stat-card .text-sm {
+        font-size: 0.78rem !important;
+        line-height: 1.45;
+    }
+
+    .app-main-content .dashboard-stat-card h4,
+    .app-main-content .dashboard-stat-card h5 {
+        margin-top: 0.15rem;
+        font-size: 1rem !important;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+    }
+
+    .app-main-content .dashboard-stat-card .card-footer {
+        padding: 0.8rem 1rem 1rem !important;
+    }
+
+    .app-main-content .chart {
+        min-height: 250px;
+    }
+
+    .app-main-content .chart .chart-canvas {
+        max-width: 100%;
+    }
+
+    #formLaporan .row {
+        row-gap: 0.75rem;
+    }
+
+    .app-main-content .col-10.col-md-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    #formLaporan .col-sm-6,
+    #formLaporan .col-sm-5 {
+        width: 100%;
+        text-align: left !important;
+    }
+
+    #formLaporan .d-flex.justify-content-center {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #formLaporan .report-action {
+        width: 100%;
+    }
+
+    .app-main-content .page-header.min-height-300 {
+        min-height: 180px !important;
+    }
+
+    .app-main-content .card.card-body.mx-3.mx-md-4 {
+        margin-right: 0.25rem !important;
+        margin-left: 0.25rem !important;
+    }
+}

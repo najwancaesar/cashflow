@@ -6,7 +6,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
     class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3 bg-gradient-faded-info"
     id="sidenav-main">
     <div class="sidenav-header">
-        <i class="fas fa-times p-3 cursor-pointer text-white opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
+        <i class="fa fa-times p-3 cursor-pointer text-white opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
             aria-hidden="true" id="iconSidenav"></i>
         <a class="navbar-brand m-0" href="main.php?module=home">
             <img src="assets/img/logocv.jpg" class="navbar-brand-img h-100" alt="main_logo">
@@ -22,7 +22,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=home">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">table_view</i>
+                        <i class="fa fa-dashboard" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">Dashboard</span>
                 </a>
@@ -36,7 +36,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=pemasukan">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">table_view</i>
+                        <i class="fa fa-arrow-circle-down" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">Pemasukan</span>
                 </a>
@@ -46,7 +46,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=pengeluaran">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">receipt_long</i>
+                        <i class="fa fa-arrow-circle-up" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">Pengeluaran</span>
                 </a>
@@ -56,7 +56,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=kategori">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">category</i>
+                        <i class="fa fa-tags" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">Kategori</span>
                 </a>
@@ -66,7 +66,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=hutang">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">table_view</i>
+                        <i class="fa fa-minus-circle" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">Utang</span>
                 </a>
@@ -76,7 +76,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=piutang">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">receipt_long</i>
+                        <i class="fa fa-handshake-o" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">Piutang</span>
                 </a>
@@ -89,7 +89,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=laporan">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">print</i>
+                        <i class="fa fa-file-text-o" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">Cetak Laporan</span>
                 </a>
@@ -105,7 +105,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
 														echo 'active bg-gradient-warning';
 													} ?>" href="main.php?module=pengguna">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                        <i class="material-icons opacity-10" translate="no">person</i>
+                        <i class="fa fa-users" aria-hidden="true"></i>
                     </div>
                     <span class="nav-link-text ms-1">User Management</span>
                 </a>

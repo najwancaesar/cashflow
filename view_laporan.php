@@ -52,7 +52,8 @@ if ($userYangSedangLogin > 0) {
                     </div>
                 </div>
                 <div class="card-body px-2 pb-2">
-                    <form method="POST" action="tcpdf/examples/laprekap.php" target="_blank">
+                    <form method="POST" action="tcpdf/examples/laprekap.php" target="_blank" id="formLaporan">
+                        <input type="hidden" name="output" id="output" value="print">
                         <div class="row">
                             <div class="col-sm-6 text-center">Laporan Transaksi</div>
                             <div class="col-sm-6">
@@ -112,10 +113,23 @@ if ($userYangSedangLogin > 0) {
                             </div>
                         </div>
                         <div class="text-center">
-                            <button type="submit" name="cetak" class="btn bg-gradient-info my-4 mb-2">
-                                <i class="material-icons opacity-10">print</i>
-                                Cetak
-                            </button>
+                            <div class="d-flex justify-content-center flex-wrap gap-2 my-4 mb-2">
+                                <button type="submit" name="cetak" class="btn bg-gradient-info mb-0 report-action" data-output="print">
+                                    <i class="fa fa-print" aria-hidden="true"></i>
+                                    Preview & Cetak
+                                </button>
+                                <button type="submit" class="btn btn-outline-info mb-0 report-action" data-output="pdf">
+                                    <i class="fa fa-file-pdf-o" aria-hidden="true"></i>
+                                    Download PDF
+                                </button>
+                                <button type="submit" class="btn btn-outline-secondary mb-0 report-action" data-output="csv">
+                                    <i class="fa fa-download" aria-hidden="true"></i>
+                                    Download CSV
+                                </button>
+                            </div>
+                            <small class="text-secondary d-block">
+                                Gunakan preview untuk melihat laporan di tab baru, atau download langsung dalam format PDF dan CSV.
+                            </small>
                         </div>
                     </form>
                 </div>
@@ -192,7 +206,11 @@ if ($userYangSedangLogin > 0) {
             updateKategoriFilter();
         });
 
-        $('form').on('submit', function(e) {
+        $('.report-action').on('click', function() {
+            $('#output').val($(this).data('output') || 'print');
+        });
+
+        $('#formLaporan').on('submit', function(e) {
             if (!$('#tanggal').val()) {
                 e.preventDefault();
                 if (typeof Swal !== 'undefined') {

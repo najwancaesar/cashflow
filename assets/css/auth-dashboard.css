@@ -12,6 +12,7 @@
 
 body.auth-page {
     min-height: 100vh;
+    overflow-x: hidden;
     color: var(--auth-text);
     background:
         radial-gradient(circle at 14% 16%, rgba(15, 159, 116, 0.15), transparent 30%),
@@ -246,23 +247,40 @@ body.auth-page::before {
 
 @media (max-width: 575.98px) {
     .auth-shell {
-        padding: 1rem;
+        min-height: auto;
+        align-items: flex-start;
+        padding: 0.85rem 0.75rem 1.25rem;
     }
 
     .auth-frame {
-        border-radius: 22px;
+        border-radius: 20px;
     }
 
     .auth-panel,
     .auth-card {
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
 
     .auth-panel-copy {
-        margin-top: 2.25rem;
+        margin-top: 1.75rem;
     }
 
     .auth-card h3 {
         font-size: 1.6rem;
+    }
+
+    .auth-input {
+        min-height: 3.1rem;
+        font-size: 16px;
+    }
+
+    .auth-submit {
+        min-height: 3.1rem;
+        padding-top: 0.9rem;
+        padding-bottom: 0.9rem;
+    }
+
+    .auth-footer {
+        margin-top: 1rem;
     }
 }

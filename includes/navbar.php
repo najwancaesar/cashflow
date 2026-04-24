@@ -14,7 +14,7 @@
                 <li class="nav-item d-flex align-items-center dropdown">
                     <a href="javascript:;" class="nav-link text-body font-weight-bold px-0 dropdown-toggle"
                         id="dropdownMenuButton" data-bs-toggle="dropdown">
-                        <i class="fa fa-user me-sm-1"></i>
+                        <i class="fa fa-user-circle me-sm-1"></i>
                         <span class="d-sm-inline d-none"><?= $_SESSION['nama'] ?></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end px-2 py-3 me-sm-n4" aria-labelledby="dropdownMenuButton">
@@ -30,7 +30,7 @@
                                             <span class="font-weight-bold"><?= $_SESSION['nama'] ?></span>
                                         </h6>
                                         <p class="text-xs text-secondary mb-0">
-                                            <i class="fa fa-briefcase me-1"></i>
+                                            <i class="fa fa-user-circle me-1"></i>
                                         </p>
                                     </div>
                                 </div>
@@ -38,7 +38,7 @@
                         </li>
                         <li class="d-flex justify-content-end">
                             <a href="aksi_logout.php" class="w-100 btn btn-info"><i
-                                    class="material-icons opacity-10">logout</i> Logout</a>
+                                    class="fa fa-sign-out" aria-hidden="true"></i> Logout</a>
                         </li>
                     </ul>
                 </li>

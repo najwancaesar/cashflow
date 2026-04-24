@@ -44,7 +44,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                     <div class="text-end me-3 mt-3">
                         <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
                             data-bs-target="#modalTambah">
-                            <i class="material-icons opacity-10" translate="no">add</i> Tambah Kategori
+                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Kategori
                         </button>
                     </div>
                     <div class="table-responsive p-4 mx-2">
@@ -83,7 +83,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                 data-confirm-confirm-text="Ya, hapus"
                                                 data-confirm-cancel-text="Batal"
                                                 class="text-secondary text-danger font-weight-bold text-xs">
-                                                <i class="material-icons opacity-10" translate="no">delete</i>
+                                                <i class="fa fa-trash" aria-hidden="true"></i>
                                             </a>
 
                                             <a type="button"
@@ -91,7 +91,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                 data-nama="<?= htmlspecialchars($row['nama_kategori'], ENT_QUOTES) ?>"
                                                 data-tipe="<?= htmlspecialchars($row['tipe_kategori'], ENT_QUOTES) ?>"
                                                 class="text-secondary text-warning font-weight-bold text-xs btneditkategori">
-                                                <i class="material-icons fa fa edit" translate="no">edit</i>
+                                                <i class="fa fa-pencil" aria-hidden="true"></i>
                                             </a>
                                         </td>
                                     </tr>
