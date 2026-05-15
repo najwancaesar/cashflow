@@ -14,6 +14,8 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) !== 'admin') {
 }
 
 include "includes/koneksi.php";
+include_once "includes/avatar_helper.php";
+include_once "includes/csrf_helper.php";
 
 function format_user_datetime($value)
 {
@@ -94,11 +96,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                     <div class="card-body p-4">
                         <div class="row align-items-center">
                             <div class="col-md-2 text-center mb-3 mb-md-0">
-                                <?php if ($detailUser['foto'] === 'default.png' || $detailUser['foto'] === '') { ?>
-                                    <i class="fa fa-user-circle text-info" style="font-size: 64px;" aria-hidden="true"></i>
-                                <?php } else { ?>
-                                    <img src="assets/img/profil/<?= htmlspecialchars($detailUser['foto']) ?>" class="avatar avatar-xxl shadow" alt="foto-user">
-                                <?php } ?>
+                                <img src="<?= htmlspecialchars(profile_photo_src($detailUser['foto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" class="avatar avatar-xxl shadow" alt="foto-user">
                             </div>
                             <div class="col-md-5">
                                 <h5 class="mb-1"><?= htmlspecialchars($detailUser['nama']) ?></h5>
@@ -202,11 +200,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                     ?>
                                     <tr>
                                         <td class="align-middle text-center">
-                                            <?php if (($row['foto'] ?? '') === '' || ($row['foto'] ?? '') === 'default.png') { ?>
-                                                <i class="fa fa-user-circle" aria-hidden="true"></i>
-                                            <?php } else { ?>
-                                                <img src="assets/img/profil/<?= htmlspecialchars($row['foto']) ?>" class="avatar avatar-sm" alt="foto-user">
-                                            <?php } ?>
+                                            <img src="<?= htmlspecialchars(profile_photo_src($row['foto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" class="avatar avatar-sm" alt="foto-user">
                                         </td>
                                         <td>
                                             <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama']) ?></p>
@@ -292,6 +286,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
             <form action="aksi_user.php?act=t" method="post">
+                <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
                         <h6 class="modal-title text-white text-capitalize ps-3">Tambah User</h6>
@@ -376,6 +371,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
             <form action="aksi_user.php?act=u" method="post">
+                <?= csrf_input() ?>
                 <input type="hidden" name="id_user" id="edit_user_id">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
@@ -447,6 +443,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
             <form action="aksi_user.php?act=r" method="post">
+                <?= csrf_input() ?>
                 <input type="hidden" name="id_user" id="reset_user_id">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">

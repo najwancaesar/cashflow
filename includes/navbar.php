@@ -1,3 +1,4 @@
+<?php include_once __DIR__ . "/avatar_helper.php"; ?>
 <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur"
     navbar-scroll="true">
     <div class="container-fluid py-1 px-3 d-flex">
@@ -15,19 +16,19 @@
                     <a href="javascript:;" class="nav-link text-body font-weight-bold px-0 dropdown-toggle"
                         id="dropdownMenuButton" data-bs-toggle="dropdown">
                         <i class="fa fa-user-circle me-sm-1"></i>
-                        <span class="d-sm-inline d-none"><?= $_SESSION['nama'] ?></span>
+                        <span class="d-sm-inline d-none"><?= htmlspecialchars($_SESSION['nama'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end px-2 py-3 me-sm-n4" aria-labelledby="dropdownMenuButton">
                         <li class="mb-2">
                             <a class="dropdown-item border-radius-md" href="main.php?module=profile">
                                 <div class="d-flex py-1">
                                     <div class="my-auto">
-                                        <img src="assets/img/profil/<?= $_SESSION['foto'] ?>"
-                                            class="avatar avatar-sm me-3 ">
+                                        <img src="<?= htmlspecialchars(profile_photo_src($_SESSION['foto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>"
+                                            class="avatar avatar-sm me-3 " alt="foto-profil">
                                     </div>
                                     <div class="d-flex flex-column justify-content-center">
                                         <h6 class="text-sm font-weight-normal mb-1">
-                                            <span class="font-weight-bold"><?= $_SESSION['nama'] ?></span>
+                                            <span class="font-weight-bold"><?= htmlspecialchars($_SESSION['nama'] ?? '', ENT_QUOTES, 'UTF-8') ?></span>
                                         </h6>
                                         <p class="text-xs text-secondary mb-0">
                                             <i class="fa fa-user-circle me-1"></i>

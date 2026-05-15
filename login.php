@@ -91,6 +91,7 @@ if (isset($_SESSION['nama'])) {
 <?php
 if (isset($_POST['kirim'])) {
     include "includes/koneksi.php";
+    include "includes/avatar_helper.php";
 
     $username = trim($_POST['username'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
@@ -132,7 +133,7 @@ if (isset($_POST['kirim'])) {
             $_SESSION['nama'] = $sesi['nama'];
             $_SESSION['id_user'] = $sesi['id_user'];
             $_SESSION['role'] = (($sesi['role'] ?? '') === 'admin') ? 'admin' : 'user';
-            $_SESSION['foto'] = $sesi['foto'] ?: 'default.png';
+            $_SESSION['foto'] = resolve_profile_photo($sesi['foto'] ?? '');
 
             echo "<script>window.location.href='main.php?module=home';</script>";
         } else {

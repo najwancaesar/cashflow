@@ -11,6 +11,8 @@ if (!isset($_SESSION['id_user'])) {
 // Query untuk mengambil data user dengan id_user = 1
 
 include "includes/koneksi.php";
+include_once "includes/avatar_helper.php";
+include_once "includes/csrf_helper.php";
 $idUser = $_SESSION['id_user'] ?? 0;
 $stmtUser = $con->prepare("SELECT * FROM user WHERE id_user = ?");
 $stmtUser->bind_param("i", $idUser);
@@ -28,18 +30,14 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
         <div class="row gx-4 mb-2">
             <div class="col-auto">
                 <div class="avatar avatar-xl position-relative">
-                    <?php if($user['foto'] == ''): ?>
-                    <i class="fa fa-user-circle text-lg position-relative text-info" aria-hidden="true"></i>
-                    <?php else : ?>
-                    <img src="assets/img/profil/<?= $user['foto'] ?>" alt="profile_image"
+                    <img src="<?= htmlspecialchars(profile_photo_src($user['foto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" alt="profile_image"
                         class="w-100 border-radius-lg shadow-sm">
-                    <?php endif ?>
                 </div>
             </div>
             <div class="col-auto my-auto">
                 <div class="h-100">
                     <h5 class="mb-1">
-                        <?= $user['nama'] ?>
+                        <?= htmlspecialchars($user['nama'] ?? '', ENT_QUOTES, 'UTF-8') ?>
                     </h5>
                     <p class="mb-0 font-weight-normal text-sm">
                         <?= $accountLabel ?>
@@ -88,16 +86,16 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
                             <ul class="list-group">
                                 <li class="list-group-item border-0 ps-0 pt-0 text-sm"><strong
                                         class="text-dark">Username :</strong>
-                                    &nbsp; <?= $user['username'] ?></li>
+                                    &nbsp; <?= htmlspecialchars($user['username'] ?? '', ENT_QUOTES, 'UTF-8') ?></li>
                                 <li class="list-group-item border-0 ps-0 pt-0 text-sm"><strong
                                         class="text-dark">Nama:</strong> &nbsp;
-                                    <?= $user['nama'] ?></li>
+                                    <?= htmlspecialchars($user['nama'] ?? '', ENT_QUOTES, 'UTF-8') ?></li>
                                 <li class="list-group-item border-0 ps-0 text-sm"><strong class="text-dark">Nomor
                                         Telepon:</strong>
-                                    &nbsp; <?= $user['no_telp'] ?></li>
+                                    &nbsp; <?= htmlspecialchars($user['no_telp'] ?? '', ENT_QUOTES, 'UTF-8') ?></li>
                                 <li class="list-group-item border-0 ps-0 text-sm"><strong
                                         class="text-dark">Email:</strong> &nbsp;
-                                    <?= $user['email'] ?></li>
+                                    <?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></li>
                             </ul>
                         </div>
                     </div>
@@ -114,7 +112,8 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
             <form action="aksi_user.php?act=e" method="post" enctype="multipart/form-data">
-                <input type="hidden" name="id_user" value="<?= $user['id_user'] ?>">
+                <?= csrf_input() ?>
+                <input type="hidden" name="id_user" value="<?= (int) $user['id_user'] ?>">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
                         class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
@@ -134,14 +133,14 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
                         <div class="col">
                             <label class="form-label">Nama</label>
                             <div class="input-group input-group-outline">
-                                <input type="text" name="nama" value="<?= $user['nama'] ?>" maxlength="50"
+                                <input type="text" name="nama" value="<?= htmlspecialchars($user['nama'] ?? '', ENT_QUOTES, 'UTF-8') ?>" maxlength="50"
                                     class="form-control" required>
                             </div>
                         </div>
                         <div class="col">
                             <label class="form-label">Username</label>
                             <div class="input-group input-group-outline">
-                                <input type="text" name="username" value="<?= $user['username'] ?>" maxlength="20"
+                                <input type="text" name="username" value="<?= htmlspecialchars($user['username'] ?? '', ENT_QUOTES, 'UTF-8') ?>" maxlength="20"
                                     class="form-control" required>
                             </div>
                         </div>
@@ -151,14 +150,14 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
                         <div class="col">
                             <label>Email</label>
                             <div class="input-group input-group-outline">
-                                <input type="email" name="email" value="<?= $user['email'] ?>" required
+                                <input type="email" name="email" value="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required
                                     class="form-control">
                             </div>
                         </div>
                         <div class="col">
                             <label class="form-label">No Telp</label>
                             <div class="input-group input-group-outline">
-                                <input type="text" maxlength="13" value="<?= $user['no_telp'] ?>" name="no_telp"
+                                <input type="text" maxlength="13" value="<?= htmlspecialchars($user['no_telp'] ?? '', ENT_QUOTES, 'UTF-8') ?>" name="no_telp"
                                     class="form-control" required>
                             </div>
                         </div>
@@ -178,7 +177,8 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
             <form action="aksi_user.php?act=p" method="post">
-                <input type="hidden" name="id_user" value="<?= $user['id_user'] ?>">
+                <?= csrf_input() ?>
+                <input type="hidden" name="id_user" value="<?= (int) $user['id_user'] ?>">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
                         class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">

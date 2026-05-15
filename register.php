@@ -101,6 +101,7 @@ if (isset($_SESSION['nama'])) {
 if (isset($_POST['kirim'])) {
     include "includes/koneksi.php";
     include "includes/default_categories.php";
+    include "includes/avatar_helper.php";
 
     $username = trim($_POST["username"] ?? '');
     $nama = trim($_POST["nama"] ?? '');
@@ -108,7 +109,7 @@ if (isset($_POST['kirim'])) {
     $password = (string) ($_POST["password"] ?? '');
     $no_telp = trim($_POST["no_telp"] ?? '');
     $role = 'user';
-    $foto = 'default.png';
+    $foto = default_avatar_filename();
     $is_active = '1';
 
     $cekStmt = $con->prepare("SELECT id_user FROM user WHERE username = ? OR email = ? LIMIT 1");

@@ -3,6 +3,8 @@ session_start();
 include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/default_categories.php";
+include "includes/avatar_helper.php";
+include "includes/csrf_helper.php";
 
 $act = $_GET['act'] ?? '';
 $currentUserId = (int) ($_SESSION['id_user'] ?? 0);
@@ -82,9 +84,17 @@ function block_admin_self_management($targetUserId, $currentUserId, $redirect)
     }
 }
 
+function require_post_csrf_user($redirect)
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !verify_csrf_token()) {
+        show_sweetalert_and_redirect('Akses ditolak', 'Permintaan tidak valid atau sesi form sudah kedaluwarsa.', 'error', $redirect);
+    }
+}
+
 require_authenticated_user($currentUserId);
 
 if ($act === 't') {
+    require_post_csrf_user('main.php?module=pengguna');
     require_admin_user($isAdmin);
 
     $username = clean_text($_POST['username'] ?? '');
@@ -95,7 +105,7 @@ if ($act === 't') {
     $passwordConfirm = (string) ($_POST['konfirmasi_password'] ?? '');
     $role = strtolower(clean_text($_POST['role'] ?? 'user'));
     $isActive = clean_text($_POST['is_active'] ?? '1');
-    $foto = 'default.png';
+    $foto = default_avatar_filename();
 
     if ($username === '' || $nama === '' || $email === '' || $no_telp === '' || $passwordRaw === '') {
         show_sweetalert_and_redirect('Data belum lengkap', 'Semua field user wajib diisi.', 'warning', 'main.php?module=pengguna');
@@ -128,6 +138,7 @@ if ($act === 't') {
 }
 
 if ($act === 'u') {
+    require_post_csrf_user('main.php?module=pengguna');
     require_admin_user($isAdmin);
 
     $targetUserId = (int) ($_POST['id_user'] ?? 0);
@@ -189,6 +200,7 @@ if ($act === 's') {
 }
 
 if ($act === 'r') {
+    require_post_csrf_user('main.php?module=pengguna');
     require_admin_user($isAdmin);
 
     $targetUserId = (int) ($_POST['id_user'] ?? 0);
@@ -219,6 +231,7 @@ if ($act === 'r') {
 }
 
 if ($act === 'e') {
+    require_post_csrf_user('main.php?module=profile');
     $id_user = (int) ($_POST['id_user'] ?? 0);
     require_account_owner($id_user, $currentUserId);
 
@@ -272,6 +285,7 @@ if ($act === 'e') {
 }
 
 if ($act === 'p') {
+    require_post_csrf_user('main.php?module=profile');
     $id_user = (int) ($_POST['id_user'] ?? 0);
     require_account_owner($id_user, $currentUserId);
 
