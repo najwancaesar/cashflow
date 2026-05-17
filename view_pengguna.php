@@ -191,7 +191,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                         </button>
                     </div>
                     <div class="table-responsive p-4">
-                        <table class="table align-items-center mb-0" id="datatable">
+                        <table class="table align-items-center mb-0 cashflow-user-table" id="datatable">
                             <thead>
                                 <tr>
                                     <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Foto</th>
@@ -210,21 +210,23 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                     $isActive = ($row['is_active'] ?? '1') === '1';
                                     ?>
                                     <tr>
-                                        <td class="align-middle text-center">
-                                            <img src="<?= htmlspecialchars(profile_photo_src($row['foto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" class="avatar avatar-sm" alt="foto-user">
+                                        <td class="align-middle text-center cashflow-user-photo-cell">
+                                            <img src="<?= htmlspecialchars(profile_photo_src($row['foto'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" class="avatar avatar-sm cashflow-user-avatar" alt="foto-user">
+                                        </td>
+                                        <td class="cashflow-user-identity-cell">
+                                            <div class="user-mobile-identity">
+                                                <strong class="user-mobile-name text-xs font-weight-bold"><?= htmlspecialchars($row['nama']) ?></strong>
+                                                <span class="user-mobile-username text-xs text-secondary">@<?= htmlspecialchars($row['username']) ?></span>
+                                                <span class="user-mobile-email text-xs text-secondary"><?= htmlspecialchars($row['email']) ?></span>
+                                            </div>
                                         </td>
                                         <td>
-                                            <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama']) ?></p>
-                                            <p class="text-xs text-secondary mb-0">@<?= htmlspecialchars($row['username']) ?></p>
-                                            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['email']) ?></p>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-sm <?= ($row['role'] ?? 'user') === 'admin' ? 'bg-gradient-dark' : 'bg-gradient-info' ?>">
+                                            <span class="badge badge-sm cashflow-user-badge <?= ($row['role'] ?? 'user') === 'admin' ? 'bg-gradient-dark' : 'bg-gradient-info' ?>">
                                                 <?= htmlspecialchars(ucfirst($row['role'] ?? 'user')) ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge badge-sm <?= $isActive ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
+                                            <span class="badge badge-sm cashflow-user-badge <?= $isActive ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
                                                 <?= $isActive ? 'Aktif' : 'Nonaktif' ?>
                                             </span>
                                         </td>
@@ -234,57 +236,59 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                         <td>
                                             <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_user_datetime($row['last_login_at'])) ?></p>
                                         </td>
-                                        <td class="align-middle">
-                                            <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2">
-                                                <i class="fa fa-eye" aria-hidden="true"></i>
-                                            </a>
-                                            <?php if (!$isSelf) { ?>
-                                                <a type="button"
-                                                    class="text-secondary text-warning font-weight-bold text-xs me-2 btnedituser"
-                                                    data-id="<?= (int) $row['id_user'] ?>"
-                                                    data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
-                                                    data-username="<?= htmlspecialchars($row['username'], ENT_QUOTES) ?>"
-                                                    data-email="<?= htmlspecialchars($row['email'], ENT_QUOTES) ?>"
-                                                    data-no_telp="<?= htmlspecialchars($row['no_telp'], ENT_QUOTES) ?>"
-                                                    data-role="<?= htmlspecialchars($row['role'], ENT_QUOTES) ?>"
-                                                    data-is_active="<?= htmlspecialchars($row['is_active'], ENT_QUOTES) ?>">
-                                                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                                        <td class="align-middle cashflow-user-action-cell">
+                                            <div class="cashflow-user-actions">
+                                                <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2">
+                                                    <i class="fa fa-eye" aria-hidden="true"></i>
                                                 </a>
+                                                <?php if (!$isSelf) { ?>
+                                                    <a type="button"
+                                                        class="text-secondary text-warning font-weight-bold text-xs me-2 btnedituser"
+                                                        data-id="<?= (int) $row['id_user'] ?>"
+                                                        data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
+                                                        data-username="<?= htmlspecialchars($row['username'], ENT_QUOTES) ?>"
+                                                        data-email="<?= htmlspecialchars($row['email'], ENT_QUOTES) ?>"
+                                                        data-no_telp="<?= htmlspecialchars($row['no_telp'], ENT_QUOTES) ?>"
+                                                        data-role="<?= htmlspecialchars($row['role'], ENT_QUOTES) ?>"
+                                                        data-is_active="<?= htmlspecialchars($row['is_active'], ENT_QUOTES) ?>">
+                                                        <i class="fa fa-pencil" aria-hidden="true"></i>
+                                                    </a>
 
-                                                <form action="aksi_user.php?act=s" method="post" class="d-inline">
-                                                    <?= csrf_input() ?>
-                                                    <input type="hidden" name="id" value="<?= (int) $row['id_user'] ?>">
-                                                    <input type="hidden" name="value" value="<?= $isActive ? '0' : '1' ?>">
-                                                    <button type="submit"
+                                                    <form action="aksi_user.php?act=s" method="post" class="d-inline">
+                                                        <?= csrf_input() ?>
+                                                        <input type="hidden" name="id" value="<?= (int) $row['id_user'] ?>">
+                                                        <input type="hidden" name="value" value="<?= $isActive ? '0' : '1' ?>">
+                                                        <button type="submit"
+                                                            data-confirm="true"
+                                                            data-confirm-title="<?= $isActive ? 'Nonaktifkan user ini?' : 'Aktifkan user ini?' ?>"
+                                                            data-confirm-text="<?= $isActive ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login kembali ke sistem.' ?>"
+                                                            data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
+                                                            data-confirm-cancel-text="Batal"
+                                                            class="border-0 bg-transparent p-0 <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2">
+                                                            <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
+                                                        </button>
+                                                    </form>
+
+                                                    <a type="button"
+                                                        class="text-secondary text-info font-weight-bold text-xs me-2 btnresetpassworduser"
+                                                        data-id="<?= (int) $row['id_user'] ?>"
+                                                        data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>">
+                                                        <i class="fa fa-key" aria-hidden="true"></i>
+                                                    </a>
+
+                                                    <a title="hapus" href="aksi_user.php?act=h&id=<?= (int) $row['id_user'] ?>"
                                                         data-confirm="true"
-                                                        data-confirm-title="<?= $isActive ? 'Nonaktifkan user ini?' : 'Aktifkan user ini?' ?>"
-                                                        data-confirm-text="<?= $isActive ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login kembali ke sistem.' ?>"
-                                                        data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
+                                                        data-confirm-title="Hapus pengguna ini?"
+                                                        data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
+                                                        data-confirm-confirm-text="Ya, hapus"
                                                         data-confirm-cancel-text="Batal"
-                                                        class="border-0 bg-transparent p-0 <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2">
-                                                        <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
-                                                    </button>
-                                                </form>
-
-                                                <a type="button"
-                                                    class="text-secondary text-info font-weight-bold text-xs me-2 btnresetpassworduser"
-                                                    data-id="<?= (int) $row['id_user'] ?>"
-                                                    data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>">
-                                                    <i class="fa fa-key" aria-hidden="true"></i>
-                                                </a>
-
-                                                <a title="hapus" href="aksi_user.php?act=h&id=<?= (int) $row['id_user'] ?>"
-                                                    data-confirm="true"
-                                                    data-confirm-title="Hapus pengguna ini?"
-                                                    data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
-                                                    data-confirm-confirm-text="Ya, hapus"
-                                                    data-confirm-cancel-text="Batal"
-                                                    class="text-secondary text-danger font-weight-bold text-xs">
-                                                    <i class="fa fa-trash" aria-hidden="true"></i>
-                                                </a>
-                                            <?php } else { ?>
-                                                <span class="text-xs text-secondary">Kelola akun sendiri lewat Profil</span>
-                                            <?php } ?>
+                                                        class="text-secondary text-danger font-weight-bold text-xs">
+                                                        <i class="fa fa-trash" aria-hidden="true"></i>
+                                                    </a>
+                                                <?php } else { ?>
+                                                    <span class="text-xs text-secondary">Kelola akun sendiri lewat Profil</span>
+                                                <?php } ?>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php } ?>

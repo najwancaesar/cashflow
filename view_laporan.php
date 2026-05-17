@@ -93,7 +93,15 @@ if ($userYangSedangLogin > 0) {
                             </div>
                             <div class="col-sm-5">
                                 <div class="input-group input-group-outline">
-                                    <input type="text" class="form-control text-center" name="tanggal" id="tanggal">
+                                    <input
+                                        type="text"
+                                        class="form-control text-center report-date-range"
+                                        name="tanggal"
+                                        id="tanggal"
+                                        readonly
+                                        autocomplete="off"
+                                        aria-label="Pilih rentang tanggal laporan"
+                                    >
                                 </div>
                             </div>
                         </div>
@@ -137,7 +145,16 @@ if ($userYangSedangLogin > 0) {
         </div>
     </div>
 </div>
+<style>
+    #tanggal.report-date-range[readonly] {
+        cursor: pointer;
+        background-color: #fff;
+    }
 
+    #tanggal.report-date-range[readonly]:focus {
+        cursor: pointer;
+    }
+</style>
 <script>
     $(function() {
         var start = moment().subtract(29, 'days');

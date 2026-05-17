@@ -112,6 +112,38 @@ function get_top_category_summary($rows, $defaultLabel)
     return $topRow;
 }
 
+function fetch_monthly_totals($con, $table, $userId, $startDate, $endDate)
+{
+    $allowedTables = ['pemasukan', 'pengeluaran'];
+    if (!in_array($table, $allowedTables, true)) {
+        return [];
+    }
+
+    $sql = "SELECT DATE_FORMAT(tanggal, '%Y-%m') AS bulan, COALESCE(SUM(jumlah), 0) AS total
+            FROM {$table}
+            WHERE user = ? AND tanggal BETWEEN ? AND ?
+            GROUP BY DATE_FORMAT(tanggal, '%Y-%m')";
+
+    $stmt = $con->prepare($sql);
+    $stmt->bind_param("iss", $userId, $startDate, $endDate);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $totals = [];
+
+    while ($result && ($row = $result->fetch_assoc())) {
+        $totals[(string) $row['bulan']] = (float) ($row['total'] ?? 0);
+    }
+
+    $stmt->close();
+
+    return $totals;
+}
+
+function format_rupiah($value)
+{
+    return 'Rp. ' . number_format((float) $value);
+}
+
 function format_datetime_label($value)
 {
     if (empty($value) || $value === '0000-00-00 00:00:00') {
@@ -398,6 +430,67 @@ $pengeluaran_bulan = [
     ),
 ];
 
+$pemasukan_bulan_ini = (float) ($pendapatan_bulan['pendapatan_bulan'] ?? 0);
+$pengeluaran_bulan_ini = (float) ($pengeluaran_bulan['pengeluaran_bulan'] ?? 0);
+$sisa_cashflow_bulan = $pemasukan_bulan_ini - $pengeluaran_bulan_ini;
+
+$total_pemasukan_semua = (float) fetch_single_value(
+    $con,
+    "SELECT COALESCE(SUM(jumlah), 0) FROM pemasukan WHERE user = ?",
+    "i",
+    [$userYangSedangLogin]
+);
+
+$total_pengeluaran_semua = (float) fetch_single_value(
+    $con,
+    "SELECT COALESCE(SUM(jumlah), 0) FROM pengeluaran WHERE user = ?",
+    "i",
+    [$userYangSedangLogin]
+);
+
+$total_saldo_keseluruhan = $total_pemasukan_semua - $total_pengeluaran_semua;
+$hari_berjalan_bulan_ini = max(1, (int) date('j', strtotime($tglSekarang)));
+$rata_pengeluaran_harian = $pengeluaran_bulan_ini / $hari_berjalan_bulan_ini;
+
+$trend_awal_bulan = (new DateTimeImmutable('first day of this month'))->modify('-5 months');
+$trend_akhir_bulan = new DateTimeImmutable('last day of this month');
+$trend_pemasukan_map = fetch_monthly_totals(
+    $con,
+    'pemasukan',
+    $userYangSedangLogin,
+    $trend_awal_bulan->format('Y-m-01'),
+    $trend_akhir_bulan->format('Y-m-d')
+);
+$trend_pengeluaran_map = fetch_monthly_totals(
+    $con,
+    'pengeluaran',
+    $userYangSedangLogin,
+    $trend_awal_bulan->format('Y-m-01'),
+    $trend_akhir_bulan->format('Y-m-d')
+);
+$cashflow_trend = [
+    'labels' => [],
+    'pemasukan' => [],
+    'pengeluaran' => [],
+    'net' => [],
+];
+
+for ($i = 0; $i < 6; $i++) {
+    $trend_bulan = $trend_awal_bulan->modify("+{$i} months");
+    $trend_key = $trend_bulan->format('Y-m');
+    $trend_pemasukan = (float) ($trend_pemasukan_map[$trend_key] ?? 0);
+    $trend_pengeluaran = (float) ($trend_pengeluaran_map[$trend_key] ?? 0);
+
+    $cashflow_trend['labels'][] = $trend_bulan->format('M Y');
+    $cashflow_trend['pemasukan'][] = $trend_pemasukan;
+    $cashflow_trend['pengeluaran'][] = $trend_pengeluaran;
+    $cashflow_trend['net'][] = $trend_pemasukan - $trend_pengeluaran;
+}
+
+$has_cashflow_trend = (array_sum($cashflow_trend['pemasukan']) + array_sum($cashflow_trend['pengeluaran'])) > 0;
+$cashflow_bulan_class = $sisa_cashflow_bulan < 0 ? 'cashflow-icon-expense' : 'cashflow-icon-income';
+$saldo_total_class = $total_saldo_keseluruhan < 0 ? 'cashflow-icon-expense' : 'cashflow-icon-report';
+
 $tpemasukan_bulan = (int) fetch_single_value(
     $con,
     "SELECT COUNT(*) FROM pemasukan WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
@@ -413,13 +506,6 @@ $tpengeluaran_bulan = (int) fetch_single_value(
 );
 
 $transaksi_bulan = $tpemasukan_bulan + $tpengeluaran_bulan;
-$user = (int) fetch_single_value($con, "SELECT COUNT(*) FROM user");
-$jumlah_kategori_aktif = (int) fetch_single_value(
-    $con,
-    "SELECT COUNT(*) FROM kategori WHERE user_id = ?",
-    "i",
-    [$userYangSedangLogin]
-);
 
 $q_pemasukan_terbaru = fetch_all_rows(
     $con,
@@ -480,6 +566,66 @@ $piutang_bulan = [
         [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
     ),
 ];
+
+$hutang_overdue_count = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM hutang
+     WHERE user = ? AND status = 'pending'
+       AND tanggal_jatuh_tempo IS NOT NULL
+       AND tanggal_jatuh_tempo < ?",
+    "is",
+    [$userYangSedangLogin, $tglSekarang]
+);
+
+$hutang_overdue_total = (float) fetch_single_value(
+    $con,
+    "SELECT COALESCE(SUM(jumlah), 0) FROM hutang
+     WHERE user = ? AND status = 'pending'
+       AND tanggal_jatuh_tempo IS NOT NULL
+       AND tanggal_jatuh_tempo < ?",
+    "is",
+    [$userYangSedangLogin, $tglSekarang]
+);
+
+$piutang_overdue_count = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM piutang
+     WHERE user = ? AND status = 'pending'
+       AND tanggal_jatuh_tempo IS NOT NULL
+       AND tanggal_jatuh_tempo < ?",
+    "is",
+    [$userYangSedangLogin, $tglSekarang]
+);
+
+$piutang_overdue_total = (float) fetch_single_value(
+    $con,
+    "SELECT COALESCE(SUM(jumlah), 0) FROM piutang
+     WHERE user = ? AND status = 'pending'
+       AND tanggal_jatuh_tempo IS NOT NULL
+       AND tanggal_jatuh_tempo < ?",
+    "is",
+    [$userYangSedangLogin, $tglSekarang]
+);
+
+$hutang_due_today_count = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM hutang
+     WHERE user = ? AND status = 'pending'
+       AND tanggal_jatuh_tempo = ?",
+    "is",
+    [$userYangSedangLogin, $tglSekarang]
+);
+
+$piutang_due_today_count = (int) fetch_single_value(
+    $con,
+    "SELECT COUNT(*) FROM piutang
+     WHERE user = ? AND status = 'pending'
+       AND tanggal_jatuh_tempo = ?",
+    "is",
+    [$userYangSedangLogin, $tglSekarang]
+);
+
+$due_today_total_count = $hutang_due_today_count + $piutang_due_today_count;
 
 $kategori_pemasukan_breakdown = fetch_category_breakdown(
     $con,
@@ -710,8 +856,8 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                         <i class="fa fa-money" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Pendapatan Bulan Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format((float) ($pendapatan_bulan['pendapatan_bulan'] ?? 0)) ?></h4>
+                        <p class="text-sm mb-0 text-capitalize">Pemasukan Bulan Ini</p>
+                        <h4 class="mb-0"><?= format_rupiah($pemasukan_bulan_ini) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -728,7 +874,7 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Pengeluaran Bulan Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format((float) ($pengeluaran_bulan['pengeluaran_bulan'] ?? 0)) ?></h4>
+                        <h4 class="mb-0"><?= format_rupiah($pengeluaran_bulan_ini) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -740,16 +886,19 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape cashflow-icon-report text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="fa fa-list-alt" aria-hidden="true"></i>
+                        class="icon icon-lg icon-shape <?= $cashflow_bulan_class ?> text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-balance-scale" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Transaksi Bulan Ini</p>
-                        <h4 class="mb-0"><?= number_format((float) ($transaksi_bulan ?? 0)) ?></h4>
+                        <p class="text-sm mb-0 text-capitalize">Sisa Cashflow Bulan Ini</p>
+                        <h4 class="mb-0 <?= $sisa_cashflow_bulan < 0 ? 'text-danger' : 'text-success' ?>">
+                            <?= format_rupiah($sisa_cashflow_bulan) ?>
+                        </h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
+                    <p class="mb-0 text-sm text-secondary"><?= number_format((float) ($transaksi_bulan ?? 0)) ?> transaksi bulan ini.</p>
                 </div>
             </div>
         </div>
@@ -757,16 +906,50 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape cashflow-icon-user text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="fa fa-users" aria-hidden="true"></i>
+                        class="icon icon-lg icon-shape <?= $saldo_total_class ?> text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-money" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Pengguna</p>
-                        <h4 class="mb-0"><?= number_format((float) ($user ?? 0)) ?></h4>
+                        <p class="text-sm mb-0 text-capitalize">Total Saldo Keseluruhan</p>
+                        <h4 class="mb-0 <?= $total_saldo_keseluruhan < 0 ? 'text-danger' : 'text-success' ?>">
+                            <?= format_rupiah($total_saldo_keseluruhan) ?>
+                        </h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
+                    <p class="mb-0 text-sm text-secondary">Semua pemasukan dikurangi semua pengeluaran.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card h-100">
+                <div class="card-header pb-0 p-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                        <div>
+                            <h6 class="mb-0">Tren Cashflow 6 Bulan Terakhir</h6>
+                            <p class="text-sm text-secondary mb-0">Pemasukan, pengeluaran, dan net cashflow pribadi.</p>
+                        </div>
+                        <span class="badge badge-sm <?= $total_saldo_keseluruhan < 0 ? 'bg-gradient-danger' : 'bg-gradient-success' ?>">
+                            Saldo: <?= format_rupiah($total_saldo_keseluruhan) ?>
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <?php if (!$has_cashflow_trend) { ?>
+                        <div class="border border-radius-lg p-4 text-center">
+                            <i class="fa fa-line-chart text-secondary mb-2" aria-hidden="true"></i>
+                            <p class="text-sm text-secondary mb-1">Belum ada data cashflow untuk 6 bulan terakhir.</p>
+                            <p class="text-xs text-secondary mb-0">Grafik akan muncul setelah Anda menambahkan pemasukan atau pengeluaran.</p>
+                        </div>
+                    <?php } else { ?>
+                        <div class="chart" style="min-height: 320px;">
+                            <canvas id="chart-cashflow-trend" class="chart-canvas" height="320"></canvas>
+                        </div>
+                    <?php } ?>
                 </div>
             </div>
         </div>
@@ -777,17 +960,17 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             <div class="card h-100 dashboard-stat-card">
                 <div class="card-header p-3 pt-2">
                     <div
-                        class="icon icon-lg icon-shape cashflow-icon-category text-center border-radius-xl mt-n4 position-absolute">
-                        <i class="fa fa-tags" aria-hidden="true"></i>
+                        class="icon icon-lg icon-shape cashflow-icon-expense text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-calendar" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Kategori Aktif</p>
-                        <h4 class="mb-0"><?= number_format((float) ($jumlah_kategori_aktif ?? 0)) ?></h4>
+                        <p class="text-sm mb-0 text-capitalize">Rata-rata Pengeluaran Harian</p>
+                        <h4 class="mb-0"><?= format_rupiah($rata_pengeluaran_harian) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
-                    <p class="mb-0 text-sm text-secondary">Jumlah kategori yang sudah Anda buat untuk pemasukan dan pengeluaran.</p>
+                    <p class="mb-0 text-sm text-secondary">Dihitung dari total pengeluaran bulan ini dibagi <?= number_format((float) $hari_berjalan_bulan_ini) ?> hari berjalan.</p>
                 </div>
             </div>
         </div>
@@ -823,7 +1006,7 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                         <i class="fa fa-pie-chart" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Top Kategori Pengeluaran</p>
+                        <p class="text-sm mb-0 text-capitalize">Insight Pengeluaran Terbesar</p>
                         <h5 class="mb-0"><?= htmlspecialchars($top_kategori_pengeluaran['kategori_nama']) ?></h5>
                     </div>
                 </div>
@@ -946,6 +1129,69 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
     </div>
 
     <div class="row mt-4">
+        <div class="col-xl-4 col-sm-6 mb-xl-0 mb-4">
+            <div class="card h-100 dashboard-stat-card">
+                <div class="card-header p-3 pt-2">
+                    <div
+                        class="icon icon-lg icon-shape cashflow-icon-debt text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-exclamation-circle" aria-hidden="true"></i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Hutang Terlambat</p>
+                        <h4 class="mb-0 text-danger"><?= number_format((float) $hutang_overdue_count) ?> item</h4>
+                    </div>
+                </div>
+                <hr class="dark horizontal my-0">
+                <div class="card-footer p-3">
+                    <p class="mb-0 text-sm text-secondary">
+                        Total pending <?= format_rupiah($hutang_overdue_total) ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-sm-6 mb-xl-0 mb-4">
+            <div class="card h-100 dashboard-stat-card">
+                <div class="card-header p-3 pt-2">
+                    <div
+                        class="icon icon-lg icon-shape cashflow-icon-receivable text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-bell" aria-hidden="true"></i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Piutang Terlambat</p>
+                        <h4 class="mb-0 text-danger"><?= number_format((float) $piutang_overdue_count) ?> item</h4>
+                    </div>
+                </div>
+                <hr class="dark horizontal my-0">
+                <div class="card-footer p-3">
+                    <p class="mb-0 text-sm text-secondary">
+                        Total pending <?= format_rupiah($piutang_overdue_total) ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-sm-12">
+            <div class="card h-100 dashboard-stat-card">
+                <div class="card-header p-3 pt-2">
+                    <div
+                        class="icon icon-lg icon-shape cashflow-icon-pending text-center border-radius-xl mt-n4 position-absolute">
+                        <i class="fa fa-calendar-check-o" aria-hidden="true"></i>
+                    </div>
+                    <div class="text-end pt-1">
+                        <p class="text-sm mb-0 text-capitalize">Jatuh Tempo Hari Ini</p>
+                        <h4 class="mb-0 text-warning"><?= number_format((float) $due_today_total_count) ?> item</h4>
+                    </div>
+                </div>
+                <hr class="dark horizontal my-0">
+                <div class="card-footer p-3">
+                    <p class="mb-0 text-sm text-secondary">
+                        Hutang <?= number_format((float) $hutang_due_today_count) ?> item, piutang <?= number_format((float) $piutang_due_today_count) ?> item.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
     </div>
     <div class="row mb-4">
         <div class="card my-4">
@@ -982,26 +1228,26 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                                     <span
                                         class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
                                         <?php if ($row['status'] == 'selesai'): ?>
-                                        <?= $row['status'] ?>
+                                        <?= htmlspecialchars($row['status']) ?>
                                         <?php else : ?>
                                         <a href="" class="text-white">
-                                            <?= $row['status'] ?>
+                                            <?= htmlspecialchars($row['status']) ?>
                                         </a>
                                         <?php endif ?>
                                     </span>
                                 </td>
                                 <td class="align-middle text-center">
-                                    <span class="text-secondary text-xs font-weight-bold"><?= $row['tanggal'] ?></span>
+                                    <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
                                 </td>
                                 <td>
-                                    <p class="text-xs text-secondary mb-0"><?= $row['catatan'] ?></p>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
                                 </td>
                                 <td>
                                     <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
                                 <td>
-                                    <p class="text-xs text-secondary mb-0"><?= $row['nama'] ?></p>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama']) ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -1046,26 +1292,26 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                                     <span
                                         class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
                                         <?php if ($row['status'] == 'selesai'): ?>
-                                        <?= $row['status'] ?>
+                                        <?= htmlspecialchars($row['status']) ?>
                                         <?php else : ?>
                                         <a href="" class="text-white">
-                                            <?= $row['status'] ?>
+                                            <?= htmlspecialchars($row['status']) ?>
                                         </a>
                                         <?php endif ?>
                                     </span>
                                 </td>
                                 <td class="align-middle text-center">
-                                    <span class="text-secondary text-xs font-weight-bold"><?= $row['tanggal'] ?></span>
+                                    <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
                                 </td>
                                 <td>
-                                    <p class="text-xs text-secondary mb-0"><?= $row['catatan'] ?></p>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
                                 </td>
                                 <td>
                                     <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
                                 <td>
-                                    <p class="text-xs text-secondary mb-0"><?= $row['nama'] ?></p>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama']) ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -1079,6 +1325,73 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
 
 <script>
 $(document).ready(function() {
+    var cashflowTrendCanvas = document.getElementById("chart-cashflow-trend");
+    if (cashflowTrendCanvas) {
+        new Chart(cashflowTrendCanvas.getContext("2d"), {
+            type: "line",
+            data: {
+                labels: <?= json_encode($cashflow_trend['labels']) ?>,
+                datasets: [{
+                    label: "Pemasukan",
+                    data: <?= json_encode($cashflow_trend['pemasukan']) ?>,
+                    borderColor: "#22c55e",
+                    backgroundColor: "rgba(34, 197, 94, 0.12)",
+                    tension: 0.35,
+                    fill: false
+                }, {
+                    label: "Pengeluaran",
+                    data: <?= json_encode($cashflow_trend['pengeluaran']) ?>,
+                    borderColor: "#ef4444",
+                    backgroundColor: "rgba(239, 68, 68, 0.12)",
+                    tension: 0.35,
+                    fill: false
+                }, {
+                    label: "Net Cashflow",
+                    data: <?= json_encode($cashflow_trend['net']) ?>,
+                    borderColor: "#0ea5e9",
+                    backgroundColor: "rgba(14, 165, 233, 0.12)",
+                    tension: 0.35,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: "index",
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                var value = Number(context.parsed.y || 0).toLocaleString("id-ID");
+                                return context.dataset.label + ": Rp. " + value;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return "Rp. " + Number(value || 0).toLocaleString("id-ID");
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     var pemasukanKategoriCanvas = document.getElementById("chart-kategori-pemasukan");
     if (pemasukanKategoriCanvas) {
         new Chart(pemasukanKategoriCanvas.getContext("2d"), {

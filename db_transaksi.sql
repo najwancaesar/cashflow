@@ -25,6 +25,7 @@ DROP TABLE IF EXISTS `hutang`;
 CREATE TABLE `hutang` (
   `id_hutang` int(11) NOT NULL AUTO_INCREMENT,
   `tanggal` date NOT NULL,
+  `tanggal_jatuh_tempo` date DEFAULT NULL COMMENT 'Tanggal jatuh tempo hutang',
   `kreditur` varchar(100) NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
@@ -40,7 +41,13 @@ CREATE TABLE `hutang` (
 
 LOCK TABLES `hutang` WRITE;
 /*!40000 ALTER TABLE `hutang` DISABLE KEYS */;
-INSERT INTO `hutang` VALUES (8,'2025-01-11','fadlan','ok',90000,'32','pending'),(9,'2025-01-13','Bank Ganesha','Peminjaman untuk dana darurat\r\n',10000,'2','pending'),(10,'2025-01-13','ferdi','mixue',10000,'39','pending'),(13,'2025-01-15','myself','oke',15000,'40','pending'),(14,'2025-01-16','ok','tst',6555500,'41','pending'),(15,'2025-02-27','Sakila','peminjaman untuk beli kebutuhan di indomaret\r\n',50000,'52','pending');
+INSERT INTO `hutang` (`id_hutang`, `tanggal`, `kreditur`, `catatan`, `jumlah`, `user`, `status`) VALUES
+(8,'2025-01-11','fadlan','ok',90000,32,'pending'),
+(9,'2025-01-13','Bank Ganesha','Peminjaman untuk dana darurat\r\n',10000,2,'pending'),
+(10,'2025-01-13','ferdi','mixue',10000,39,'pending'),
+(13,'2025-01-15','myself','oke',15000,40,'pending'),
+(14,'2025-01-16','ok','tst',6555500,41,'pending'),
+(15,'2025-02-27','Sakila','peminjaman untuk beli kebutuhan di indomaret\r\n',50000,52,'pending');
 /*!40000 ALTER TABLE `hutang` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -205,6 +212,7 @@ DROP TABLE IF EXISTS `piutang`;
 CREATE TABLE `piutang` (
   `id_piutang` int(11) NOT NULL AUTO_INCREMENT,
   `tanggal` date NOT NULL,
+  `tanggal_jatuh_tempo` date DEFAULT NULL COMMENT 'Tanggal jatuh tempo piutang',
   `debitur` varchar(100) NOT NULL,
   `catatan` text NOT NULL,
   `jumlah` int(11) NOT NULL,
@@ -220,7 +228,15 @@ CREATE TABLE `piutang` (
 
 LOCK TABLES `piutang` WRITE;
 /*!40000 ALTER TABLE `piutang` DISABLE KEYS */;
-INSERT INTO `piutang` VALUES (10,'2025-01-11','adad','ok',90000,'32','pending'),(11,'2025-01-13','bank bca','award winner',100000,'2','pending'),(12,'2025-01-13','tangguh','nasi bungkus',10000,'39','pending'),(14,'2025-01-15','tama','oke saja',100000,'40','pending'),(15,'2025-01-15','oooo','okkkkkkkkkkkkkk',800000,'40','pending'),(16,'2025-01-16','okk','okgtgyu',800000,'41','pending'),(17,'2025-01-31','select','omset',500000,'50','pending'),(18,'2025-02-27','Sakila','biaya operasional rumah sakit',100000,'52','pending');
+INSERT INTO `piutang` (`id_piutang`, `tanggal`, `debitur`, `catatan`, `jumlah`, `user`, `status`) VALUES
+(10,'2025-01-11','adad','ok',90000,32,'pending'),
+(11,'2025-01-13','bank bca','award winner',100000,2,'pending'),
+(12,'2025-01-13','tangguh','nasi bungkus',10000,39,'pending'),
+(14,'2025-01-15','tama','oke saja',100000,40,'pending'),
+(15,'2025-01-15','oooo','okkkkkkkkkkkkkk',800000,40,'pending'),
+(16,'2025-01-16','okk','okgtgyu',800000,41,'pending'),
+(17,'2025-01-31','select','omset',500000,50,'pending'),
+(18,'2025-02-27','Sakila','biaya operasional rumah sakit',100000,52,'pending');
 /*!40000 ALTER TABLE `piutang` ENABLE KEYS */;
 UNLOCK TABLES;
 

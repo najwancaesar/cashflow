@@ -280,6 +280,22 @@ body.g-sidenav-show {
     vertical-align: middle;
 }
 
+.app-main-content .cashflow-user-actions > a,
+.app-main-content .cashflow-user-actions > form > button {
+    display: inline-flex;
+    min-width: 38px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.65rem;
+}
+
+.app-main-content .cashflow-user-actions > form {
+    display: inline-flex !important;
+    margin-right: 0.25rem;
+    vertical-align: middle;
+}
+
 .app-main-content .badge.bg-gradient-warning {
     color: #fff;
 }
@@ -807,6 +823,84 @@ body.g-sidenav-show {
         min-height: 42px;
         font-size: 0.95rem;
     }
+
+    .app-main-content .cashflow-user-table,
+    .app-main-content .cashflow-user-table * {
+        box-sizing: border-box;
+    }
+
+    .app-main-content .cashflow-user-table .cashflow-user-avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .app-main-content .cashflow-user-table .user-mobile-identity {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        flex-direction: column;
+        gap: 0.12rem;
+        overflow: hidden;
+        color: #344767;
+        text-align: right;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .app-main-content .cashflow-user-table .user-mobile-name,
+    .app-main-content .cashflow-user-table .user-mobile-username,
+    .app-main-content .cashflow-user-table .user-mobile-email {
+        display: block;
+        max-width: 100%;
+        line-height: 1.35;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .app-main-content .cashflow-user-table .cashflow-user-badge {
+        max-width: 100%;
+        white-space: normal;
+        text-align: center;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .app-main-content .cashflow-user-table .cashflow-user-actions {
+        display: flex;
+        max-width: 100%;
+        min-width: 0;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.4rem;
+    }
+
+    .app-main-content .cashflow-user-table .cashflow-user-actions > a,
+    .app-main-content .cashflow-user-table .cashflow-user-actions > form > button {
+        flex: 0 0 auto;
+        min-width: 42px;
+        min-height: 42px;
+        margin: 0 !important;
+    }
+
+    .app-main-content .cashflow-user-table .cashflow-user-actions > form {
+        display: inline-flex !important;
+        margin: 0 !important;
+    }
+
+    .app-main-content .cashflow-user-table .cashflow-user-actions > span {
+        flex: 1 1 100%;
+        text-align: right;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
 }
 
 @media (max-width: 575.98px) {
@@ -843,6 +937,12 @@ body.g-sidenav-show {
         box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
     }
 
+    .app-main-content .cashflow-user-table.cashflow-responsive-table tbody tr {
+        max-width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
     .app-main-content .cashflow-responsive-table tbody tr:last-child {
         margin-bottom: 0;
     }
@@ -858,6 +958,45 @@ body.g-sidenav-show {
         font-size: 0.84rem !important;
         text-align: right !important;
         white-space: normal !important;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table td {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table .cashflow-user-photo-cell {
+        align-items: center;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table .cashflow-user-photo-cell .cashflow-user-avatar {
+        margin-left: auto;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table .cashflow-user-identity-cell {
+        display: grid;
+        grid-template-columns: minmax(4.5rem, 34%) minmax(0, 1fr);
+        align-items: flex-start;
+        gap: 0.65rem;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table .cashflow-user-identity-cell::before {
+        flex: initial;
+        min-width: 0;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table .cashflow-user-identity-cell .user-mobile-identity {
+        align-items: flex-end;
+        width: 100%;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table .cashflow-user-action-cell {
+        overflow: hidden;
+    }
+
+    .app-main-content .cashflow-user-table.cashflow-responsive-table .cashflow-user-action-cell .cashflow-user-actions {
+        width: 100%;
+        justify-content: flex-end;
     }
 
     .app-main-content .cashflow-responsive-table td:last-child {

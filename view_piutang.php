@@ -3,6 +3,42 @@ include "includes/koneksi.php";
 include "includes/csrf_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$today = date('Y-m-d');
+
+function format_piutang_due_date($value)
+{
+	if (empty($value) || $value === '0000-00-00') {
+		return '-';
+	}
+
+	$timestamp = strtotime((string) $value);
+	if ($timestamp === false) {
+		return '-';
+	}
+
+	return date('d M Y', $timestamp);
+}
+
+function piutang_due_badge($status, $dueDate, $today)
+{
+	if ((string) $status === 'selesai') {
+		return ['label' => 'Selesai', 'class' => 'bg-gradient-success'];
+	}
+
+	if (empty($dueDate) || $dueDate === '0000-00-00') {
+		return ['label' => 'Tidak Ada Jatuh Tempo', 'class' => 'bg-gradient-secondary'];
+	}
+
+	if ($dueDate < $today) {
+		return ['label' => 'Terlambat', 'class' => 'bg-gradient-danger'];
+	}
+
+	if ($dueDate === $today) {
+		return ['label' => 'Jatuh Tempo Hari Ini', 'class' => 'bg-gradient-warning'];
+	}
+
+	return ['label' => 'Belum Jatuh Tempo', 'class' => 'bg-gradient-info'];
+}
 
 if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     echo "<script>window.location.href='main.php?module=home';</script>";
@@ -54,6 +90,8 @@ $sql = $stmtPiutang->get_result();
 									<th>
 										Catatan
 									</th>
+									<th>Jatuh Tempo</th>
+									<th>Status Jatuh Tempo</th>
 									<th>User</th>
 									<th>Status</th>
 									<th></th>
@@ -63,6 +101,7 @@ $sql = $stmtPiutang->get_result();
 							<?php
 							$no = 1;
 							while ($row = mysqli_fetch_array($sql)) {
+								$dueBadge = piutang_due_badge($row['status'] ?? '', $row['tanggal_jatuh_tempo'] ?? '', $today);
 							?>
 
 								<tr>
@@ -78,6 +117,14 @@ $sql = $stmtPiutang->get_result();
 									</td>
 									<td>
 										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?></p>
+									</td>
+									<td>
+										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_piutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+									</td>
+									<td class="align-middle text-center text-sm">
+										<span class="badge badge-sm <?= htmlspecialchars($dueBadge['class'], ENT_QUOTES, 'UTF-8') ?>">
+											<?= htmlspecialchars($dueBadge['label'], ENT_QUOTES, 'UTF-8') ?>
+										</span>
 									</td>
 									<td>
 										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?></p>
@@ -122,6 +169,7 @@ $sql = $stmtPiutang->get_result();
 											data-debitur="<?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?>"
 											data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?>"
 											data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES, 'UTF-8') ?>"
+											data-jatuh_tempo="<?= htmlspecialchars($row['tanggal_jatuh_tempo'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
 											class="text-secondary text-warning font-weight-bold text-xs btneditpiutang">
 											<i class="fa fa-pencil" aria-hidden="true"></i>
 										</a>
@@ -167,6 +215,12 @@ $sql = $stmtPiutang->get_result();
 						</div>
 					</div>
 					<div class="row my-3">
+						<label>Tanggal Jatuh Tempo</label>
+						<div class="input-group input-group-outline">
+							<input type="date" name="tanggal_jatuh_tempo" id="tanggal_jatuh_tempo" class="form-control">
+						</div>
+					</div>
+					<div class="row my-3">
 						<label>Debitur</label>
 						<div class="input-group input-group-outline">
 							<input type="text" name="debitur" id="debitur" class="form-control">
@@ -206,6 +260,14 @@ $sql = $stmtPiutang->get_result();
 				},
 			},
 			dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+		});
+
+		$(document).on("click", ".btneditpiutang", function() {
+			$('#tanggal_jatuh_tempo').val($(this).attr("data-jatuh_tempo") || '');
+		});
+
+		$(document).on("click", 'button[data-bs-target="#modalTambah"]', function() {
+			$('#tanggal_jatuh_tempo').val('');
 		});
 	});
 </script>
