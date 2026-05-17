@@ -177,10 +177,11 @@ if ($act === 'u') {
 }
 
 if ($act === 's') {
+    require_post_csrf_user('main.php?module=pengguna');
     require_admin_user($isAdmin);
 
-    $targetUserId = (int) ($_GET['id'] ?? 0);
-    $isActive = clean_text($_GET['value'] ?? '');
+    $targetUserId = (int) ($_POST['id'] ?? 0);
+    $isActive = clean_text($_POST['value'] ?? '');
     block_admin_self_management($targetUserId, $currentUserId, 'main.php?module=pengguna');
 
     if ($targetUserId <= 0 || !validate_active_value($isActive)) {

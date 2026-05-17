@@ -107,6 +107,23 @@ body.g-sidenav-show {
     box-shadow: 0 8px 18px rgba(52, 71, 103, 0.2) !important;
 }
 
+.app-main-content .card {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+}
+
+.app-main-content .dashboard-stat-card {
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (hover: hover) and (min-width: 992px) {
+    .app-main-content .dashboard-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.09);
+    }
+}
+
 .app-main-content .dashboard-stat-card .card-header {
     min-height: 76px;
 }
@@ -230,6 +247,41 @@ body.g-sidenav-show {
 
 .app-main-content .table-responsive .dataTables_wrapper > .d-flex:first-child {
     margin-bottom: 1rem;
+}
+
+.app-main-content .table-responsive {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.42) transparent;
+}
+
+.app-main-content .table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.app-main-content .table-responsive::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(100, 116, 139, 0.38);
+}
+
+.app-main-content .table td.align-middle > a,
+.app-main-content .table td.align-middle > button,
+.app-main-content .table td.align-middle > form > button {
+    display: inline-flex;
+    min-width: 38px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.65rem;
+}
+
+.app-main-content .table td.align-middle > form {
+    display: inline-flex !important;
+    margin-right: 0.25rem;
+    vertical-align: middle;
+}
+
+.app-main-content .badge.bg-gradient-warning {
+    color: #fff;
 }
 
 @media (max-width: 1199.98px) {
@@ -713,5 +765,150 @@ body.g-sidenav-show {
     .app-main-content .card.card-body.mx-3.mx-md-4 {
         margin-right: 0.25rem !important;
         margin-left: 0.25rem !important;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .app-main-content .modal-body .row {
+        margin-right: 0;
+        margin-left: 0;
+        row-gap: 0.35rem;
+    }
+
+    .app-main-content .modal-body label,
+    .app-main-content .modal-body .form-label {
+        margin-bottom: 0.35rem;
+        color: #344767;
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    .app-main-content .modal-body .input-group-outline {
+        margin-bottom: 0.2rem;
+    }
+
+    .app-main-content .modal-header .bg-gradient-info {
+        align-items: center;
+        min-height: 58px;
+    }
+
+    .app-main-content .modal-header .btn-close {
+        min-width: 38px;
+        min-height: 38px;
+        border-radius: 0.75rem;
+        background-color: rgba(255, 255, 255, 0.84);
+        opacity: 1;
+    }
+
+    .app-main-content .table td.align-middle > a,
+    .app-main-content .table td.align-middle > button,
+    .app-main-content .table td.align-middle > form > button {
+        min-width: 42px;
+        min-height: 42px;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .app-main-content .table-responsive {
+        border-top: 0;
+        border-radius: 1rem;
+        background: linear-gradient(180deg, rgba(248, 250, 252, 0.85), rgba(255, 255, 255, 0.95));
+    }
+
+    .app-main-content .cashflow-responsive-table {
+        min-width: 0 !important;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .app-main-content .cashflow-responsive-table thead {
+        display: none;
+    }
+
+    .app-main-content .cashflow-responsive-table,
+    .app-main-content .cashflow-responsive-table tbody,
+    .app-main-content .cashflow-responsive-table tr,
+    .app-main-content .cashflow-responsive-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .app-main-content .cashflow-responsive-table tbody tr {
+        margin-bottom: 0.85rem;
+        padding: 0.75rem 0.85rem;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 1rem;
+        background: #fff;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .app-main-content .cashflow-responsive-table tbody tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .app-main-content .cashflow-responsive-table td {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.58rem 0 !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        color: #344767;
+        font-size: 0.84rem !important;
+        text-align: right !important;
+        white-space: normal !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td:last-child {
+        border-bottom: 0;
+    }
+
+    .app-main-content .cashflow-responsive-table td::before {
+        content: attr(data-label);
+        flex: 0 0 42%;
+        color: #64748b;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.035em;
+        line-height: 1.45;
+        text-align: left;
+        text-transform: uppercase;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label=""] {
+        justify-content: flex-end;
+        gap: 0.45rem;
+        padding-top: 0.75rem !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label=""]::before {
+        display: none;
+    }
+
+    .app-main-content .cashflow-responsive-table td p,
+    .app-main-content .cashflow-responsive-table td span:not(.badge),
+    .app-main-content .cashflow-responsive-table td .text-xs,
+    .app-main-content .cashflow-responsive-table td .text-sm {
+        margin-bottom: 0 !important;
+        color: inherit;
+        font-size: 0.84rem !important;
+        line-height: 1.45;
+        text-align: right;
+        white-space: normal !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td .badge {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+    }
+
+    .app-main-content .cashflow-responsive-table td.align-middle > form {
+        margin-right: 0;
     }
 }

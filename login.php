@@ -122,9 +122,8 @@ if (isset($_POST['kirim'])) {
                 $updateStmt->close();
             }
 
-            $lastLoginAt = date('Y-m-d H:i:s');
-            $activityStmt = $con->prepare("UPDATE user SET last_login_at = ? WHERE id_user = ?");
-            $activityStmt->bind_param("si", $lastLoginAt, $sesi['id_user']);
+            $activityStmt = $con->prepare("UPDATE user SET last_login_at = NOW() WHERE id_user = ?");
+            $activityStmt->bind_param("i", $sesi['id_user']);
             $activityStmt->execute();
             $activityStmt->close();
 

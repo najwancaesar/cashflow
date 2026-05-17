@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('Asia/Jakarta');
+
 $server = 'localhost';
 $user = 'root';
 $password = '';
@@ -16,3 +18,4 @@ if ($con->connect_error) {
 }
 
 $con->set_charset('utf8mb4');
+$con->query("SET time_zone = '+07:00'");

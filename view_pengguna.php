@@ -34,7 +34,8 @@ function format_user_datetime($value)
 function fetch_user_count($con, $table, $userId, $column = 'user')
 {
     $allowedTables = ['kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang'];
-    if (!in_array($table, $allowedTables, true)) {
+    $allowedColumns = ['user', 'user_id'];
+    if (!in_array($table, $allowedTables, true) || !in_array($column, $allowedColumns, true)) {
         return 0;
     }
 
@@ -63,12 +64,22 @@ if ($selectedDetailUserId > 0) {
 
     if ($detailUser) {
         $detailSummary = [
-            'kategori' => fetch_user_count($con, 'kategori', $selectedDetailUserId, 'user_id'),
-            'pemasukan' => fetch_user_count($con, 'pemasukan', $selectedDetailUserId),
-            'pengeluaran' => fetch_user_count($con, 'pengeluaran', $selectedDetailUserId),
-            'hutang' => fetch_user_count($con, 'hutang', $selectedDetailUserId),
-            'piutang' => fetch_user_count($con, 'piutang', $selectedDetailUserId),
+            'kategori' => 0,
+            'pemasukan' => 0,
+            'pengeluaran' => 0,
+            'hutang' => 0,
+            'piutang' => 0,
         ];
+
+        if (strtolower((string) ($detailUser['role'] ?? 'user')) === 'user') {
+            $detailSummary = [
+                'kategori' => fetch_user_count($con, 'kategori', $selectedDetailUserId, 'user_id'),
+                'pemasukan' => fetch_user_count($con, 'pemasukan', $selectedDetailUserId),
+                'pengeluaran' => fetch_user_count($con, 'pengeluaran', $selectedDetailUserId),
+                'hutang' => fetch_user_count($con, 'hutang', $selectedDetailUserId),
+                'piutang' => fetch_user_count($con, 'piutang', $selectedDetailUserId),
+            ];
+        }
     }
 }
 
@@ -240,15 +251,20 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                     <i class="fa fa-pencil" aria-hidden="true"></i>
                                                 </a>
 
-                                                <a href="aksi_user.php?act=s&id=<?= (int) $row['id_user'] ?>&value=<?= $isActive ? '0' : '1' ?>"
-                                                    data-confirm="true"
-                                                    data-confirm-title="<?= $isActive ? 'Nonaktifkan user ini?' : 'Aktifkan user ini?' ?>"
-                                                    data-confirm-text="<?= $isActive ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login kembali ke sistem.' ?>"
-                                                    data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
-                                                    data-confirm-cancel-text="Batal"
-                                                    class="text-secondary <?= $isActive ? 'text-secondary' : 'text-success' ?> font-weight-bold text-xs me-2">
-                                                    <i class="fa <?= $isActive ? 'fa-toggle-off' : 'fa-toggle-on' ?>" aria-hidden="true"></i>
-                                                </a>
+                                                <form action="aksi_user.php?act=s" method="post" class="d-inline">
+                                                    <?= csrf_input() ?>
+                                                    <input type="hidden" name="id" value="<?= (int) $row['id_user'] ?>">
+                                                    <input type="hidden" name="value" value="<?= $isActive ? '0' : '1' ?>">
+                                                    <button type="submit"
+                                                        data-confirm="true"
+                                                        data-confirm-title="<?= $isActive ? 'Nonaktifkan user ini?' : 'Aktifkan user ini?' ?>"
+                                                        data-confirm-text="<?= $isActive ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login kembali ke sistem.' ?>"
+                                                        data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
+                                                        data-confirm-cancel-text="Batal"
+                                                        class="border-0 bg-transparent p-0 <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2">
+                                                        <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
+                                                    </button>
+                                                </form>
 
                                                 <a type="button"
                                                     class="text-secondary text-info font-weight-bold text-xs me-2 btnresetpassworduser"

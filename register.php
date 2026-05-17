@@ -48,10 +48,10 @@ if (isset($_SESSION['nama'])) {
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nama Lengkap</label>
+                                    <label class="form-label">Full name</label>
                                     <div class="auth-field">
                                         <span class="material-icons-round">badge</span>
-                                        <input type="text" name="nama" class="auth-input" placeholder="Masukkan nama lengkap" required>
+                                        <input type="text" name="nama" class="auth-input" placeholder="Masukkan full name" required>
                                     </div>
                                 </div>
                             </div>

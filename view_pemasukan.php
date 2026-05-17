@@ -95,7 +95,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                         </td>
                                         <td class="align-middle text-center text-sm">
                                             <span
-                                                class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
+                                                class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
                                                 <?php if ($row['status'] == 'selesai'): ?>
                                                     <?= htmlspecialchars($row['status']) ?>
                                                 <?php else : ?>

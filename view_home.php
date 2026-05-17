@@ -980,7 +980,7 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                             <tr>
                                 <td class="align-middle text-center text-sm">
                                     <span
-                                        class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-info' : 'bg-gradient-secondary' ?>">
+                                        class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
                                         <?php if ($row['status'] == 'selesai'): ?>
                                         <?= $row['status'] ?>
                                         <?php else : ?>
@@ -1044,7 +1044,7 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                             <tr>
                                 <td class="align-middle text-center text-sm">
                                     <span
-                                        class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-info' : 'bg-gradient-secondary' ?>">
+                                        class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
                                         <?php if ($row['status'] == 'selesai'): ?>
                                         <?= $row['status'] ?>
                                         <?php else : ?>

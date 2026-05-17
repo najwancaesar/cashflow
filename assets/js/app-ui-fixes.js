@@ -66,6 +66,28 @@
             .attr('placeholder', 'Ketik untuk mencari data...');
     }
 
+    function annotateResponsiveTable(table) {
+        if (!table || table.classList.contains('cashflow-responsive-table')) {
+            return;
+        }
+
+        var headers = Array.prototype.map.call(table.querySelectorAll('thead th'), function (header) {
+            return (header.textContent || '').replace(/\s+/g, ' ').trim();
+        });
+
+        if (!headers.length) {
+            return;
+        }
+
+        table.classList.add('cashflow-responsive-table');
+
+        Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), function (row) {
+            Array.prototype.forEach.call(row.children, function (cell, index) {
+                cell.setAttribute('data-label', headers[index] || '');
+            });
+        });
+    }
+
     function setupDataTableToolbars() {
         if (!window.jQuery) {
             return;
@@ -75,12 +97,20 @@
 
         $(document).on('init.dt', function (event, settings) {
             enhanceDataTableToolbar(settings.nTable);
+            annotateResponsiveTable(settings.nTable);
         });
 
         $(function () {
             $('table.dataTable, table[id="datatable"]').each(function () {
                 enhanceDataTableToolbar(this);
+                annotateResponsiveTable(this);
             });
+        });
+    }
+
+    function setupResponsiveTables() {
+        document.querySelectorAll('.app-main-content table').forEach(function (table) {
+            annotateResponsiveTable(table);
         });
     }
 
@@ -119,4 +149,5 @@
     });
 
     setupDataTableToolbars();
+    setupResponsiveTables();
 })();

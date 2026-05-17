@@ -95,7 +95,7 @@ $sql = $stmtHutang->get_result();
                                                 data-confirm-text="Status utang akan diubah menjadi selesai."
                                                 data-confirm-confirm-text="Ya, selesaikan"
                                                 data-confirm-cancel-text="Batal"
-                                                class="badge badge-sm bg-gradient-secondary border-0 text-white">
+                                                class="badge badge-sm bg-gradient-warning border-0 text-white">
                                                 Pending
                                             </button>
                                         </form>
