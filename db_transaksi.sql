@@ -623,10 +623,12 @@ CREATE TABLE
     `jumlah` int (11) NOT NULL,
     `user` int (11) NOT NULL,
     `id_kategori` int (11) DEFAULT NULL,
+    `id_wallet` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
     PRIMARY KEY (`id_pemasukan`),
     KEY `idx_pemasukan_user` (`user`),
-    KEY `idx_pemasukan_kategori` (`id_kategori`)
+    KEY `idx_pemasukan_kategori` (`id_kategori`),
+    KEY `idx_pemasukan_wallet` (`id_wallet`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 44 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1122,9 +1124,6 @@ CREATE TABLE `wallet` (
 -- Dumping data for table `wallet`
 --
 
-LOCK TABLES `wallet` WRITE;
-/*!40000 ALTER TABLE `wallet` DISABLE KEYS */;
-
 INSERT INTO `wallet` (
   `user_id`,
   `nama_wallet`,
@@ -1134,14 +1133,26 @@ INSERT INTO `wallet` (
   `is_active`
 )
 SELECT
-  `id_user`,
+  u.`id_user`,
   'Dompet Utama',
   'cash',
   0.00,
   1,
   1
-FROM `user`
-WHERE `role` = 'user';
+FROM `user` u
+WHERE u.`role` = 'user'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM `wallet` w
+    WHERE w.`user_id` = u.`id_user`
+  );
+
+UPDATE `pemasukan` p
+JOIN `wallet` w
+  ON w.`user_id` = p.`user`
+ AND w.`is_default` = 1
+SET p.`id_wallet` = w.`id_wallet`
+WHERE p.`id_wallet` IS NULL;
 
 /*!40000 ALTER TABLE `wallet` ENABLE KEYS */;
 UNLOCK TABLES;

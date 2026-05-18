@@ -35,6 +35,63 @@ function validate_kategori_id($kategoriId, $userId, $tipeKategori) {
     return $kategori ? (int) $kategori['id_kategori'] : false;
 }
 
+function get_default_active_wallet_id($userId) {
+    global $con;
+
+    $query = "SELECT id_wallet
+              FROM wallet
+              WHERE user_id = ? AND is_default = 1 AND is_active = 1
+              LIMIT 1";
+    $stmt = mysqli_prepare($con, $query);
+    mysqli_stmt_bind_param($stmt, "i", $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $wallet = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+
+    return $wallet ? (int) $wallet['id_wallet'] : null;
+}
+
+function validate_wallet_id($walletId, $userId) {
+    global $con;
+
+    if ($walletId === null) {
+        return null;
+    }
+
+    $query = "SELECT id_wallet
+              FROM wallet
+              WHERE id_wallet = ? AND user_id = ? AND is_active = 1
+              LIMIT 1";
+    $stmt = mysqli_prepare($con, $query);
+    mysqli_stmt_bind_param($stmt, "ii", $walletId, $userId);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $wallet = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+
+    return $wallet ? (int) $wallet['id_wallet'] : false;
+}
+
+function resolve_pemasukan_wallet_id($walletId, $userId) {
+    if ($walletId !== null) {
+        $validatedWalletId = validate_wallet_id($walletId, $userId);
+
+        if ($validatedWalletId === false) {
+            show_sweetalert_and_redirect('Gagal!', 'Wallet tujuan tidak valid atau tidak aktif.', 'error', 'main.php?module=pemasukan');
+        }
+
+        return $validatedWalletId;
+    }
+
+    $defaultWalletId = get_default_active_wallet_id($userId);
+    if ($defaultWalletId !== null) {
+        return $defaultWalletId;
+    }
+
+    show_sweetalert_and_redirect('Gagal!', 'Belum ada wallet aktif. Silakan buat atau aktifkan wallet terlebih dahulu.', 'error', 'main.php?module=pemasukan');
+}
+
 function pemasukan_dimiliki_user($idPemasukan, $userId) {
     global $con;
 
@@ -71,6 +128,9 @@ if ($act == 't') {
     $kategoriId = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== ''
         ? (int) clean_input($_POST['id_kategori'])
         : null;
+    $walletId = isset($_POST['id_wallet']) && $_POST['id_wallet'] !== ''
+        ? (int) clean_input($_POST['id_wallet'])
+        : null;
 
     if ($tanggal === '' || $jumlah <= 0 || $status === '') {
         show_sweetalert_and_redirect('Gagal!', 'Tanggal, jumlah, dan status wajib diisi.', 'error', 'main.php?module=pemasukan');
@@ -85,11 +145,13 @@ if ($act == 't') {
         show_sweetalert_and_redirect('Gagal!', 'Kategori pemasukan yang dipilih tidak valid.', 'error', 'main.php?module=pemasukan');
     }
 
+    $validatedWalletId = resolve_pemasukan_wallet_id($walletId, $user);
+
     if ($_POST['id_pemasukan'] == '') {
-        $query = "INSERT INTO pemasukan(tanggal, catatan, status, jumlah, user, id_kategori)
-                 VALUES (?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO pemasukan(tanggal, catatan, status, jumlah, user, id_kategori, id_wallet)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)";
         $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "sssdii", $tanggal, $catatan, $status, $jumlah, $user, $validatedKategoriId);
+        mysqli_stmt_bind_param($stmt, "sssdiii", $tanggal, $catatan, $status, $jumlah, $user, $validatedKategoriId, $validatedWalletId);
         $hasil = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
 
@@ -105,10 +167,10 @@ if ($act == 't') {
         }
 
         $query = "UPDATE pemasukan 
-                 SET tanggal = ?, status = ?, catatan = ?, jumlah = ?, id_kategori = ?
+                 SET tanggal = ?, status = ?, catatan = ?, jumlah = ?, id_kategori = ?, id_wallet = ?
                  WHERE id_pemasukan = ? AND user = ?";
         $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "sssdiii", $tanggal, $status, $catatan, $jumlah, $validatedKategoriId, $id_pemasukan, $user);
+        mysqli_stmt_bind_param($stmt, "sssdiiii", $tanggal, $status, $catatan, $jumlah, $validatedKategoriId, $validatedWalletId, $id_pemasukan, $user);
         $hasil = mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
 
