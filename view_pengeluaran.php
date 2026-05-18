@@ -9,6 +9,19 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     exit;
 }
 
+function pengeluaran_wallet_type_label($type)
+{
+    $labels = [
+        'cash' => 'Cash',
+        'bank' => 'Bank',
+        'e_wallet' => 'E-Wallet',
+        'tabungan' => 'Tabungan',
+        'lainnya' => 'Lainnya',
+    ];
+
+    return $labels[$type] ?? 'Lainnya';
+}
+
 $kategoriPengeluaran = [];
 $kategoriQuery = "SELECT id_kategori, nama_kategori
                   FROM kategori
@@ -25,14 +38,45 @@ while ($kategori = mysqli_fetch_assoc($kategoriResult)) {
 
 mysqli_stmt_close($kategoriStmt);
 
-$transaksiQuery = "SELECT pengeluaran.*, user.nama, kategori.nama_kategori
+$walletAktif = [];
+$defaultWalletAktif = null;
+$walletQuery = "SELECT id_wallet, nama_wallet, tipe_wallet, is_default
+                FROM wallet
+                WHERE user_id = ? AND is_active = 1
+                ORDER BY is_default DESC, nama_wallet ASC";
+$walletStmt = mysqli_prepare($con, $walletQuery);
+mysqli_stmt_bind_param($walletStmt, "i", $userYangSedangLogin);
+mysqli_stmt_execute($walletStmt);
+$walletResult = mysqli_stmt_get_result($walletStmt);
+
+while ($wallet = mysqli_fetch_assoc($walletResult)) {
+    $walletAktif[] = $wallet;
+
+    if ($defaultWalletAktif === null && (string) ($wallet['is_default'] ?? '0') === '1') {
+        $defaultWalletAktif = $wallet;
+    }
+}
+
+mysqli_stmt_close($walletStmt);
+
+$defaultWalletId = $defaultWalletAktif ? (int) $defaultWalletAktif['id_wallet'] : '';
+$defaultWalletName = $defaultWalletAktif ? (string) $defaultWalletAktif['nama_wallet'] : 'Dompet Utama';
+
+$transaksiQuery = "SELECT
+                       pengeluaran.*,
+                       kategori.nama_kategori,
+                       wallet.nama_wallet,
+                       wallet.tipe_wallet,
+                       wallet.is_active AS wallet_is_active
                    FROM pengeluaran
-                   INNER JOIN user ON pengeluaran.user = user.id_user
                    LEFT JOIN kategori
                        ON pengeluaran.id_kategori = kategori.id_kategori
                       AND kategori.user_id = pengeluaran.user
                       AND kategori.tipe_kategori = 'pengeluaran'
-                   WHERE user.id_user = ?
+                   LEFT JOIN wallet
+                       ON pengeluaran.id_wallet = wallet.id_wallet
+                      AND wallet.user_id = pengeluaran.user
+                   WHERE pengeluaran.user = ?
                    ORDER BY pengeluaran.tanggal DESC, pengeluaran.id_pengeluaran DESC";
 $transaksiStmt = mysqli_prepare($con, $transaksiQuery);
 mysqli_stmt_bind_param($transaksiStmt, "i", $userYangSedangLogin);
@@ -69,7 +113,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                     <th>Catatan</th>
                                     <th>Kategori</th>
                                     <th>Jumlah Pengeluaran</th>
-                                    <th>User</th>
+                                    <th>Wallet</th>
                                     <th>Status</th>
                                     <th></th>
                                 </tr>
@@ -80,6 +124,11 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                     $statusTransaksi = (string) ($row['status'] ?? 'pending');
                                     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
                                     $targetStatusLabel = ucfirst($targetStatus);
+                                    $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
+                                    $walletDisplayType = $row['tipe_wallet'] ? pengeluaran_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+                                    $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
+                                        ? (int) $row['id_wallet']
+                                        : $defaultWalletId;
                                     ?>
                                     <tr>
                                         <td class="align-middle text-center">
@@ -97,7 +146,8 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                             <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></p>
                                         </td>
                                         <td>
-                                            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama']) ?></p>
+                                            <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></p>
+                                            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></p>
                                         </td>
                                         <td class="align-middle text-center text-sm">
                                             <form action="aksi_pengeluaran.php?act=l" method="post" class="d-inline">
@@ -137,6 +187,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                                 data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES) ?>"
                                                 data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
                                                 data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
+                                                data-wallet="<?= htmlspecialchars((string) $editWalletId, ENT_QUOTES) ?>"
                                                 class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
                                                 <i class="fa fa-pencil" aria-hidden="true"></i>
                                             </a>
@@ -199,6 +250,22 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                         <?php } ?>
                     </div>
                     <div class="row my-3">
+                        <label>Wallet Sumber</label>
+                        <div class="input-group input-group-outline">
+                            <select class="form-control" name="id_wallet" id="id_wallet" required>
+                                <option value="">Pilih Wallet</option>
+                                <?php foreach ($walletAktif as $wallet) { ?>
+                                    <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === (int) $defaultWalletId ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(pengeluaran_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                        <?php if (empty($walletAktif)) { ?>
+                            <small class="text-secondary px-2 mt-1">Belum ada wallet aktif. Tambahkan atau aktifkan wallet terlebih dahulu lewat menu Wallet.</small>
+                        <?php } ?>
+                    </div>
+                    <div class="row my-3">
                         <label>Jumlah Pengeluaran</label>
                         <div class="input-group input-group-outline">
                             <input type="text" name="jumlah" id="jumlah" required class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 250.000">
@@ -225,6 +292,8 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
 
 <script>
     $(document).ready(function() {
+        var defaultWalletId = "<?= htmlspecialchars((string) $defaultWalletId, ENT_QUOTES, 'UTF-8') ?>";
+
         $('#datatable').DataTable({
             language: {
                 "paginate": {
@@ -235,6 +304,15 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                 },
             },
             dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+        });
+
+        $(document).on("click", ".btneditpengeluaran", function() {
+            var walletId = $(this).attr("data-wallet") || defaultWalletId;
+            $('#id_wallet').val(walletId);
+        });
+
+        $('#modalTambah').on('hidden.bs.modal', function() {
+            $('#id_wallet').val(defaultWalletId);
         });
     });
 </script>

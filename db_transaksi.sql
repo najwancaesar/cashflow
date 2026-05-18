@@ -788,10 +788,12 @@ CREATE TABLE
     `jumlah` int (11) NOT NULL,
     `user` int (11) NOT NULL,
     `id_kategori` int (11) DEFAULT NULL,
+    `id_wallet` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
     PRIMARY KEY (`id_pengeluaran`),
     KEY `idx_pengeluaran_user` (`user`),
-    KEY `idx_pengeluaran_kategori` (`id_kategori`)
+    KEY `idx_pengeluaran_kategori` (`id_kategori`),
+    KEY `idx_pengeluaran_wallet` (`id_wallet`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 30 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1148,6 +1150,13 @@ WHERE u.`role` = 'user'
   );
 
 UPDATE `pemasukan` p
+JOIN `wallet` w
+  ON w.`user_id` = p.`user`
+ AND w.`is_default` = 1
+SET p.`id_wallet` = w.`id_wallet`
+WHERE p.`id_wallet` IS NULL;
+
+UPDATE `pengeluaran` p
 JOIN `wallet` w
   ON w.`user_id` = p.`user`
  AND w.`is_default` = 1
