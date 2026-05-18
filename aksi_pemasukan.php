@@ -159,14 +159,26 @@ if ($act == 'l') {
 }
 
 if ($act == 'h') {
-    $id = (int) clean_input($_GET['id'] ?? 0);
-    if ($id <= 0) {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        show_sweetalert_and_redirect('Akses ditolak', 'Hapus pemasukan wajib melalui form yang valid.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    if (!verify_csrf_token()) {
+        show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    $id_pemasukan = (int) ($_POST['id_pemasukan'] ?? 0);
+    if ($id_pemasukan <= 0) {
         show_sweetalert_and_redirect('Gagal!', 'ID pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');
+    }
+
+    if (!pemasukan_dimiliki_user($id_pemasukan, $user)) {
+        show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
     }
 
     $query = "DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ?";
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "ii", $id, $user);
+    mysqli_stmt_bind_param($stmt, "ii", $id_pemasukan, $user);
     $hasil = mysqli_stmt_execute($stmt);
     $affectedRows = mysqli_stmt_affected_rows($stmt);
     mysqli_stmt_close($stmt);

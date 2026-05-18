@@ -166,16 +166,28 @@ if (isset($_GET['act'])) {
             break;
 
         case 'h':
-            $id = (int) clean_input($_GET['id'] ?? '');
+            if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+                show_sweetalert_and_redirect('Akses ditolak', 'Hapus pengeluaran wajib melalui form yang valid.', 'warning', 'main.php?module=pengeluaran');
+            }
 
-            if (empty($id)) {
+            if (!verify_csrf_token()) {
+                show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pengeluaran');
+            }
+
+            $id_pengeluaran = (int) ($_POST['id_pengeluaran'] ?? 0);
+
+            if ($id_pengeluaran <= 0) {
                 show_sweetalert_and_redirect('Gagal!', 'ID tidak valid!', 'error', 'main.php?module=pengeluaran');
+            }
+
+            if (!pengeluaran_dimiliki_user($id_pengeluaran, $user)) {
+                show_sweetalert_and_redirect('Gagal!', 'Data pengeluaran tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pengeluaran');
             }
 
             $query = "DELETE FROM pengeluaran 
             WHERE id_pengeluaran = ? AND user = ?";
             $stmt = mysqli_prepare($con, $query);
-            mysqli_stmt_bind_param($stmt, "ii", $id, $_SESSION['id_user']);
+            mysqli_stmt_bind_param($stmt, "ii", $id_pengeluaran, $user);
             if (mysqli_stmt_execute($stmt)) {
                 $affectedRows = mysqli_stmt_affected_rows($stmt);
                 mysqli_stmt_close($stmt);

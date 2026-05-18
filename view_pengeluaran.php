@@ -116,15 +116,19 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                             </form>
                                         </td>
                                         <td class="align-middle">
-                                            <a href="aksi_pengeluaran.php?&act=h&id=<?= (int) $row['id_pengeluaran'] ?>"
-                                                data-confirm="true"
-                                                data-confirm-title="Hapus pengeluaran ini?"
-                                                data-confirm-text="Data pengeluaran yang dihapus tidak bisa dikembalikan."
-                                                data-confirm-confirm-text="Ya, hapus"
-                                                data-confirm-cancel-text="Batal"
-                                                class="text-secondary text-danger font-weight-bold text-xs">
-                                                <i class="fa fa-trash" aria-hidden="true"></i>
-                                            </a>
+                                            <form action="aksi_pengeluaran.php?act=h" method="post" class="d-inline">
+                                                <?= csrf_input() ?>
+                                                <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
+                                                <button type="submit"
+                                                    data-confirm="true"
+                                                    data-confirm-title="Hapus pengeluaran ini?"
+                                                    data-confirm-text="Data pengeluaran yang dihapus tidak bisa dikembalikan."
+                                                    data-confirm-confirm-text="Ya, hapus"
+                                                    data-confirm-cancel-text="Batal"
+                                                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                    <i class="fa fa-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
 
                                             <a type="submit"
                                                 data-id="<?= (int) $row['id_pengeluaran'] ?>"
