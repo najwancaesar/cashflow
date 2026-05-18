@@ -183,7 +183,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                         <div class="input-group input-group-outline budget-category-input">
                                                             <input type="text"
                                                                 name="nominal_budget"
-                                                                class="form-control js-format-nominal"
+                                                                class="form-control js-budget-nominal"
                                                                 inputmode="numeric"
                                                                 placeholder="0"
                                                                 value="<?= $budgetNominal > 0 ? htmlspecialchars(number_format($budgetNominal, 0, ',', '.'), ENT_QUOTES, 'UTF-8') : '' ?>">
@@ -201,15 +201,19 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                             </p>
                                         </td>
                                         <td class="align-middle">
-                                            <a href="aksi_kategori.php?act=h&id=<?= (int) $row['id_kategori'] ?>"
-                                                data-confirm="true"
-                                                data-confirm-title="Hapus kategori ini?"
-                                                data-confirm-text="Kategori yang dihapus tidak akan otomatis menghapus transaksi lama."
-                                                data-confirm-confirm-text="Ya, hapus"
-                                                data-confirm-cancel-text="Batal"
-                                                class="text-secondary text-danger font-weight-bold text-xs">
-                                                <i class="fa fa-trash" aria-hidden="true"></i>
-                                            </a>
+                                            <form action="aksi_kategori.php?act=h" method="post" class="d-inline">
+                                                <?= csrf_input() ?>
+                                                <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
+                                                <button type="submit"
+                                                    data-confirm="true"
+                                                    data-confirm-title="Hapus kategori ini?"
+                                                    data-confirm-text="Kategori yang dihapus tidak akan otomatis menghapus transaksi lama."
+                                                    data-confirm-confirm-text="Ya, hapus"
+                                                    data-confirm-cancel-text="Batal"
+                                                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                    <i class="fa fa-trash" aria-hidden="true"></i>
+                                                </button>
+                                            </form>
 
                                             <a type="button"
                                                 data-id="<?= (int) $row['id_kategori'] ?>"
@@ -237,6 +241,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
             <form action="aksi_kategori.php?act=t" method="post">
+                <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
                         class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
@@ -275,6 +280,69 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
 
 <script>
     $(document).ready(function() {
+        function getBudgetNominalDigits(value) {
+            return String(value || '').replace(/\D/g, '');
+        }
+
+        function formatBudgetNominal(value) {
+            var digits = getBudgetNominalDigits(value);
+
+            if (!digits) {
+                return '';
+            }
+
+            return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function applyBudgetNominalFormatting(input) {
+            if (!input) {
+                return;
+            }
+
+            var rawValue = input.value || '';
+            var selectionStart = typeof input.selectionStart === 'number' ? input.selectionStart : rawValue.length;
+            var digitsBeforeCursor = getBudgetNominalDigits(rawValue.slice(0, selectionStart)).length;
+            var formattedValue = formatBudgetNominal(rawValue);
+
+            input.value = formattedValue;
+
+            if (typeof input.setSelectionRange === 'function') {
+                var cursorPosition = formattedValue.length;
+
+                if (digitsBeforeCursor === 0) {
+                    cursorPosition = 0;
+                } else {
+                    var countedDigits = 0;
+                    for (var i = 0; i < formattedValue.length; i++) {
+                        if (/\d/.test(formattedValue.charAt(i))) {
+                            countedDigits++;
+                        }
+
+                        if (countedDigits >= digitsBeforeCursor) {
+                            cursorPosition = i + 1;
+                            break;
+                        }
+                    }
+                }
+
+                input.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        }
+
+        $('.budget-category-form .js-budget-nominal').each(function() {
+            this.value = formatBudgetNominal(this.value);
+        });
+
+        $(document).on('input', '.budget-category-form .js-budget-nominal', function() {
+            applyBudgetNominalFormatting(this);
+        });
+
+        $(document).on('submit', '.budget-category-form', function() {
+            $(this).find('.js-budget-nominal').each(function() {
+                this.value = getBudgetNominalDigits(this.value);
+            });
+        });
+
         $('#datatable').DataTable({
             language: {
                 "paginate": {

@@ -2,6 +2,7 @@
 session_start();
 include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
+include_once "includes/csrf_helper.php";
 
 function clean_input($data) {
     global $con;
@@ -70,6 +71,14 @@ $userId = (int) $_SESSION['id_user'];
 $act = $_GET['act'] ?? '';
 
 if ($act === 't') {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        show_sweetalert_and_redirect('Akses ditolak', 'Simpan kategori wajib melalui form yang valid.', 'warning', 'main.php?module=kategori');
+    }
+
+    if (!verify_csrf_token()) {
+        show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=kategori');
+    }
+
     $idKategori = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== ''
         ? (int) clean_input($_POST['id_kategori'])
         : null;
@@ -122,7 +131,15 @@ if ($act === 't') {
 }
 
 if ($act === 'h') {
-    $idKategori = isset($_GET['id']) ? (int) clean_input($_GET['id']) : 0;
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        show_sweetalert_and_redirect('Akses ditolak', 'Hapus kategori wajib melalui form yang valid.', 'warning', 'main.php?module=kategori');
+    }
+
+    if (!verify_csrf_token()) {
+        show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=kategori');
+    }
+
+    $idKategori = isset($_POST['id_kategori']) ? (int) clean_input($_POST['id_kategori']) : 0;
 
     if ($idKategori <= 0) {
         show_sweetalert_and_redirect('Gagal!', 'ID kategori tidak valid.', 'error', 'main.php?module=kategori');
@@ -136,9 +153,10 @@ if ($act === 'h') {
     $stmt = mysqli_prepare($con, $query);
     mysqli_stmt_bind_param($stmt, "ii", $idKategori, $userId);
     $result = mysqli_stmt_execute($stmt);
+    $affectedRows = mysqli_stmt_affected_rows($stmt);
     mysqli_stmt_close($stmt);
 
-    if ($result) {
+    if ($result && $affectedRows > 0) {
         show_sweetalert_and_redirect('Berhasil!', 'Kategori berhasil dihapus.', 'success', 'main.php?module=kategori');
     }
 
