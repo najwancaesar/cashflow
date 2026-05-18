@@ -3,6 +3,7 @@ session_start();
 include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
+include_once "includes/csrf_helper.php";
 
 function clean_input($data) {
     global $con;
@@ -96,9 +97,8 @@ if (isset($_GET['act'])) {
                     show_sweetalert_and_redirect('Berhasil!', 'Data berhasil ditambahkan.', 'success', 'main.php?module=pengeluaran');
                 }
 
-                $errorMessage = mysqli_error($con);
                 mysqli_stmt_close($stmt);
-                show_sweetalert_and_redirect('Gagal!', 'Gagal menambahkan data: ' . $errorMessage, 'error', 'main.php?module=pengeluaran');
+                show_sweetalert_and_redirect('Gagal!', 'Gagal menambahkan data.', 'error', 'main.php?module=pengeluaran');
             } else {
                 $id_pengeluaran = (int) clean_input($_POST['id_pengeluaran']);
                 if (!pengeluaran_dimiliki_user($id_pengeluaran, $user)) {
@@ -116,24 +116,40 @@ if (isset($_GET['act'])) {
                     show_sweetalert_and_redirect('Berhasil!', 'Data berhasil diubah.', 'success', 'main.php?module=pengeluaran');
                 }
 
-                $errorMessage = mysqli_error($con);
                 mysqli_stmt_close($stmt);
-                show_sweetalert_and_redirect('Gagal!', 'Gagal mengubah data: ' . $errorMessage, 'error', 'main.php?module=pengeluaran');
+                show_sweetalert_and_redirect('Gagal!', 'Gagal mengubah data.', 'error', 'main.php?module=pengeluaran');
             }
             break;
 
         case 'l':
-            $id_pengeluaran = (int) clean_input($_GET['id'] ?? '');
+            if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+                show_sweetalert_and_redirect('Akses ditolak', 'Ubah status pengeluaran wajib melalui form yang valid.', 'warning', 'main.php?module=pengeluaran');
+            }
+
+            if (!verify_csrf_token()) {
+                show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pengeluaran');
+            }
+
+            $id_pengeluaran = (int) ($_POST['id_pengeluaran'] ?? 0);
+            $targetStatus = clean_input($_POST['status'] ?? '');
 
             if (empty($id_pengeluaran)) {
                 show_sweetalert_and_redirect('Gagal!', 'ID tidak valid!', 'error', 'main.php?module=pengeluaran');
             }
 
+            if (!in_array($targetStatus, ['pending', 'selesai'], true)) {
+                show_sweetalert_and_redirect('Gagal!', 'Status pengeluaran tidak valid!', 'error', 'main.php?module=pengeluaran');
+            }
+
+            if (!pengeluaran_dimiliki_user($id_pengeluaran, $user)) {
+                show_sweetalert_and_redirect('Gagal!', 'Data pengeluaran tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pengeluaran');
+            }
+
             $query = "UPDATE pengeluaran 
-                      SET status = 'selesai' 
+                      SET status = ?
                       WHERE id_pengeluaran = ? AND user = ?";
             $stmt = mysqli_prepare($con, $query);
-            mysqli_stmt_bind_param($stmt, "ii", $id_pengeluaran, $_SESSION['id_user']);
+            mysqli_stmt_bind_param($stmt, "sii", $targetStatus, $id_pengeluaran, $user);
 
             if (mysqli_stmt_execute($stmt)) {
                 $affectedRows = mysqli_stmt_affected_rows($stmt);
@@ -145,9 +161,8 @@ if (isset($_GET['act'])) {
                 show_sweetalert_and_redirect('Gagal!', 'Data pengeluaran tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pengeluaran');
             }
 
-            $errorMessage = mysqli_error($con);
             mysqli_stmt_close($stmt);
-            show_sweetalert_and_redirect('Gagal!', 'Gagal mengubah status: ' . $errorMessage, 'error', 'main.php?module=pengeluaran');
+            show_sweetalert_and_redirect('Gagal!', 'Gagal mengubah status pengeluaran.', 'error', 'main.php?module=pengeluaran');
             break;
 
         case 'h':
@@ -171,9 +186,8 @@ if (isset($_GET['act'])) {
                 show_sweetalert_and_redirect('Gagal!', 'Data pengeluaran tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pengeluaran');
             }
 
-            $errorMessage = mysqli_error($con);
             mysqli_stmt_close($stmt);
-            show_sweetalert_and_redirect('Gagal!', 'Gagal menghapus data: ' . $errorMessage, 'error', 'main.php?module=pengeluaran');
+            show_sweetalert_and_redirect('Gagal!', 'Gagal menghapus data.', 'error', 'main.php?module=pengeluaran');
             break;
 
         default:

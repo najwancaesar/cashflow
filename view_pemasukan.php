@@ -1,5 +1,6 @@
 <?php
 include "includes/koneksi.php";
+include_once "includes/csrf_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 
@@ -75,6 +76,11 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                             </thead>
                             <tbody>
                                 <?php while ($row = mysqli_fetch_assoc($transaksiResult)) { ?>
+                                    <?php
+                                    $statusTransaksi = (string) ($row['status'] ?? 'pending');
+                                    $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
+                                    $targetStatusLabel = ucfirst($targetStatus);
+                                    ?>
                                     <tr>
                                         <td class="align-middle text-center">
                                             <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
@@ -94,17 +100,20 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                             <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama']) ?></p>
                                         </td>
                                         <td class="align-middle text-center text-sm">
-                                            <span
-                                                class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
-                                                <?php if ($row['status'] == 'selesai'): ?>
-                                                    <?= htmlspecialchars($row['status']) ?>
-                                                <?php else : ?>
-                                                    <a href="aksi_pemasukan.php?act=l&id=<?= (int) $row['id_pemasukan'] ?>"
-                                                        class="text-white">
-                                                        <?= htmlspecialchars($row['status']) ?>
-                                                    </a>
-                                                <?php endif ?>
-                                            </span>
+                                            <form action="aksi_pemasukan.php?act=l" method="post" class="d-inline">
+                                                <?= csrf_input() ?>
+                                                <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
+                                                <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
+                                                <button type="submit"
+                                                    data-confirm="true"
+                                                    data-confirm-title="Ubah status transaksi?"
+                                                    data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
+                                                    data-confirm-confirm-text="Ya, ubah"
+                                                    data-confirm-cancel-text="Batal"
+                                                    class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
+                                                    <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
+                                                </button>
+                                            </form>
                                         </td>
                                         <td class="align-middle">
                                             <a href="aksi_pemasukan.php?&act=h&id=<?= (int) $row['id_pemasukan'] ?>"

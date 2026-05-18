@@ -3,6 +3,7 @@ session_start();
 include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
+include_once "includes/csrf_helper.php";
 
 // Fungsi untuk membersihkan input
 function clean_input($data) {
@@ -120,14 +121,32 @@ if ($act == 't') {
 }
 
 if ($act == 'l') {
-    $id_pemasukan = (int) clean_input($_GET['id'] ?? 0);
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        show_sweetalert_and_redirect('Akses ditolak', 'Ubah status pemasukan wajib melalui form yang valid.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    if (!verify_csrf_token()) {
+        show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    $id_pemasukan = (int) ($_POST['id_pemasukan'] ?? 0);
+    $targetStatus = clean_input($_POST['status'] ?? '');
+
     if ($id_pemasukan <= 0) {
         show_sweetalert_and_redirect('Gagal!', 'ID pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');
     }
 
-    $query = "UPDATE pemasukan SET status = 'selesai' WHERE id_pemasukan = ? AND user = ?";
+    if (!in_array($targetStatus, ['pending', 'selesai'], true)) {
+        show_sweetalert_and_redirect('Gagal!', 'Status pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');
+    }
+
+    if (!pemasukan_dimiliki_user($id_pemasukan, $user)) {
+        show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
+    }
+
+    $query = "UPDATE pemasukan SET status = ? WHERE id_pemasukan = ? AND user = ?";
     $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "ii", $id_pemasukan, $user);
+    mysqli_stmt_bind_param($stmt, "sii", $targetStatus, $id_pemasukan, $user);
     $hasil = mysqli_stmt_execute($stmt);
     $affectedRows = mysqli_stmt_affected_rows($stmt);
     mysqli_stmt_close($stmt);
