@@ -1,5 +1,6 @@
 <?php
 include "includes/koneksi.php";
+include_once "includes/csrf_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -12,13 +13,81 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 }
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$budgetBulan = (int) date('n');
+$budgetTahun = (int) date('Y');
+$periodeBudgetLabel = date('M Y');
 
-$kategoriQuery = "SELECT id_kategori, nama_kategori, tipe_kategori, created_at
+function format_kategori_rupiah($value)
+{
+    return 'Rp. ' . number_format((float) $value);
+}
+
+function get_budget_status($budgetNominal, $totalTerpakai)
+{
+    if ($budgetNominal <= 0) {
+        return [
+            'label' => 'Belum diatur',
+            'badge_class' => 'bg-gradient-secondary',
+            'progress_class' => 'bg-gradient-secondary',
+            'percentage' => 0,
+            'width' => 0,
+        ];
+    }
+
+    $percentage = ($totalTerpakai / $budgetNominal) * 100;
+
+    if ($percentage >= 100) {
+        $label = 'Over Budget';
+        $badgeClass = 'bg-gradient-danger';
+        $progressClass = 'bg-gradient-danger';
+    } elseif ($percentage >= 80) {
+        $label = 'Warning';
+        $badgeClass = 'bg-gradient-warning';
+        $progressClass = 'bg-gradient-warning';
+    } else {
+        $label = 'Aman';
+        $badgeClass = 'bg-gradient-success';
+        $progressClass = 'bg-gradient-success';
+    }
+
+    return [
+        'label' => $label,
+        'badge_class' => $badgeClass,
+        'progress_class' => $progressClass,
+        'percentage' => $percentage,
+        'width' => min(100, $percentage),
+    ];
+}
+
+$kategoriQuery = "SELECT
+                      kategori.id_kategori,
+                      kategori.nama_kategori,
+                      kategori.tipe_kategori,
+                      kategori.created_at,
+                      COALESCE(budget_kategori.nominal_budget, 0) AS nominal_budget,
+                      COALESCE(SUM(pengeluaran.jumlah), 0) AS total_pengeluaran_bulan
                   FROM kategori
-                  WHERE user_id = ?
-                  ORDER BY tipe_kategori ASC, nama_kategori ASC";
+                  LEFT JOIN budget_kategori
+                    ON budget_kategori.user_id = kategori.user_id
+                   AND budget_kategori.id_kategori = kategori.id_kategori
+                   AND budget_kategori.bulan = ?
+                   AND budget_kategori.tahun = ?
+                  LEFT JOIN pengeluaran
+                    ON pengeluaran.user = kategori.user_id
+                   AND pengeluaran.id_kategori = kategori.id_kategori
+                   AND pengeluaran.status = 'selesai'
+                   AND MONTH(pengeluaran.tanggal) = ?
+                   AND YEAR(pengeluaran.tanggal) = ?
+                  WHERE kategori.user_id = ?
+                  GROUP BY
+                      kategori.id_kategori,
+                      kategori.nama_kategori,
+                      kategori.tipe_kategori,
+                      kategori.created_at,
+                      budget_kategori.nominal_budget
+                  ORDER BY kategori.tipe_kategori ASC, kategori.nama_kategori ASC";
 $kategoriStmt = mysqli_prepare($con, $kategoriQuery);
-mysqli_stmt_bind_param($kategoriStmt, "i", $userYangSedangLogin);
+mysqli_stmt_bind_param($kategoriStmt, "iiiii", $budgetBulan, $budgetTahun, $budgetBulan, $budgetTahun, $userYangSedangLogin);
 mysqli_stmt_execute($kategoriStmt);
 $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
 ?>
@@ -53,12 +122,20 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                 <tr>
                                     <th>Nama Kategori</th>
                                     <th>Tipe</th>
+                                    <th>Budget Bulan Ini</th>
                                     <th>Dibuat</th>
                                     <th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php while ($row = mysqli_fetch_assoc($kategoriResult)) { ?>
+                                    <?php
+                                    $isKategoriPengeluaran = $row['tipe_kategori'] === 'pengeluaran';
+                                    $budgetNominal = (float) ($row['nominal_budget'] ?? 0);
+                                    $totalTerpakai = (float) ($row['total_pengeluaran_bulan'] ?? 0);
+                                    $sisaBudget = max(0, $budgetNominal - $totalTerpakai);
+                                    $budgetStatus = get_budget_status($budgetNominal, $totalTerpakai);
+                                    ?>
                                     <tr>
                                         <td>
                                             <p class="text-xs font-weight-bold mb-0">
@@ -69,6 +146,54 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                             <span class="badge badge-sm <?= $row['tipe_kategori'] === 'pemasukan' ? 'bg-gradient-success' : 'bg-gradient-info' ?>">
                                                 <?= htmlspecialchars(ucfirst($row['tipe_kategori'])) ?>
                                             </span>
+                                        </td>
+                                        <td>
+                                            <?php if ($isKategoriPengeluaran) { ?>
+                                                <div class="budget-category-box">
+                                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                        <span class="badge badge-sm <?= htmlspecialchars($budgetStatus['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
+                                                            <?= htmlspecialchars($budgetStatus['label']) ?>
+                                                        </span>
+                                                        <span class="text-xs text-secondary"><?= htmlspecialchars($periodeBudgetLabel) ?></span>
+                                                    </div>
+                                                    <p class="text-xs text-secondary mb-1">
+                                                        Terpakai
+                                                        <strong class="text-dark"><?= format_kategori_rupiah($totalTerpakai) ?></strong>
+                                                        dari
+                                                        <strong class="text-dark"><?= format_kategori_rupiah($budgetNominal) ?></strong>
+                                                    </p>
+                                                    <div class="progress budget-category-progress mb-1">
+                                                        <div class="progress-bar <?= htmlspecialchars($budgetStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
+                                                            role="progressbar"
+                                                            style="width: <?= htmlspecialchars((string) $budgetStatus['width'], ENT_QUOTES, 'UTF-8') ?>%;"
+                                                            aria-valuenow="<?= htmlspecialchars((string) round($budgetStatus['width'], 2), ENT_QUOTES, 'UTF-8') ?>"
+                                                            aria-valuemin="0"
+                                                            aria-valuemax="100"></div>
+                                                    </div>
+                                                    <p class="text-xs text-secondary mb-2">
+                                                        <?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai
+                                                        <span class="mx-1">|</span>
+                                                        Sisa <?= format_kategori_rupiah($sisaBudget) ?>
+                                                    </p>
+                                                    <form action="aksi_budget.php" method="post" class="budget-category-form">
+                                                        <?= csrf_input() ?>
+                                                        <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
+                                                        <input type="hidden" name="bulan" value="<?= (int) $budgetBulan ?>">
+                                                        <input type="hidden" name="tahun" value="<?= (int) $budgetTahun ?>">
+                                                        <div class="input-group input-group-outline budget-category-input">
+                                                            <input type="text"
+                                                                name="nominal_budget"
+                                                                class="form-control"
+                                                                inputmode="numeric"
+                                                                placeholder="0"
+                                                                value="<?= $budgetNominal > 0 ? htmlspecialchars(number_format($budgetNominal, 0, ',', '.'), ENT_QUOTES, 'UTF-8') : '' ?>">
+                                                            <button type="submit" class="btn btn-sm btn-info mb-0">Simpan</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            <?php } else { ?>
+                                                <p class="text-xs text-secondary mb-0">Tidak berlaku untuk pemasukan</p>
+                                            <?php } ?>
                                         </td>
                                         <td>
                                             <p class="text-xs text-secondary mb-0">

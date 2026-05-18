@@ -300,6 +300,40 @@ body.g-sidenav-show {
     color: #fff;
 }
 
+.app-main-content .budget-category-box {
+    width: 100%;
+    min-width: 260px;
+    max-width: 360px;
+    padding: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 0.85rem;
+    background: rgba(248, 250, 252, 0.76);
+}
+
+.app-main-content .budget-category-progress {
+    height: 0.45rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background-color: rgba(148, 163, 184, 0.18);
+}
+
+.app-main-content .budget-category-input {
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+}
+
+.app-main-content .budget-category-input .form-control {
+    min-width: 0;
+    min-height: 38px;
+    padding: 0.45rem 0.65rem;
+}
+
+.app-main-content .budget-category-input .btn {
+    min-height: 38px;
+    border-radius: 0.65rem;
+}
+
 @media (max-width: 1199.98px) {
     body.g-sidenav-show .app-main-content {
         width: 100%;
@@ -1049,5 +1083,18 @@ body.g-sidenav-show {
 
     .app-main-content .cashflow-responsive-table td.align-middle > form {
         margin-right: 0;
+    }
+
+    .app-main-content .cashflow-responsive-table .budget-category-box {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .app-main-content .cashflow-responsive-table .budget-category-input {
+        flex-direction: column;
+    }
+
+    .app-main-content .cashflow-responsive-table .budget-category-input .btn {
+        width: 100%;
     }
 }
