@@ -744,6 +744,112 @@ $top_kategori_pengeluaran = get_top_category_summary($kategori_pengeluaran_break
 $chart_kategori_pemasukan = build_chart_series_from_breakdown($kategori_pemasukan_breakdown);
 $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengeluaran_breakdown);
 
+$bulan_lalu = (new DateTimeImmutable('first day of this month'))->modify('-1 month');
+$bulan_lalu_nomor = (int) $bulan_lalu->format('m');
+$tahun_bulan_lalu = (int) $bulan_lalu->format('Y');
+
+$insight_pemasukan_bulan_ini = (float) fetch_single_value(
+    $con,
+    "SELECT COALESCE(SUM(jumlah), 0)
+     FROM pemasukan
+     WHERE user = ? AND status = 'selesai'
+       AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?",
+    "iii",
+    [$userYangSedangLogin, $bulansekarang, $tahunsekarang]
+);
+
+$insight_pengeluaran_bulan_ini = (float) fetch_single_value(
+    $con,
+    "SELECT COALESCE(SUM(jumlah), 0)
+     FROM pengeluaran
+     WHERE user = ? AND status = 'selesai'
+       AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?",
+    "iii",
+    [$userYangSedangLogin, $bulansekarang, $tahunsekarang]
+);
+
+$insight_pengeluaran_bulan_lalu = (float) fetch_single_value(
+    $con,
+    "SELECT COALESCE(SUM(jumlah), 0)
+     FROM pengeluaran
+     WHERE user = ? AND status = 'selesai'
+       AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?",
+    "iii",
+    [$userYangSedangLogin, $bulan_lalu_nomor, $tahun_bulan_lalu]
+);
+
+$insight_top_pengeluaran_rows = fetch_all_rows(
+    $con,
+    "SELECT
+        COALESCE(kategori.nama_kategori, 'Belum dikategorikan') AS kategori_nama,
+        COALESCE(SUM(pengeluaran.jumlah), 0) AS total_jumlah,
+        COUNT(*) AS total_transaksi
+     FROM pengeluaran
+     LEFT JOIN kategori
+        ON kategori.id_kategori = pengeluaran.id_kategori
+       AND kategori.user_id = pengeluaran.user
+       AND kategori.tipe_kategori = 'pengeluaran'
+     WHERE pengeluaran.user = ?
+       AND pengeluaran.status = 'selesai'
+       AND MONTH(pengeluaran.tanggal) = ?
+       AND YEAR(pengeluaran.tanggal) = ?
+     GROUP BY COALESCE(kategori.nama_kategori, 'Belum dikategorikan')
+     ORDER BY total_jumlah DESC, total_transaksi DESC
+     LIMIT 1",
+    "iii",
+    [$userYangSedangLogin, $bulansekarang, $tahunsekarang]
+);
+
+$insight_top_pengeluaran = $insight_top_pengeluaran_rows[0] ?? null;
+$insight_rata_harian = $insight_pengeluaran_bulan_ini / $hari_berjalan_bulan_ini;
+$insight_rasio_pengeluaran = $insight_pemasukan_bulan_ini > 0
+    ? ($insight_pengeluaran_bulan_ini / $insight_pemasukan_bulan_ini) * 100
+    : null;
+$has_monthly_insight = ($insight_pemasukan_bulan_ini + $insight_pengeluaran_bulan_ini + $insight_pengeluaran_bulan_lalu) > 0
+    || $insight_top_pengeluaran !== null;
+
+$insight_kategori_label = $insight_top_pengeluaran
+    ? (string) ($insight_top_pengeluaran['kategori_nama'] ?? 'Belum dikategorikan')
+    : 'Belum ada data';
+$insight_kategori_total = $insight_top_pengeluaran
+    ? (float) ($insight_top_pengeluaran['total_jumlah'] ?? 0)
+    : 0;
+$insight_kategori_transaksi = $insight_top_pengeluaran
+    ? (int) ($insight_top_pengeluaran['total_transaksi'] ?? 0)
+    : 0;
+
+if (!$has_monthly_insight) {
+    $insight_perbandingan_text = 'Belum cukup data untuk membandingkan pengeluaran bulan ini.';
+    $insight_perbandingan_badge = 'bg-gradient-secondary';
+} elseif ($insight_pengeluaran_bulan_lalu <= 0 && $insight_pengeluaran_bulan_ini > 0) {
+    $insight_perbandingan_text = 'Pengeluaran bulan ini mulai tercatat; bulan lalu belum ada pengeluaran selesai.';
+    $insight_perbandingan_badge = 'bg-gradient-warning';
+} elseif ($insight_pengeluaran_bulan_lalu <= 0) {
+    $insight_perbandingan_text = 'Pengeluaran bulan ini sama dengan bulan lalu.';
+    $insight_perbandingan_badge = 'bg-gradient-success';
+} else {
+    $insight_selisih_pengeluaran = $insight_pengeluaran_bulan_ini - $insight_pengeluaran_bulan_lalu;
+    $insight_persen_perubahan = abs($insight_selisih_pengeluaran / $insight_pengeluaran_bulan_lalu * 100);
+
+    if (abs($insight_selisih_pengeluaran) < 0.01) {
+        $insight_perbandingan_text = 'Pengeluaran bulan ini sama dengan bulan lalu.';
+        $insight_perbandingan_badge = 'bg-gradient-success';
+    } elseif ($insight_selisih_pengeluaran > 0) {
+        $insight_perbandingan_text = 'Pengeluaran bulan ini naik ' . number_format((float) $insight_persen_perubahan, 1) . '% dibanding bulan lalu.';
+        $insight_perbandingan_badge = 'bg-gradient-danger';
+    } else {
+        $insight_perbandingan_text = 'Pengeluaran bulan ini turun ' . number_format((float) $insight_persen_perubahan, 1) . '% dibanding bulan lalu.';
+        $insight_perbandingan_badge = 'bg-gradient-success';
+    }
+}
+
+$insight_kategori_sentence = $insight_top_pengeluaran
+    ? 'Kategori paling boros bulan ini adalah ' . $insight_kategori_label . '.'
+    : 'Belum ada kategori pengeluaran selesai bulan ini.';
+$insight_rasio_sentence = $insight_rasio_pengeluaran !== null
+    ? 'Rasio pengeluaran terhadap pemasukan bulan ini ' . number_format((float) $insight_rasio_pengeluaran, 1) . '%.'
+    : 'Belum ada pemasukan selesai bulan ini, sehingga rasio belum bisa dihitung.';
+
 ?>
 <style>
 .dashboard-stat-card {
@@ -1111,6 +1217,82 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
                         <p class="mb-0 text-sm text-secondary">
                             Rp. <?= number_format((float) $top_kategori_pengeluaran['total_jumlah']) ?> dari <?= number_format((float) $top_kategori_pengeluaran['total_transaksi']) ?> transaksi bulan ini.
                         </p>
+                    <?php } ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card h-100">
+                <div class="card-header pb-0 p-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                        <div>
+                            <h6 class="mb-0">Insight Bulan Ini</h6>
+                            <p class="text-sm text-secondary mb-0">Ringkasan ringan berdasarkan transaksi selesai bulan berjalan.</p>
+                        </div>
+                        <span class="badge badge-sm <?= htmlspecialchars($insight_perbandingan_badge, ENT_QUOTES, 'UTF-8') ?>">
+                            Transaksi selesai
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <?php if (!$has_monthly_insight) { ?>
+                        <div class="border border-radius-lg p-4 text-center">
+                            <i class="fa fa-lightbulb-o text-secondary mb-2" aria-hidden="true"></i>
+                            <p class="text-sm text-secondary mb-1">Belum cukup data untuk menampilkan insight bulan ini.</p>
+                            <p class="text-xs text-secondary mb-0">Insight akan muncul setelah ada pemasukan atau pengeluaran berstatus selesai.</p>
+                        </div>
+                    <?php } else { ?>
+                        <div class="row">
+                            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Kategori Paling Boros</p>
+                                    <h6 class="mb-1"><?= htmlspecialchars($insight_kategori_label, ENT_QUOTES, 'UTF-8') ?></h6>
+                                    <p class="text-xs text-secondary mb-0">
+                                        <?= format_rupiah($insight_kategori_total) ?> dari <?= number_format((float) $insight_kategori_transaksi) ?> transaksi.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Rata-rata Harian</p>
+                                    <h6 class="mb-1"><?= format_rupiah($insight_rata_harian) ?></h6>
+                                    <p class="text-xs text-secondary mb-0"><?= number_format((float) $hari_berjalan_bulan_ini) ?> hari berjalan bulan ini.</p>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-sm-6 mb-sm-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Rasio Pengeluaran</p>
+                                    <h6 class="mb-1">
+                                        <?= $insight_rasio_pengeluaran !== null ? number_format((float) $insight_rasio_pengeluaran, 1) . '%' : '-' ?>
+                                    </h6>
+                                    <p class="text-xs text-secondary mb-0">Terhadap pemasukan selesai bulan ini.</p>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-sm-6">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Vs Bulan Lalu</p>
+                                    <span class="badge badge-sm <?= htmlspecialchars($insight_perbandingan_badge, ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= format_rupiah($insight_pengeluaran_bulan_ini) ?>
+                                    </span>
+                                    <p class="text-xs text-secondary mb-0 mt-2">Bulan lalu <?= format_rupiah($insight_pengeluaran_bulan_lalu) ?>.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border border-radius-lg p-3 mt-3">
+                            <p class="text-sm font-weight-bold mb-2">Catatan Insight</p>
+                            <p class="text-sm text-secondary mb-1">
+                                <i class="fa fa-pie-chart me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_kategori_sentence, ENT_QUOTES, 'UTF-8') ?>
+                            </p>
+                            <p class="text-sm text-secondary mb-1">
+                                <i class="fa fa-percent me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_rasio_sentence, ENT_QUOTES, 'UTF-8') ?>
+                            </p>
+                            <p class="text-sm text-secondary mb-0">
+                                <i class="fa fa-exchange me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_perbandingan_text, ENT_QUOTES, 'UTF-8') ?>
+                            </p>
+                        </div>
                     <?php } ?>
                 </div>
             </div>
