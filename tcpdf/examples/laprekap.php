@@ -210,6 +210,11 @@ $tanggalCetak = date('d M Y H:i');
 $jenisLaporan = ucfirst($tabel);
 $labelKategoriRingkas = $supportsKategori ? $selectedKategoriLabel : 'Tidak menggunakan kategori';
 $periodeLabel = date('d M Y', strtotime($tgl_awal)) . ' s/d ' . date('d M Y', strtotime($tgl_akhir));
+$copyrightYear = date('Y');
+$reportLogoPath = realpath(__DIR__ . '/../../assets/img/logocv.jpg');
+$hasReportLogo = $reportLogoPath !== false && is_file($reportLogoPath);
+$reportLogoPdfPath = $hasReportLogo ? str_replace('\\', '/', $reportLogoPath) : '';
+$reportLogoWebPath = '../../assets/img/logocv.jpg';
 
 if ($output === 'csv') {
     $filename = build_report_filename($tabel, $tgl_awal, $tgl_akhir, 'csv');
@@ -283,16 +288,40 @@ if ($output === 'csv') {
 if ($output === 'pdf') {
     require_once(__DIR__ . '/tcpdf_include.php');
 
-    $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+    if (!class_exists('CashFlowReportPdf')) {
+        class CashFlowReportPdf extends TCPDF
+        {
+            public function Footer()
+            {
+                $this->SetY(-12);
+                $this->SetFont('helvetica', '', 8);
+                $this->SetTextColor(100, 116, 139);
+                $this->Cell(
+                    0,
+                    6,
+                    '© CashFlow Control ' . date('Y') . ' | Halaman ' . $this->getAliasNumPage() . ' dari ' . $this->getAliasNbPages(),
+                    0,
+                    false,
+                    'C'
+                );
+            }
+        }
+    }
+
+    $pdf = new CashFlowReportPdf('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
     $pdf->SetCreator('CashFlow Control');
     $pdf->SetAuthor('CashFlow Control');
     $pdf->SetTitle('Laporan ' . $jenisLaporan);
     $pdf->setPrintHeader(false);
-    $pdf->setPrintFooter(false);
+    $pdf->setPrintFooter(true);
     $pdf->SetMargins(12, 12, 12);
-    $pdf->SetAutoPageBreak(true, 12);
+    $pdf->SetAutoPageBreak(true, 16);
     $pdf->AddPage();
     $pdf->SetFont('helvetica', '', 10);
+
+    $pdfLogoHtml = $hasReportLogo
+        ? '<td width="58"><img src="' . report_escape($reportLogoPdfPath) . '" width="42" height="42"></td>'
+        : '';
 
     $pdfHtml = '
     <style>
@@ -300,6 +329,10 @@ if ($output === 'pdf') {
         table { border-collapse: collapse; width: 100%; }
         th, td { border: 1px solid #d1d5db; padding: 6px 8px; }
         th { background-color: #f3f4f6; font-weight: bold; }
+        .brand-table td { border: none; padding: 0; vertical-align: middle; }
+        .brand-title { font-size: 20px; font-weight: bold; letter-spacing: 1px; color: #0f172a; }
+        .brand-subtitle { color: #64748b; font-size: 11px; }
+        .rule { border-top: 2px solid #0ea5e9; height: 1px; }
         .meta-table td { border: none; padding: 2px 0; }
         .summary-table td { border: 1px solid #dbeafe; background-color: #f8fbff; padding: 8px; }
         .muted { color: #64748b; font-size: 11px; }
@@ -308,13 +341,22 @@ if ($output === 'pdf') {
         .total-row td { font-weight: bold; background-color: #f9fafb; }
         .spacer { height: 10px; }
     </style>
-    <h1 style="font-size:20px;">CashFlow Control</h1>
-    <p class="muted">Laporan transaksi pribadi dari sistem internal</p>
+    <table class="brand-table"><tr>
+        ' . $pdfLogoHtml . '
+        <td>
+            <p class="brand-title">CASHFLOW CONTROL</p>
+            <p class="brand-subtitle">Laporan transaksi pribadi dari sistem CashFlow Control</p>
+        </td>
+    </tr></table>
+    <div class="spacer"></div>
+    <div class="rule"></div>
     <div class="spacer"></div>
     <h2 style="font-size:16px;">Laporan ' . report_escape($jenisLaporan) . '</h2>
     <div class="spacer"></div>
     <table class="meta-table">
+        <tr><td width="110">Jenis laporan</td><td>: ' . report_escape($jenisLaporan) . '</td></tr>
         <tr><td width="110">Periode</td><td>: ' . report_escape($periodeLabel) . '</td></tr>
+        <tr><td width="110">Kategori</td><td>: ' . report_escape($labelKategoriRingkas) . '</td></tr>
         <tr><td width="110">Dicetak pada</td><td>: ' . report_escape($tanggalCetak) . '</td></tr>
         <tr><td width="110">Dicetak oleh</td><td>: ' . report_escape($user_data['nama'] ?? $user_data['username'] ?? '-') . ' (' . report_escape($user_data['username'] ?? '-') . ')</td></tr>
     </table>
@@ -420,6 +462,19 @@ if ($output === 'pdf') {
         margin-bottom: 24px;
         border-bottom: 2px solid #e5e7eb;
         padding-bottom: 16px;
+    }
+
+    .brand-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .brand-logo {
+        width: 54px;
+        height: 54px;
+        border-radius: 12px;
+        object-fit: cover;
     }
 
     .brand-title {
@@ -539,6 +594,15 @@ if ($output === 'pdf') {
         margin-bottom: 12px;
     }
 
+    .report-footer {
+        margin-top: 28px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+    }
+
     .no-print button {
         padding: 10px 16px;
         margin-right: 8px;
@@ -576,14 +640,29 @@ if ($output === 'pdf') {
 
 <body>
     <div class="header">
-        <p class="brand-title">CASHFLOW CONTROL</p>
-        <p class="brand-subtitle">Laporan transaksi pribadi yang dicetak langsung dari sistem internal</p>
+        <div class="brand-row">
+            <?php if ($hasReportLogo) { ?>
+                <img src="<?= htmlspecialchars($reportLogoWebPath, ENT_QUOTES, 'UTF-8') ?>" alt="CashFlow Control" class="brand-logo">
+            <?php } ?>
+            <div>
+                <p class="brand-title">CASHFLOW CONTROL</p>
+                <p class="brand-subtitle">Laporan transaksi pribadi yang dicetak langsung dari sistem internal</p>
+            </div>
+        </div>
         <h2 class="report-title">Laporan <?= htmlspecialchars($jenisLaporan) ?></h2>
 
         <div class="header-meta">
             <div class="header-meta-row">
+                <div class="header-meta-label">Jenis laporan</div>
+                <div class="header-meta-value">: <?= htmlspecialchars($jenisLaporan) ?></div>
+            </div>
+            <div class="header-meta-row">
                 <div class="header-meta-label">Periode</div>
                 <div class="header-meta-value">: <?= date('d M Y', strtotime($tgl_awal)) ?> s/d <?= date('d M Y', strtotime($tgl_akhir)) ?></div>
+            </div>
+            <div class="header-meta-row">
+                <div class="header-meta-label">Kategori</div>
+                <div class="header-meta-value">: <?= htmlspecialchars($labelKategoriRingkas) ?></div>
             </div>
             <div class="header-meta-row">
                 <div class="header-meta-label">Dicetak pada</div>
@@ -697,6 +776,10 @@ if ($output === 'pdf') {
             </table>
         <?php } ?>
     <?php } ?>
+
+    <div class="report-footer">
+        © CashFlow Control <?= htmlspecialchars($copyrightYear) ?>. Laporan ini dicetak otomatis dari sistem CashFlow Control.
+    </div>
 
     <div class="no-print">
         <button onclick="window.print()" class="print-btn">Cetak Laporan</button>

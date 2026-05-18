@@ -26,7 +26,7 @@ function kategori_dimiliki_user($idKategori, $userId) {
     $kategori = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
 
-    return $kategori !== false;
+    return is_array($kategori);
 }
 
 function kategori_duplikat($namaKategori, $tipeKategori, $userId, $excludeId = null) {
@@ -55,7 +55,7 @@ function kategori_duplikat($namaKategori, $tipeKategori, $userId, $excludeId = n
     $kategori = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
 
-    return $kategori !== false;
+    return is_array($kategori);
 }
 
 if (!isset($_SESSION['id_user'])) {

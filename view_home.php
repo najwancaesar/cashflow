@@ -627,6 +627,99 @@ $piutang_due_today_count = (int) fetch_single_value(
 
 $due_today_total_count = $hutang_due_today_count + $piutang_due_today_count;
 
+$budget_summary_rows = fetch_all_rows(
+    $con,
+    "SELECT
+        budget_kategori.id_kategori,
+        kategori.nama_kategori,
+        budget_kategori.nominal_budget,
+        COALESCE(pengeluaran_bulan.total_pengeluaran, 0) AS total_terpakai
+     FROM budget_kategori
+     INNER JOIN kategori
+        ON kategori.id_kategori = budget_kategori.id_kategori
+       AND kategori.user_id = budget_kategori.user_id
+       AND kategori.tipe_kategori = 'pengeluaran'
+     LEFT JOIN (
+        SELECT id_kategori, COALESCE(SUM(jumlah), 0) AS total_pengeluaran
+        FROM pengeluaran
+        WHERE user = ?
+          AND status = 'selesai'
+          AND MONTH(tanggal) = ?
+          AND YEAR(tanggal) = ?
+        GROUP BY id_kategori
+     ) AS pengeluaran_bulan
+        ON pengeluaran_bulan.id_kategori = budget_kategori.id_kategori
+     WHERE budget_kategori.user_id = ?
+       AND budget_kategori.bulan = ?
+       AND budget_kategori.tahun = ?
+     ORDER BY kategori.nama_kategori ASC",
+    "iiiiii",
+    [$userYangSedangLogin, $bulansekarang, $tahunsekarang, $userYangSedangLogin, $bulansekarang, $tahunsekarang]
+);
+
+$total_budget_bulan_ini = 0;
+$budget_terpakai_bulan_ini = 0;
+$budget_aman_count = 0;
+$budget_warning_count = 0;
+$budget_over_count = 0;
+$budget_attention_rows = [];
+
+foreach ($budget_summary_rows as $budgetRow) {
+    $budgetNominal = max(0, (float) ($budgetRow['nominal_budget'] ?? 0));
+    $budgetTerpakai = max(0, (float) ($budgetRow['total_terpakai'] ?? 0));
+    $budgetPersen = $budgetNominal > 0 ? ($budgetTerpakai / $budgetNominal) * 100 : 0;
+
+    $total_budget_bulan_ini += $budgetNominal;
+    $budget_terpakai_bulan_ini += $budgetTerpakai;
+
+    if ($budgetNominal <= 0) {
+        continue;
+    }
+
+    if ($budgetPersen >= 100) {
+        $budget_over_count++;
+        $budgetBadgeClass = 'bg-gradient-danger';
+        $budgetLabel = 'Over Budget';
+    } elseif ($budgetPersen >= 80) {
+        $budget_warning_count++;
+        $budgetBadgeClass = 'bg-gradient-warning';
+        $budgetLabel = 'Warning';
+    } else {
+        $budget_aman_count++;
+        $budgetBadgeClass = 'bg-gradient-success';
+        $budgetLabel = 'Aman';
+    }
+
+    if ($budgetPersen >= 80) {
+        $budget_attention_rows[] = [
+            'nama_kategori' => (string) ($budgetRow['nama_kategori'] ?? 'Tanpa kategori'),
+            'nominal_budget' => $budgetNominal,
+            'total_terpakai' => $budgetTerpakai,
+            'percentage' => $budgetPersen,
+            'badge_class' => $budgetBadgeClass,
+            'label' => $budgetLabel,
+        ];
+    }
+}
+
+usort($budget_attention_rows, function ($left, $right) {
+    return ($right['percentage'] <=> $left['percentage'])
+        ?: ($right['total_terpakai'] <=> $left['total_terpakai']);
+});
+
+$budget_attention_rows = array_slice($budget_attention_rows, 0, 5);
+$has_budget_summary = count($budget_summary_rows) > 0;
+$budget_sisa_bulan_ini = max(0, $total_budget_bulan_ini - $budget_terpakai_bulan_ini);
+$budget_pemakaian_persen = $total_budget_bulan_ini > 0
+    ? ($budget_terpakai_bulan_ini / $total_budget_bulan_ini) * 100
+    : 0;
+$budget_total_badge_class = $budget_pemakaian_persen >= 100
+    ? 'bg-gradient-danger'
+    : ($budget_pemakaian_persen >= 80 ? 'bg-gradient-warning' : 'bg-gradient-success');
+$budget_total_icon_class = $budget_pemakaian_persen >= 100
+    ? 'cashflow-icon-expense'
+    : ($budget_pemakaian_persen >= 80 ? 'cashflow-icon-pending' : 'cashflow-icon-report');
+
 $kategori_pemasukan_breakdown = fetch_category_breakdown(
     $con,
     'pemasukan',
@@ -1023,6 +1116,182 @@ $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengel
             </div>
         </div>
     </div>
+
+    <?php if (!$has_budget_summary) { ?>
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card h-100">
+                    <div class="card-header pb-0 p-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                            <div>
+                                <h6 class="mb-0">Budget Bulan Ini</h6>
+                                <p class="text-sm text-secondary mb-0">Ringkasan budget kategori pengeluaran.</p>
+                            </div>
+                            <span class="badge badge-sm bg-gradient-secondary">Belum diatur</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="border border-radius-lg p-4 text-center">
+                            <i class="fa fa-money text-secondary mb-2" aria-hidden="true"></i>
+                            <p class="text-sm text-secondary mb-1">Budget bulan ini belum diatur.</p>
+                            <p class="text-xs text-secondary mb-0">Atur budget pada kategori pengeluaran lewat menu Kategori.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php } else { ?>
+        <div class="row mt-4">
+            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                <div class="card h-100 dashboard-stat-card">
+                    <div class="card-header p-3 pt-2">
+                        <div
+                            class="icon icon-lg icon-shape cashflow-icon-report text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-flag" aria-hidden="true"></i>
+                        </div>
+                        <div class="text-end pt-1">
+                            <p class="text-sm mb-0 text-capitalize">Total Budget Bulan Ini</p>
+                            <h4 class="mb-0"><?= format_rupiah($total_budget_bulan_ini) ?></h4>
+                        </div>
+                    </div>
+                    <hr class="dark horizontal my-0">
+                    <div class="card-footer p-3">
+                        <p class="mb-0 text-sm text-secondary"><?= number_format((float) count($budget_summary_rows)) ?> kategori diatur.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                <div class="card h-100 dashboard-stat-card">
+                    <div class="card-header p-3 pt-2">
+                        <div
+                            class="icon icon-lg icon-shape cashflow-icon-expense text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-shopping-cart" aria-hidden="true"></i>
+                        </div>
+                        <div class="text-end pt-1">
+                            <p class="text-sm mb-0 text-capitalize">Budget Terpakai</p>
+                            <h4 class="mb-0"><?= format_rupiah($budget_terpakai_bulan_ini) ?></h4>
+                        </div>
+                    </div>
+                    <hr class="dark horizontal my-0">
+                    <div class="card-footer p-3">
+                        <p class="mb-0 text-sm text-secondary">Hanya pengeluaran selesai pada kategori berbudget.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+                <div class="card h-100 dashboard-stat-card">
+                    <div class="card-header p-3 pt-2">
+                        <div
+                            class="icon icon-lg icon-shape cashflow-icon-income text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-shield" aria-hidden="true"></i>
+                        </div>
+                        <div class="text-end pt-1">
+                            <p class="text-sm mb-0 text-capitalize">Sisa Budget Total</p>
+                            <h4 class="mb-0"><?= format_rupiah($budget_sisa_bulan_ini) ?></h4>
+                        </div>
+                    </div>
+                    <hr class="dark horizontal my-0">
+                    <div class="card-footer p-3">
+                        <p class="mb-0 text-sm text-secondary">Total budget dikurangi pemakaian bulan ini.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-sm-6">
+                <div class="card h-100 dashboard-stat-card">
+                    <div class="card-header p-3 pt-2">
+                        <div
+                            class="icon icon-lg icon-shape <?= htmlspecialchars($budget_total_icon_class, ENT_QUOTES, 'UTF-8') ?> text-center border-radius-xl mt-n4 position-absolute">
+                            <i class="fa fa-tachometer" aria-hidden="true"></i>
+                        </div>
+                        <div class="text-end pt-1">
+                            <p class="text-sm mb-0 text-capitalize">Pemakaian Budget</p>
+                            <h4 class="mb-0"><?= number_format((float) $budget_pemakaian_persen, 1) ?>%</h4>
+                        </div>
+                    </div>
+                    <hr class="dark horizontal my-0">
+                    <div class="card-footer p-3">
+                        <span class="badge badge-sm <?= htmlspecialchars($budget_total_badge_class, ENT_QUOTES, 'UTF-8') ?>">
+                            <?= $budget_pemakaian_persen >= 100 ? 'Over Budget' : ($budget_pemakaian_persen >= 80 ? 'Warning' : 'Aman') ?>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-lg-4 mb-lg-0 mb-4">
+                <div class="card h-100">
+                    <div class="card-header pb-0 p-3">
+                        <h6 class="mb-0">Status Budget</h6>
+                        <p class="text-sm text-secondary mb-0">Kategori pengeluaran bulan berjalan</p>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span class="badge badge-sm bg-gradient-success">Aman</span>
+                            <p class="text-sm font-weight-bold mb-0"><?= number_format((float) $budget_aman_count) ?> kategori</p>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span class="badge badge-sm bg-gradient-warning">Warning</span>
+                            <p class="text-sm font-weight-bold mb-0"><?= number_format((float) $budget_warning_count) ?> kategori</p>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center py-2">
+                            <span class="badge badge-sm bg-gradient-danger">Over Budget</span>
+                            <p class="text-sm font-weight-bold mb-0"><?= number_format((float) $budget_over_count) ?> kategori</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-8">
+                <div class="card h-100">
+                    <div class="card-header pb-0 p-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                            <div>
+                                <h6 class="mb-0">Kategori Hampir/Over Budget</h6>
+                                <p class="text-sm text-secondary mb-0">Diurutkan berdasarkan persentase pemakaian tertinggi.</p>
+                            </div>
+                            <span class="badge badge-sm <?= htmlspecialchars($budget_total_badge_class, ENT_QUOTES, 'UTF-8') ?>">
+                                <?= number_format((float) $budget_pemakaian_persen, 1) ?>% total
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-3">
+                        <?php if (empty($budget_attention_rows)) { ?>
+                            <div class="border border-radius-lg p-4 text-center">
+                                <i class="fa fa-check-circle text-success mb-2" aria-hidden="true"></i>
+                                <p class="text-sm text-secondary mb-1">Belum ada kategori yang mencapai 80% budget.</p>
+                                <p class="text-xs text-secondary mb-0">Kategori warning dan over budget akan muncul di sini.</p>
+                            </div>
+                        <?php } else { ?>
+                            <?php foreach ($budget_attention_rows as $budgetRow) { ?>
+                                <?php $budgetProgressWidth = min(100, (float) $budgetRow['percentage']); ?>
+                                <div class="py-2 border-bottom">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mb-2">
+                                        <div>
+                                            <p class="text-sm font-weight-bold mb-0"><?= htmlspecialchars($budgetRow['nama_kategori'], ENT_QUOTES, 'UTF-8') ?></p>
+                                            <p class="text-xs text-secondary mb-0">
+                                                <?= format_rupiah($budgetRow['total_terpakai']) ?> dari <?= format_rupiah($budgetRow['nominal_budget']) ?>
+                                            </p>
+                                        </div>
+                                        <span class="badge badge-sm <?= htmlspecialchars($budgetRow['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <?= htmlspecialchars($budgetRow['label'], ENT_QUOTES, 'UTF-8') ?> - <?= number_format((float) $budgetRow['percentage'], 1) ?>%
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 0.45rem;">
+                                        <div class="progress-bar <?= htmlspecialchars($budgetRow['badge_class'], ENT_QUOTES, 'UTF-8') ?>"
+                                            role="progressbar"
+                                            style="width: <?= htmlspecialchars((string) $budgetProgressWidth, ENT_QUOTES, 'UTF-8') ?>%;"
+                                            aria-valuenow="<?= htmlspecialchars((string) round($budgetProgressWidth, 2), ENT_QUOTES, 'UTF-8') ?>"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            <?php } ?>
+                        <?php } ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php } ?>
 
     <div class="row mt-4">
         <div class="col-lg-6 mb-lg-0 mb-4">

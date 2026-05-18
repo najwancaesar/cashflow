@@ -12,6 +12,8 @@ $kategoriOptions = [
     'pemasukan' => [],
     'pengeluaran' => [],
 ];
+$reportLogoPath = 'assets/img/logocv.jpg';
+$hasReportLogo = is_file(__DIR__ . '/' . $reportLogoPath);
 
 if ($userYangSedangLogin > 0) {
     $kategoriQuery = "SELECT id_kategori, nama_kategori, tipe_kategori
@@ -52,6 +54,15 @@ if ($userYangSedangLogin > 0) {
                     </div>
                 </div>
                 <div class="card-body px-2 pb-2">
+                    <div class="report-form-brand mx-3 mb-4">
+                        <?php if ($hasReportLogo) { ?>
+                            <img src="<?= htmlspecialchars($reportLogoPath, ENT_QUOTES, 'UTF-8') ?>" alt="CashFlow Control" class="report-form-logo">
+                        <?php } ?>
+                        <div>
+                            <p class="report-form-title mb-1">CASHFLOW CONTROL</p>
+                            <p class="report-form-subtitle mb-0">Laporan transaksi pribadi</p>
+                        </div>
+                    </div>
                     <form method="POST" action="tcpdf/examples/laprekap.php" target="_blank" id="formLaporan">
                         <input type="hidden" name="output" id="output" value="print">
                         <div class="row">
@@ -153,6 +164,35 @@ if ($userYangSedangLogin > 0) {
 
     #tanggal.report-date-range[readonly]:focus {
         cursor: pointer;
+    }
+
+    .report-form-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 0.85rem;
+        background: #f8fafc;
+    }
+
+    .report-form-logo {
+        width: 46px;
+        height: 46px;
+        border-radius: 0.75rem;
+        object-fit: cover;
+    }
+
+    .report-form-title {
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+    }
+
+    .report-form-subtitle {
+        color: #64748b;
+        font-size: 0.82rem;
     }
 </style>
 <script>

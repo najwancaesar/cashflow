@@ -183,7 +183,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                         <div class="input-group input-group-outline budget-category-input">
                                                             <input type="text"
                                                                 name="nominal_budget"
-                                                                class="form-control"
+                                                                class="form-control js-format-nominal"
                                                                 inputmode="numeric"
                                                                 placeholder="0"
                                                                 value="<?= $budgetNominal > 0 ? htmlspecialchars(number_format($budgetNominal, 0, ',', '.'), ENT_QUOTES, 'UTF-8') : '' ?>">
