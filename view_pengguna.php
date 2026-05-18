@@ -256,7 +256,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
 
                                                     <form action="aksi_user.php?act=s" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
-                                                        <input type="hidden" name="id" value="<?= (int) $row['id_user'] ?>">
+                                                        <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
                                                         <input type="hidden" name="value" value="<?= $isActive ? '0' : '1' ?>">
                                                         <button type="submit"
                                                             data-confirm="true"
@@ -276,15 +276,20 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                         <i class="fa fa-key" aria-hidden="true"></i>
                                                     </a>
 
-                                                    <a title="hapus" href="aksi_user.php?act=h&id=<?= (int) $row['id_user'] ?>"
-                                                        data-confirm="true"
-                                                        data-confirm-title="Hapus pengguna ini?"
-                                                        data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
-                                                        data-confirm-confirm-text="Ya, hapus"
-                                                        data-confirm-cancel-text="Batal"
-                                                        class="text-secondary text-danger font-weight-bold text-xs">
-                                                        <i class="fa fa-trash" aria-hidden="true"></i>
-                                                    </a>
+                                                    <form action="aksi_user.php?act=h" method="post" class="d-inline">
+                                                        <?= csrf_input() ?>
+                                                        <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
+                                                        <button type="submit"
+                                                            title="hapus"
+                                                            data-confirm="true"
+                                                            data-confirm-title="Hapus pengguna ini?"
+                                                            data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
+                                                            data-confirm-confirm-text="Ya, hapus"
+                                                            data-confirm-cancel-text="Batal"
+                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                            <i class="fa fa-trash" aria-hidden="true"></i>
+                                                        </button>
+                                                    </form>
                                                 <?php } else { ?>
                                                     <span class="text-xs text-secondary">Kelola akun sendiri lewat Profil</span>
                                                 <?php } ?>

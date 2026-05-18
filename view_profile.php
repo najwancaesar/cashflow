@@ -126,8 +126,9 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
                     <div class="row my-3">
                         <label class="form-label">Foto</label>
                         <div class="input-group input-group-outline">
-                            <input class="form-control" type="file" name="foto">
+                            <input class="form-control" type="file" name="foto" accept=".jpg,.jpeg,.png,image/jpeg,image/png">
                         </div>
+                        <small class="text-secondary">Format JPG, JPEG, atau PNG. Maksimal 2MB.</small>
                     </div>
                     <div class="row my-3">
                         <div class="col">

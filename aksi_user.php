@@ -91,6 +91,34 @@ function require_post_csrf_user($redirect)
     }
 }
 
+function upload_error_message($errorCode)
+{
+    switch ((int) $errorCode) {
+        case UPLOAD_ERR_INI_SIZE:
+        case UPLOAD_ERR_FORM_SIZE:
+            return 'Ukuran file profil melebihi batas yang diizinkan.';
+        case UPLOAD_ERR_PARTIAL:
+            return 'Upload file profil tidak lengkap. Silakan coba lagi.';
+        case UPLOAD_ERR_NO_TMP_DIR:
+        case UPLOAD_ERR_CANT_WRITE:
+        case UPLOAD_ERR_EXTENSION:
+            return 'Upload file profil gagal diproses. Silakan coba lagi.';
+        default:
+            return 'Upload file profil tidak valid.';
+    }
+}
+
+function generate_profile_photo_filename($extension)
+{
+    try {
+        $randomName = bin2hex(random_bytes(16));
+    } catch (Exception $exception) {
+        $randomName = str_replace('.', '', uniqid('profile_', true));
+    }
+
+    return $randomName . '.' . $extension;
+}
+
 require_authenticated_user($currentUserId);
 
 if ($act === 't') {
@@ -180,7 +208,7 @@ if ($act === 's') {
     require_post_csrf_user('main.php?module=pengguna');
     require_admin_user($isAdmin);
 
-    $targetUserId = (int) ($_POST['id'] ?? 0);
+    $targetUserId = (int) ($_POST['id_user'] ?? 0);
     $isActive = clean_text($_POST['value'] ?? '');
     block_admin_self_management($targetUserId, $currentUserId, 'main.php?module=pengguna');
 
@@ -245,33 +273,76 @@ if ($act === 'e') {
         show_sweetalert_and_redirect('Data sudah dipakai', 'Username atau email sudah digunakan akun lain.', 'warning', "main.php?module=profile&id=$id_user");
     }
 
-    if (!empty($_FILES['foto']['name'])) {
-        $foto = $_FILES['foto']['name'];
-        $lokasi = $_FILES['foto']['tmp_name'];
-        $ukuran = (int) ($_FILES['foto']['size'] ?? 0);
+    $fotoUpload = $_FILES['foto'] ?? null;
+    $uploadError = (int) ($fotoUpload['error'] ?? UPLOAD_ERR_NO_FILE);
 
-        $ekstensi = strtolower(pathinfo($foto, PATHINFO_EXTENSION));
-        $valid_file = ['jpeg', 'jpg', 'png'];
-
-        if (in_array($ekstensi, $valid_file, true) == 0) {
-            show_sweetalert_and_redirect('File tidak valid', 'Gunakan file dengan format JPG, JPEG, atau PNG.', 'warning', "main.php?module=profile&id=$id_user");
-        } elseif ($ukuran > 50000000) {
-            show_sweetalert_and_redirect('Ukuran terlalu besar', 'Ukuran file profil melebihi batas yang diizinkan.', 'warning', "main.php?module=profile&id=$id_user");
-        } else {
-            $namafile = time() . "_" . $foto;
-            move_uploaded_file($lokasi, "assets/img/profil/" . $namafile);
-
-            $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ?, foto = ?, last_profile_update_at = NOW() WHERE id_user = ?");
-            $stmt->bind_param("sssssi", $username, $nama, $email, $no_telp, $namafile, $id_user);
-            $stmt->execute();
-            $stmt->close();
-
-            $_SESSION['username'] = $username;
-            $_SESSION['nama'] = $nama;
-            $_SESSION['foto'] = $namafile;
-
-            show_sweetalert_and_redirect('Berhasil', 'Profil berhasil diperbarui.', 'success', "main.php?module=profile&id=$id_user");
+    if ($uploadError !== UPLOAD_ERR_NO_FILE) {
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            show_sweetalert_and_redirect('Upload gagal', upload_error_message($uploadError), 'warning', "main.php?module=profile&id=$id_user");
         }
+
+        $maxPhotoSize = 2 * 1024 * 1024;
+        $ukuran = (int) ($fotoUpload['size'] ?? 0);
+        $lokasi = (string) ($fotoUpload['tmp_name'] ?? '');
+        $namaAsli = (string) ($fotoUpload['name'] ?? '');
+
+        if ($ukuran <= 0 || $ukuran > $maxPhotoSize) {
+            show_sweetalert_and_redirect('Ukuran terlalu besar', 'Ukuran foto profil maksimal 2MB.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        if ($lokasi === '' || !is_uploaded_file($lokasi)) {
+            show_sweetalert_and_redirect('Upload gagal', 'File profil tidak valid. Silakan coba lagi.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        $allowedPhotoTypes = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+        ];
+        $ekstensi = strtolower(pathinfo($namaAsli, PATHINFO_EXTENSION));
+
+        if (!array_key_exists($ekstensi, $allowedPhotoTypes)) {
+            show_sweetalert_and_redirect('File tidak valid', 'Gunakan file dengan format JPG, JPEG, atau PNG.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        if (!function_exists('finfo_open') || !defined('FILEINFO_MIME_TYPE')) {
+            show_sweetalert_and_redirect('Upload gagal', 'Validasi file profil tidak tersedia. Silakan hubungi admin.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo === false) {
+            show_sweetalert_and_redirect('Upload gagal', 'Validasi file profil gagal. Silakan coba lagi.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        $mimeType = finfo_file($finfo, $lokasi);
+        finfo_close($finfo);
+
+        if ($mimeType !== $allowedPhotoTypes[$ekstensi]) {
+            show_sweetalert_and_redirect('File tidak valid', 'Isi file profil tidak sesuai dengan format gambar yang diizinkan.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR . 'profil' . DIRECTORY_SEPARATOR;
+        if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
+            show_sweetalert_and_redirect('Upload gagal', 'Folder upload profil tidak siap. Silakan hubungi admin.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        $namafile = generate_profile_photo_filename($ekstensi);
+        $tujuanUpload = $uploadDir . $namafile;
+
+        if (!move_uploaded_file($lokasi, $tujuanUpload)) {
+            show_sweetalert_and_redirect('Upload gagal', 'Foto profil gagal disimpan. Silakan coba lagi.', 'warning', "main.php?module=profile&id=$id_user");
+        }
+
+        $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ?, foto = ?, last_profile_update_at = NOW() WHERE id_user = ?");
+        $stmt->bind_param("sssssi", $username, $nama, $email, $no_telp, $namafile, $id_user);
+        $stmt->execute();
+        $stmt->close();
+
+        $_SESSION['username'] = $username;
+        $_SESSION['nama'] = $nama;
+        $_SESSION['foto'] = $namafile;
+
+        show_sweetalert_and_redirect('Berhasil', 'Profil berhasil diperbarui.', 'success', "main.php?module=profile&id=$id_user");
     }
 
     $stmt = $con->prepare("UPDATE user SET username = ?, nama = ?, email = ?, no_telp = ?, last_profile_update_at = NOW() WHERE id_user = ?");
@@ -290,24 +361,36 @@ if ($act === 'p') {
     $id_user = (int) ($_POST['id_user'] ?? 0);
     require_account_owner($id_user, $currentUserId);
 
-    if (($_POST['password_baru'] ?? '') == ($_POST['konfirmasi_password'] ?? '')) {
-        $password = password_hash((string) $_POST['password_baru'], PASSWORD_DEFAULT);
+    $passwordBaru = (string) ($_POST['password_baru'] ?? '');
+    $konfirmasiPassword = (string) ($_POST['konfirmasi_password'] ?? '');
 
-        $stmt = $con->prepare("UPDATE user SET password = ?, last_profile_update_at = NOW() WHERE id_user = ?");
-        $stmt->bind_param("si", $password, $id_user);
-        $stmt->execute();
-        $stmt->close();
-
-        show_sweetalert_and_redirect('Berhasil', 'Password berhasil diperbarui.', 'success', "main.php?module=profile&id=$id_user");
+    if (trim($passwordBaru) === '' || trim($konfirmasiPassword) === '') {
+        show_sweetalert_and_redirect('Data belum lengkap', 'Password baru dan konfirmasi password wajib diisi.', 'warning', "main.php?module=profile&id=$id_user");
     }
 
-    show_sweetalert_and_redirect('Konfirmasi gagal', 'Password baru dan konfirmasi password tidak sesuai.', 'error', "main.php?module=profile&id=$id_user");
+    if ($passwordBaru !== $konfirmasiPassword) {
+        show_sweetalert_and_redirect('Konfirmasi gagal', 'Password baru dan konfirmasi password tidak sesuai.', 'error', "main.php?module=profile&id=$id_user");
+    }
+
+    if (strlen($passwordBaru) < 6) {
+        show_sweetalert_and_redirect('Password terlalu pendek', 'Password baru minimal 6 karakter.', 'warning', "main.php?module=profile&id=$id_user");
+    }
+
+    $password = password_hash($passwordBaru, PASSWORD_DEFAULT);
+
+    $stmt = $con->prepare("UPDATE user SET password = ?, last_profile_update_at = NOW() WHERE id_user = ?");
+    $stmt->bind_param("si", $password, $id_user);
+    $stmt->execute();
+    $stmt->close();
+
+    show_sweetalert_and_redirect('Berhasil', 'Password berhasil diperbarui.', 'success', "main.php?module=profile&id=$id_user");
 }
 
 if ($act === 'h') {
+    require_post_csrf_user('main.php?module=pengguna');
     require_admin_user($isAdmin);
 
-    $targetUserId = (int) ($_GET['id'] ?? 0);
+    $targetUserId = (int) ($_POST['id_user'] ?? 0);
     block_admin_self_management($targetUserId, $currentUserId, 'main.php?module=pengguna');
 
     if ($targetUserId <= 0 || !fetch_user_by_id($con, $targetUserId)) {
@@ -317,9 +400,14 @@ if ($act === 'h') {
     $stmt = $con->prepare("DELETE FROM user WHERE id_user = ?");
     $stmt->bind_param("i", $targetUserId);
     $stmt->execute();
+    $affectedRows = $stmt->affected_rows;
     $stmt->close();
 
-    show_sweetalert_and_redirect('Berhasil', 'Pengguna berhasil dihapus.', 'success', 'main.php?module=pengguna');
+    if ($affectedRows > 0) {
+        show_sweetalert_and_redirect('Berhasil', 'Pengguna berhasil dihapus.', 'success', 'main.php?module=pengguna');
+    }
+
+    show_sweetalert_and_redirect('Gagal', 'Pengguna gagal dihapus.', 'error', 'main.php?module=pengguna');
 }
 
 show_sweetalert_and_redirect('Aksi tidak valid', 'Permintaan yang Anda kirim tidak dikenali.', 'error', 'main.php?module=home');
