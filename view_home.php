@@ -144,6 +144,32 @@ function format_rupiah($value)
     return 'Rp. ' . number_format((float) $value);
 }
 
+function dashboard_wallet_type_label($type)
+{
+    $labels = [
+        'cash' => 'CASH',
+        'bank' => 'BANK',
+        'e_wallet' => 'E-WALLET',
+        'tabungan' => 'TABUNGAN',
+        'lainnya' => 'LAINNYA',
+    ];
+
+    return $labels[$type] ?? 'LAINNYA';
+}
+
+function dashboard_wallet_type_badge_class($type)
+{
+    $classes = [
+        'cash' => 'bg-gradient-success',
+        'bank' => 'bg-gradient-info',
+        'e_wallet' => 'bg-gradient-primary',
+        'tabungan' => 'bg-gradient-warning',
+        'lainnya' => 'bg-gradient-secondary',
+    ];
+
+    return $classes[$type] ?? 'bg-gradient-secondary';
+}
+
 function format_datetime_label($value)
 {
     if (empty($value) || $value === '0000-00-00 00:00:00') {
@@ -626,6 +652,72 @@ $piutang_due_today_count = (int) fetch_single_value(
 );
 
 $due_today_total_count = $hutang_due_today_count + $piutang_due_today_count;
+
+$wallet_summary_rows = fetch_all_rows(
+    $con,
+    "SELECT
+        wallet.id_wallet,
+        wallet.nama_wallet,
+        wallet.tipe_wallet,
+        wallet.saldo_awal,
+        wallet.is_default,
+        COALESCE(pemasukan_wallet.total_pemasukan, 0) AS total_pemasukan,
+        COALESCE(pengeluaran_wallet.total_pengeluaran, 0) AS total_pengeluaran
+     FROM wallet
+     LEFT JOIN (
+        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_pemasukan
+        FROM pemasukan
+        WHERE user = ?
+          AND status = 'selesai'
+          AND id_wallet IS NOT NULL
+        GROUP BY id_wallet
+     ) AS pemasukan_wallet
+        ON pemasukan_wallet.id_wallet = wallet.id_wallet
+     LEFT JOIN (
+        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_pengeluaran
+        FROM pengeluaran
+        WHERE user = ?
+          AND status = 'selesai'
+          AND id_wallet IS NOT NULL
+        GROUP BY id_wallet
+     ) AS pengeluaran_wallet
+        ON pengeluaran_wallet.id_wallet = wallet.id_wallet
+     WHERE wallet.user_id = ?
+       AND wallet.is_active = 1
+     ORDER BY wallet.is_default DESC, wallet.nama_wallet ASC",
+    "iii",
+    [$userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin]
+);
+
+$wallet_summary_items = [];
+$wallet_total_saldo_aktif = 0;
+$wallet_default_name = 'Belum ada default wallet aktif';
+
+foreach ($wallet_summary_rows as $walletRow) {
+    $walletSaldoAwal = (float) ($walletRow['saldo_awal'] ?? 0);
+    $walletTotalPemasukan = (float) ($walletRow['total_pemasukan'] ?? 0);
+    $walletTotalPengeluaran = (float) ($walletRow['total_pengeluaran'] ?? 0);
+    $walletSaldoAkhir = $walletSaldoAwal + $walletTotalPemasukan - $walletTotalPengeluaran;
+    $walletIsDefault = (int) ($walletRow['is_default'] ?? 0) === 1;
+
+    if ($walletIsDefault) {
+        $wallet_default_name = (string) ($walletRow['nama_wallet'] ?? 'Dompet Utama');
+    }
+
+    $wallet_total_saldo_aktif += $walletSaldoAkhir;
+    $wallet_summary_items[] = [
+        'nama_wallet' => (string) ($walletRow['nama_wallet'] ?? '-'),
+        'tipe_wallet' => (string) ($walletRow['tipe_wallet'] ?? 'lainnya'),
+        'saldo_awal' => $walletSaldoAwal,
+        'total_pemasukan' => $walletTotalPemasukan,
+        'total_pengeluaran' => $walletTotalPengeluaran,
+        'saldo_akhir' => $walletSaldoAkhir,
+        'is_default' => $walletIsDefault,
+    ];
+}
+
+$wallet_aktif_count = count($wallet_summary_items);
+$has_wallet_summary = $wallet_aktif_count > 0;
 
 $budget_summary_rows = fetch_all_rows(
     $con,
@@ -1118,6 +1210,104 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
                     <p class="mb-0 text-sm text-secondary">Semua pemasukan dikurangi semua pengeluaran.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card h-100">
+                <div class="card-header pb-0 p-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                        <div>
+                            <h6 class="mb-0">Saldo Wallet</h6>
+                            <p class="text-sm text-secondary mb-0">Saldo akhir dihitung dari saldo awal, pemasukan selesai, dan pengeluaran selesai.</p>
+                        </div>
+                        <span class="badge badge-sm <?= $has_wallet_summary ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
+                            <?= number_format((float) $wallet_aktif_count) ?> wallet aktif
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <?php if (!$has_wallet_summary) { ?>
+                        <div class="border border-radius-lg p-4 text-center">
+                            <i class="fa fa-credit-card text-secondary mb-2" aria-hidden="true"></i>
+                            <p class="text-sm text-secondary mb-1">Belum ada wallet. Tambahkan wallet terlebih dahulu.</p>
+                            <p class="text-xs text-secondary mb-0">Wallet aktif akan muncul di sini setelah dibuat lewat menu Wallet.</p>
+                        </div>
+                    <?php } else { ?>
+                        <div class="row">
+                            <div class="col-lg-4 col-sm-6 mb-lg-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Total Saldo Wallet Aktif</p>
+                                    <h6 class="mb-0 <?= $wallet_total_saldo_aktif < 0 ? 'text-danger' : 'text-success' ?>">
+                                        <?= format_rupiah($wallet_total_saldo_aktif) ?>
+                                    </h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-sm-6 mb-lg-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Jumlah Wallet Aktif</p>
+                                    <h6 class="mb-0"><?= number_format((float) $wallet_aktif_count) ?> wallet</h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-sm-12">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Wallet Default</p>
+                                    <h6 class="mb-0"><?= htmlspecialchars($wallet_default_name, ENT_QUOTES, 'UTF-8') ?></h6>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive mt-4">
+                            <table class="table align-items-center mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Wallet</th>
+                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tipe</th>
+                                        <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo Awal</th>
+                                        <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Pemasukan</th>
+                                        <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Pengeluaran</th>
+                                        <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo Akhir</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($wallet_summary_items as $walletRow) { ?>
+                                        <tr>
+                                            <td>
+                                                <div class="py-2">
+                                                    <p class="text-sm font-weight-bold mb-0"><?= htmlspecialchars($walletRow['nama_wallet'], ENT_QUOTES, 'UTF-8') ?></p>
+                                                    <?php if ($walletRow['is_default']) { ?>
+                                                        <span class="badge badge-sm bg-gradient-info">Default</span>
+                                                    <?php } ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-sm <?= htmlspecialchars(dashboard_wallet_type_badge_class($walletRow['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>">
+                                                    <?= htmlspecialchars(dashboard_wallet_type_label($walletRow['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                                </span>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <p class="text-sm text-secondary mb-0"><?= format_rupiah($walletRow['saldo_awal']) ?></p>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <p class="text-sm text-success mb-0"><?= format_rupiah($walletRow['total_pemasukan']) ?></p>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <p class="text-sm text-danger mb-0"><?= format_rupiah($walletRow['total_pengeluaran']) ?></p>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <p class="text-sm font-weight-bold mb-0 <?= $walletRow['saldo_akhir'] < 0 ? 'text-danger' : 'text-success' ?>">
+                                                    <?= format_rupiah($walletRow['saldo_akhir']) ?>
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    <?php } ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php } ?>
                 </div>
             </div>
         </div>
