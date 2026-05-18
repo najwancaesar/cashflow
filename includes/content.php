@@ -3,6 +3,7 @@
 $allowedModules = [
     'home' => "view_home.php",
     'dashboard' => "view_home.php",
+    'wallet' => "view_wallet.php",
     'kategori' => "view_kategori.php",
     'pemasukan' => "view_pemasukan.php",
     'pengeluaran' => "view_pengeluaran.php",
@@ -14,7 +15,7 @@ $allowedModules = [
 ];
 
 $adminOnlyModules = ['pengguna'];
-$userOnlyModules = ['kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang', 'laporan'];
+$userOnlyModules = ['wallet', 'kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang', 'laporan'];
 
 // Jika session nama tidak ada, arahkan ke login
 if (!isset($_SESSION['nama'])) {

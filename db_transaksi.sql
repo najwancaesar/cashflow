@@ -1093,6 +1093,60 @@ VALUES
 UNLOCK TABLES;
 
 --
+-- Table structure for table `wallet`
+--
+
+DROP TABLE IF EXISTS `wallet`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+
+CREATE TABLE `wallet` (
+  `id_wallet` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `nama_wallet` varchar(100) NOT NULL,
+  `tipe_wallet` enum('cash','bank','e_wallet','tabungan','lainnya') NOT NULL DEFAULT 'lainnya',
+  `saldo_awal` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_wallet`),
+  KEY `idx_wallet_user` (`user_id`),
+  KEY `idx_wallet_user_active` (`user_id`, `is_active`),
+  UNIQUE KEY `uniq_wallet_user_name` (`user_id`, `nama_wallet`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `wallet`
+--
+
+LOCK TABLES `wallet` WRITE;
+/*!40000 ALTER TABLE `wallet` DISABLE KEYS */;
+
+INSERT INTO `wallet` (
+  `user_id`,
+  `nama_wallet`,
+  `tipe_wallet`,
+  `saldo_awal`,
+  `is_default`,
+  `is_active`
+)
+SELECT
+  `id_user`,
+  'Dompet Utama',
+  'cash',
+  0.00,
+  1,
+  1
+FROM `user`
+WHERE `role` = 'user';
+
+/*!40000 ALTER TABLE `wallet` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Dumping events for database 'cashflow'
 --
 --
