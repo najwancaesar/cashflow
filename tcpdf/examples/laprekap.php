@@ -69,11 +69,18 @@ if (!in_array($output, $allowedOutputs, true)) {
 }
 
 $supportsKategori = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
+$supportsWallet = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
 $idKategori = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== '' ? (int) $_POST['id_kategori'] : null;
+$idWallet = isset($_POST['id_wallet']) && $_POST['id_wallet'] !== '' ? (int) $_POST['id_wallet'] : null;
 $selectedKategoriLabel = 'Semua kategori';
+$selectedWalletLabel = 'Semua Wallet';
 
 if (!$supportsKategori) {
     $idKategori = null;
+}
+
+if (!$supportsWallet) {
+    $idWallet = null;
 }
 
 if ($supportsKategori && $idKategori !== null) {
@@ -95,6 +102,25 @@ if ($supportsKategori && $idKategori !== null) {
     $selectedKategoriLabel = $kategoriRow['nama_kategori'];
 }
 
+if ($supportsWallet && $idWallet !== null) {
+    $walletQuery = "SELECT nama_wallet
+                    FROM wallet
+                    WHERE id_wallet = ? AND user_id = ?
+                    LIMIT 1";
+    $walletStmt = mysqli_prepare($con, $walletQuery);
+    mysqli_stmt_bind_param($walletStmt, "ii", $idWallet, $id_user);
+    mysqli_stmt_execute($walletStmt);
+    $walletResult = mysqli_stmt_get_result($walletStmt);
+    $walletRow = mysqli_fetch_assoc($walletResult);
+    mysqli_stmt_close($walletStmt);
+
+    if (!$walletRow) {
+        die("Wallet tidak valid");
+    }
+
+    $selectedWalletLabel = $walletRow['nama_wallet'];
+}
+
 $queryUser = "SELECT * FROM user WHERE id_user = ?";
 $stmtUser = mysqli_prepare($con, $queryUser);
 mysqli_stmt_bind_param($stmtUser, "i", $id_user);
@@ -108,15 +134,21 @@ $total = 0;
 
 if ($supportsKategori) {
     $mainQuery = "SELECT laporan.*, user.username,
-                    COALESCE(kategori.nama_kategori, 'Belum dikategorikan') AS nama_kategori
+                    COALESCE(kategori.nama_kategori, 'Belum dikategorikan') AS nama_kategori,
+                    COALESCE(wallet.nama_wallet, 'Tanpa wallet') AS nama_wallet
                   FROM {$tabel} AS laporan
                   INNER JOIN user ON laporan.user = user.id_user
                   LEFT JOIN kategori
                     ON laporan.id_kategori = kategori.id_kategori
                    AND kategori.user_id = laporan.user
                    AND kategori.tipe_kategori = ?
+                  LEFT JOIN wallet
+                    ON laporan.id_wallet = wallet.id_wallet
+                   AND wallet.user_id = laporan.user
                   WHERE laporan.user = ?
                     AND laporan.tanggal BETWEEN ? AND ?";
+    $mainTypes = "siss";
+    $mainParams = [$tabel, $id_user, $tgl_awal, $tgl_akhir];
 
     if ($tabel === 'pemasukan') {
         $mainQuery .= " AND laporan.status = 'selesai'";
@@ -124,17 +156,20 @@ if ($supportsKategori) {
 
     if ($idKategori !== null) {
         $mainQuery .= " AND laporan.id_kategori = ?";
+        $mainTypes .= "i";
+        $mainParams[] = $idKategori;
+    }
+
+    if ($idWallet !== null) {
+        $mainQuery .= " AND laporan.id_wallet = ?";
+        $mainTypes .= "i";
+        $mainParams[] = $idWallet;
     }
 
     $mainQuery .= " ORDER BY laporan.tanggal ASC, laporan.id_{$tabel} ASC";
 
     $stmt = mysqli_prepare($con, $mainQuery);
-
-    if ($idKategori !== null) {
-        mysqli_stmt_bind_param($stmt, "sissi", $tabel, $id_user, $tgl_awal, $tgl_akhir, $idKategori);
-    } else {
-        mysqli_stmt_bind_param($stmt, "siss", $tabel, $id_user, $tgl_awal, $tgl_akhir);
-    }
+    mysqli_stmt_bind_param($stmt, $mainTypes, ...$mainParams);
 
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
@@ -166,16 +201,28 @@ if ($supportsKategori) {
         $summaryQuery .= " AND laporan.id_kategori = ?";
     }
 
+    if ($idWallet !== null) {
+        $summaryQuery .= " AND laporan.id_wallet = ?";
+    }
+
     $summaryQuery .= " GROUP BY COALESCE(kategori.nama_kategori, 'Belum dikategorikan')
                        ORDER BY total_jumlah DESC, total_transaksi DESC";
 
     $stmtSummary = mysqli_prepare($con, $summaryQuery);
+    $summaryTypes = "siss";
+    $summaryParams = [$tabel, $id_user, $tgl_awal, $tgl_akhir];
 
     if ($idKategori !== null) {
-        mysqli_stmt_bind_param($stmtSummary, "sissi", $tabel, $id_user, $tgl_awal, $tgl_akhir, $idKategori);
-    } else {
-        mysqli_stmt_bind_param($stmtSummary, "siss", $tabel, $id_user, $tgl_awal, $tgl_akhir);
+        $summaryTypes .= "i";
+        $summaryParams[] = $idKategori;
     }
+
+    if ($idWallet !== null) {
+        $summaryTypes .= "i";
+        $summaryParams[] = $idWallet;
+    }
+
+    mysqli_stmt_bind_param($stmtSummary, $summaryTypes, ...$summaryParams);
 
     mysqli_stmt_execute($stmtSummary);
     $summaryResult = mysqli_stmt_get_result($stmtSummary);
@@ -209,6 +256,7 @@ $jumlahTransaksi = count($reportRows);
 $tanggalCetak = date('d M Y H:i');
 $jenisLaporan = ucfirst($tabel);
 $labelKategoriRingkas = $supportsKategori ? $selectedKategoriLabel : 'Tidak menggunakan kategori';
+$labelWalletRingkas = $supportsWallet ? $selectedWalletLabel : 'Tidak menggunakan wallet';
 $periodeLabel = date('d M Y', strtotime($tgl_awal)) . ' s/d ' . date('d M Y', strtotime($tgl_akhir));
 $copyrightYear = date('Y');
 $reportLogoPath = realpath(__DIR__ . '/../../assets/img/logocv.jpg');
@@ -231,6 +279,7 @@ if ($output === 'csv') {
     fputcsv($csvOutput, ['Jenis Laporan', $jenisLaporan], ';');
     fputcsv($csvOutput, ['Periode', $periodeLabel], ';');
     fputcsv($csvOutput, ['Kategori', $labelKategoriRingkas], ';');
+    fputcsv($csvOutput, ['Wallet', $labelWalletRingkas], ';');
     fputcsv($csvOutput, ['Jumlah Transaksi', (string) $jumlahTransaksi], ';');
     fputcsv($csvOutput, ['Total Nominal', (string) $total], ';');
     fputcsv($csvOutput, [], ';');
@@ -238,6 +287,9 @@ if ($output === 'csv') {
     $headers = ['No', 'Tanggal'];
     if ($supportsKategori) {
         $headers[] = 'Kategori';
+    }
+    if ($supportsWallet) {
+        $headers[] = 'Wallet';
     }
     $headers[] = 'Jumlah';
     $headers[] = 'Catatan';
@@ -255,6 +307,9 @@ if ($output === 'csv') {
 
         if ($supportsKategori) {
             $line[] = $row['nama_kategori'] ?? 'Belum dikategorikan';
+        }
+        if ($supportsWallet) {
+            $line[] = $row['nama_wallet'] ?? 'Tanpa wallet';
         }
 
         $line[] = (string) ((float) ($row['jumlah'] ?? 0));
@@ -293,13 +348,13 @@ if ($output === 'pdf') {
         {
             public function Footer()
             {
-                $this->SetY(-12);
-                $this->SetFont('helvetica', '', 8);
+                $this->SetY(-10);
+                $this->SetFont('helvetica', '', 7.5);
                 $this->SetTextColor(100, 116, 139);
                 $this->Cell(
                     0,
-                    6,
-                    '© CashFlow Control ' . date('Y') . ' | Halaman ' . $this->getAliasNumPage() . ' dari ' . $this->getAliasNbPages(),
+                    5,
+                    'Copyright CashFlow Control ' . date('Y') . '. Laporan ini dicetak otomatis dari sistem CashFlow Control. Halaman ' . $this->getAliasNumPage() . ' dari ' . $this->getAliasNbPages(),
                     0,
                     false,
                     'C'
@@ -308,86 +363,143 @@ if ($output === 'pdf') {
         }
     }
 
-    $pdf = new CashFlowReportPdf('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+    $pdf = new CashFlowReportPdf('P', PDF_UNIT, 'A4', true, 'UTF-8', false);
     $pdf->SetCreator('CashFlow Control');
     $pdf->SetAuthor('CashFlow Control');
     $pdf->SetTitle('Laporan ' . $jenisLaporan);
     $pdf->setPrintHeader(false);
     $pdf->setPrintFooter(true);
-    $pdf->SetMargins(12, 12, 12);
+    $pdf->SetMargins(11, 11, 11);
     $pdf->SetAutoPageBreak(true, 16);
     $pdf->AddPage();
-    $pdf->SetFont('helvetica', '', 10);
+    $pdf->SetFont('helvetica', '', 8);
 
-    $pdfLogoHtml = $hasReportLogo
-        ? '<td width="58"><img src="' . report_escape($reportLogoPdfPath) . '" width="42" height="42"></td>'
-        : '';
+    $pdfMetaHtml = $supportsWallet
+        ? '<table class="meta-table">
+        <tr>
+            <td width="18%" class="meta-label">Jenis laporan</td><td width="3%">:</td><td width="29%">' . report_escape($jenisLaporan) . '</td>
+            <td width="14%" class="meta-label">Periode</td><td width="3%">:</td><td width="33%">' . report_escape($periodeLabel) . '</td>
+        </tr>
+        <tr>
+            <td width="18%" class="meta-label">Kategori</td><td width="3%">:</td><td width="29%">' . report_escape($labelKategoriRingkas) . '</td>
+            <td width="14%" class="meta-label">Wallet</td><td width="3%">:</td><td width="33%">' . report_escape($labelWalletRingkas) . '</td>
+        </tr>
+        <tr>
+            <td width="18%" class="meta-label">Dicetak pada</td><td width="3%">:</td><td width="29%">' . report_escape($tanggalCetak) . '</td>
+            <td width="14%" class="meta-label">Dicetak oleh</td><td width="3%">:</td><td width="33%">' . report_escape($user_data['nama'] ?? $user_data['username'] ?? '-') . ' (' . report_escape($user_data['username'] ?? '-') . ')</td>
+        </tr>
+    </table>'
+        : '<table class="meta-table">
+        <tr>
+            <td width="18%" class="meta-label">Jenis laporan</td><td width="3%">:</td><td width="29%">' . report_escape($jenisLaporan) . '</td>
+            <td width="14%" class="meta-label">Periode</td><td width="3%">:</td><td width="33%">' . report_escape($periodeLabel) . '</td>
+        </tr>
+        <tr>
+            <td width="18%" class="meta-label">Kategori</td><td width="3%">:</td><td width="29%">' . report_escape($labelKategoriRingkas) . '</td>
+            <td width="14%" class="meta-label">Dicetak pada</td><td width="3%">:</td><td width="33%">' . report_escape($tanggalCetak) . '</td>
+        </tr>
+        <tr>
+            <td width="18%" class="meta-label">Dicetak oleh</td><td width="3%">:</td><td width="79%">' . report_escape($user_data['nama'] ?? $user_data['username'] ?? '-') . ' (' . report_escape($user_data['username'] ?? '-') . ')</td>
+        </tr>
+    </table>';
+
+
+    $pdfSummaryHtml = $supportsWallet
+        ? '<table class="summary-table">
+        <tr>
+            <td width="19%"><span class="summary-label">Periode Laporan</span><br>' . report_escape($periodeLabel) . '</td>
+            <td width="14%"><span class="summary-label">Jenis Laporan</span><br>' . report_escape($jenisLaporan) . '</td>
+            <td width="18%"><span class="summary-label">Kategori</span><br>' . report_escape($labelKategoriRingkas) . '</td>
+            <td width="17%"><span class="summary-label">Wallet</span><br>' . report_escape($labelWalletRingkas) . '</td>
+            <td width="14%"><span class="summary-label">Transaksi</span><br>' . number_format((float) $jumlahTransaksi, 0, ',', '.') . '</td>
+            <td width="18%"><span class="summary-label">Total Nominal</span><br>Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+        </tr>
+    </table>'
+        : '<table class="summary-table">
+        <tr>
+            <td width="22%"><span class="summary-label">Periode Laporan</span><br>' . report_escape($periodeLabel) . '</td>
+            <td width="17%"><span class="summary-label">Jenis Laporan</span><br>' . report_escape($jenisLaporan) . '</td>
+            <td width="21%"><span class="summary-label">Kategori</span><br>' . report_escape($labelKategoriRingkas) . '</td>
+            <td width="17%"><span class="summary-label">Jumlah Transaksi</span><br>' . number_format((float) $jumlahTransaksi, 0, ',', '.') . ' transaksi</td>
+            <td width="23%"><span class="summary-label">Total Nominal</span><br>Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+        </tr>
+    </table>';
 
     $pdfHtml = '
     <style>
         h1, h2, h3, p { margin: 0; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #d1d5db; padding: 6px 8px; }
-        th { background-color: #f3f4f6; font-weight: bold; }
-        .brand-table td { border: none; padding: 0; vertical-align: middle; }
-        .brand-title { font-size: 20px; font-weight: bold; letter-spacing: 1px; color: #0f172a; }
-        .brand-subtitle { color: #64748b; font-size: 11px; }
-        .rule { border-top: 2px solid #0ea5e9; height: 1px; }
-        .meta-table td { border: none; padding: 2px 0; }
-        .summary-table td { border: 1px solid #dbeafe; background-color: #f8fbff; padding: 8px; }
-        .muted { color: #64748b; font-size: 11px; }
+        table { border-collapse: collapse; width: 100%; font-size: 8px; }
+        th, td { border: 0.45px solid #d1d5db; padding: 3px 4px; line-height: 1.25; }
+        th { background-color: #eef2f7; color: #0f172a; font-weight: bold; }
+        .brand-table td { border: none; padding: 0; vertical-align: top; }
+        .brand-title { font-size: 15px; font-weight: bold; color: #0f172a; }
+        .brand-subtitle { color: #0f172a; font-size: 9px; font-weight: bold; }
+        .brand-note { color: #64748b; font-size: 8.2px; }
+        .brand-date { color: #64748b; font-size: 8px; text-align: right; }
+        .report-heading { font-size: 12px; font-weight: bold; color: #0f172a; }
+        .rule { border-top: 1.2px solid #0ea5e9; height: 1px; }
+        .meta-table td { border: none; padding: 1px 2px; font-size: 8px; line-height: 1.25; }
+        .meta-label { color: #64748b; }
+        .summary-table td { border: 0.45px solid #dbeafe; background-color: #f8fbff; padding: 5px 5px; font-size: 7.8px; line-height: 1.25; }
+        .summary-label { color: #64748b; font-weight: bold; }
+        .report-table th, .report-table td { font-size: 7.1px; padding: 2.5px 3px; line-height: 1.22; }
+        .muted { color: #64748b; font-size: 8px; }
         .right { text-align: right; }
         .center { text-align: center; }
         .total-row td { font-weight: bold; background-color: #f9fafb; }
-        .spacer { height: 10px; }
+        .spacer { height: 5px; }
+        .spacer-sm { height: 3px; }
     </style>
     <table class="brand-table"><tr>
-        ' . $pdfLogoHtml . '
-        <td>
+        <td width="68%">
             <p class="brand-title">CASHFLOW CONTROL</p>
-            <p class="brand-subtitle">Laporan transaksi pribadi dari sistem CashFlow Control</p>
+            <p class="brand-subtitle">Catatan keuangan pribadi</p>
+            <p class="brand-note">Laporan transaksi pribadi yang dibuat otomatis dari sistem CashFlow Control</p>
+        </td>
+        <td width="32%" class="brand-date">
+            Dicetak pada:<br>' . report_escape($tanggalCetak) . '
         </td>
     </tr></table>
-    <div class="spacer"></div>
+    <div class="spacer-sm"></div>
     <div class="rule"></div>
     <div class="spacer"></div>
-    <h2 style="font-size:16px;">Laporan ' . report_escape($jenisLaporan) . '</h2>
+    <p class="report-heading">Laporan ' . report_escape($jenisLaporan) . '</p>
+    <div class="spacer-sm"></div>
+    ' . $pdfMetaHtml . '
     <div class="spacer"></div>
-    <table class="meta-table">
-        <tr><td width="110">Jenis laporan</td><td>: ' . report_escape($jenisLaporan) . '</td></tr>
-        <tr><td width="110">Periode</td><td>: ' . report_escape($periodeLabel) . '</td></tr>
-        <tr><td width="110">Kategori</td><td>: ' . report_escape($labelKategoriRingkas) . '</td></tr>
-        <tr><td width="110">Dicetak pada</td><td>: ' . report_escape($tanggalCetak) . '</td></tr>
-        <tr><td width="110">Dicetak oleh</td><td>: ' . report_escape($user_data['nama'] ?? $user_data['username'] ?? '-') . ' (' . report_escape($user_data['username'] ?? '-') . ')</td></tr>
-    </table>
-    <div class="spacer"></div>
-    <table class="summary-table">
-        <tr>
-            <td width="20%"><strong>Jenis</strong><br>' . report_escape($jenisLaporan) . '</td>
-            <td width="26%"><strong>Periode</strong><br>' . report_escape($periodeLabel) . '</td>
-            <td width="22%"><strong>Kategori</strong><br>' . report_escape($labelKategoriRingkas) . '</td>
-            <td width="14%"><strong>Transaksi</strong><br>' . number_format((float) $jumlahTransaksi, 0, ',', '.') . '</td>
-            <td width="18%"><strong>Total</strong><br>Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
-        </tr>
-    </table>
+    ' . $pdfSummaryHtml . '
     <div class="spacer"></div>';
 
     if (empty($reportRows)) {
         $pdfHtml .= '<p>Tidak ada data laporan untuk filter yang dipilih.</p>';
     } else {
-        $pdfHtml .= '<table><thead><tr>
-            <th width="5%" class="center">No</th>
-            <th width="12%">Tanggal</th>';
+        $pdfShowStatus = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
 
-        if ($supportsKategori) {
-            $pdfHtml .= '<th width="18%">Kategori</th>';
+        if ($supportsWallet && $supportsKategori) {
+            $pdfWidths = ['no' => '5%', 'tanggal' => '12%', 'kategori' => '15%', 'wallet' => '15%', 'jumlah' => '16%', 'catatan' => '27%', 'status' => '10%'];
+        } elseif ($supportsKategori) {
+            $pdfWidths = ['no' => '5%', 'tanggal' => '13%', 'kategori' => '18%', 'wallet' => '0%', 'jumlah' => '17%', 'catatan' => '35%', 'status' => '12%'];
+        } else {
+            $pdfWidths = ['no' => '5%', 'tanggal' => '15%', 'kategori' => '0%', 'wallet' => '0%', 'jumlah' => '20%', 'catatan' => '60%', 'status' => '0%'];
         }
 
-        $pdfHtml .= '<th width="15%">Jumlah</th>
-            <th width="' . ($supportsKategori ? ($tabel === 'pemasukan' ? '38%' : '50%') : ($tabel === 'pemasukan' ? '50%' : '62%')) . '">Catatan</th>';
+        $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+            <th width="' . $pdfWidths['no'] . '" class="center">No</th>
+            <th width="' . $pdfWidths['tanggal'] . '">Tanggal</th>';
 
-        if ($tabel === 'pemasukan') {
-            $pdfHtml .= '<th width="12%">Status</th>';
+        if ($supportsKategori) {
+            $pdfHtml .= '<th width="' . $pdfWidths['kategori'] . '">Kategori</th>';
+        }
+
+        if ($supportsWallet) {
+            $pdfHtml .= '<th width="' . $pdfWidths['wallet'] . '">Wallet</th>';
+        }
+
+        $pdfHtml .= '<th width="' . $pdfWidths['jumlah'] . '">Jumlah</th>
+            <th width="' . $pdfWidths['catatan'] . '">Catatan</th>';
+
+        if ($pdfShowStatus) {
+            $pdfHtml .= '<th width="' . $pdfWidths['status'] . '">Status</th>';
         }
 
         $pdfHtml .= '</tr></thead><tbody>';
@@ -401,26 +513,31 @@ if ($output === 'pdf') {
                 $pdfHtml .= '<td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>';
             }
 
+            if ($supportsWallet) {
+                $pdfHtml .= '<td>' . report_escape($row['nama_wallet'] ?? 'Tanpa wallet') . '</td>';
+            }
+
             $pdfHtml .= '<td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
                 <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>';
 
-            if ($tabel === 'pemasukan') {
+            if ($pdfShowStatus) {
                 $pdfHtml .= '<td>' . report_escape($row['status'] ?? '-') . '</td>';
             }
 
             $pdfHtml .= '</tr>';
         }
 
+        $totalLabelColspan = 2 + ($supportsKategori ? 1 : 0) + ($supportsWallet ? 1 : 0);
         $pdfHtml .= '<tr class="total-row">
-            <td colspan="' . ($supportsKategori ? '3' : '2') . '">Total</td>
+            <td colspan="' . $totalLabelColspan . '">Total</td>
             <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
-            <td colspan="' . ($tabel === 'pemasukan' ? '2' : '1') . '"></td>
+            <td colspan="' . (1 + ($pdfShowStatus ? 1 : 0)) . '"></td>
         </tr>';
         $pdfHtml .= '</tbody></table>';
 
         if ($supportsKategori && !empty($summaryRows)) {
-            $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:13px;">Rekap Total Per Kategori</h3><div class="spacer"></div>';
-            $pdfHtml .= '<table><thead><tr>
+            $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Total Per Kategori</h3><div class="spacer-sm"></div>';
+            $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
                 <th width="50%">Kategori</th>
                 <th width="20%">Jumlah Transaksi</th>
                 <th width="30%">Total</th>
@@ -665,6 +782,10 @@ if ($output === 'pdf') {
                 <div class="header-meta-value">: <?= htmlspecialchars($labelKategoriRingkas) ?></div>
             </div>
             <div class="header-meta-row">
+                <div class="header-meta-label">Wallet</div>
+                <div class="header-meta-value">: <?= htmlspecialchars($labelWalletRingkas) ?></div>
+            </div>
+            <div class="header-meta-row">
                 <div class="header-meta-label">Dicetak pada</div>
                 <div class="header-meta-value">: <?= htmlspecialchars($tanggalCetak) ?></div>
             </div>
@@ -724,6 +845,9 @@ if ($output === 'pdf') {
                     <?php if ($supportsKategori) { ?>
                         <th>Kategori</th>
                     <?php } ?>
+                    <?php if ($supportsWallet) { ?>
+                        <th>Wallet</th>
+                    <?php } ?>
                     <th>Jumlah</th>
                     <th>Catatan</th>
                     <?php if ($tabel == 'pemasukan'): ?>
@@ -739,6 +863,9 @@ if ($output === 'pdf') {
                         <?php if ($supportsKategori) { ?>
                             <td><?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?></td>
                         <?php } ?>
+                        <?php if ($supportsWallet) { ?>
+                            <td><?= htmlspecialchars($row['nama_wallet'] ?? 'Tanpa wallet') ?></td>
+                        <?php } ?>
                         <td align="right">Rp <?= number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') ?></td>
                         <td><?= htmlspecialchars($row['catatan'] ?? '-') ?></td>
                         <?php if ($tabel == 'pemasukan'): ?>
@@ -747,7 +874,7 @@ if ($output === 'pdf') {
                     </tr>
                 <?php } ?>
                 <tr class="total-row">
-                    <td colspan="<?= $supportsKategori ? '3' : '2' ?>">Total</td>
+                    <td colspan="<?= 2 + ($supportsKategori ? 1 : 0) + ($supportsWallet ? 1 : 0) ?>">Total</td>
                     <td align="right">Rp <?= number_format((float) $total, 0, ',', '.') ?></td>
                     <td colspan="<?= ($supportsKategori ? ($tabel == 'pemasukan' ? '2' : '1') : ($tabel == 'pemasukan' ? '2' : '1')) ?>"></td>
                 </tr>

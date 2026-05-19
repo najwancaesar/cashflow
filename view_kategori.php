@@ -135,6 +135,8 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                     $totalTerpakai = (float) ($row['total_pengeluaran_bulan'] ?? 0);
                                     $sisaBudget = max(0, $budgetNominal - $totalTerpakai);
                                     $budgetStatus = get_budget_status($budgetNominal, $totalTerpakai);
+                                    $budgetModalId = 'modalBudgetKategori' . (int) $row['id_kategori'];
+                                    $namaKategoriEsc = htmlspecialchars($row['nama_kategori'], ENT_QUOTES, 'UTF-8');
                                     ?>
                                     <tr>
                                         <td>
@@ -149,20 +151,21 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                         </td>
                                         <td>
                                             <?php if ($isKategoriPengeluaran) { ?>
-                                                <div class="budget-category-box">
-                                                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                <div class="budget-category-box category-budget-summary">
+                                                    <div class="category-budget-summary-header">
+                                                        <span class="category-budget-title">Budget Bulan Ini</span>
                                                         <span class="badge badge-sm <?= htmlspecialchars($budgetStatus['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
                                                             <?= htmlspecialchars($budgetStatus['label']) ?>
                                                         </span>
-                                                        <span class="text-xs text-secondary"><?= htmlspecialchars($periodeBudgetLabel) ?></span>
                                                     </div>
-                                                    <p class="text-xs text-secondary mb-1">
+                                                    <div class="category-budget-period"><?= htmlspecialchars($periodeBudgetLabel) ?></div>
+                                                    <p class="text-xs text-secondary mb-1 category-budget-amount">
                                                         Terpakai
                                                         <strong class="text-dark"><?= format_kategori_rupiah($totalTerpakai) ?></strong>
                                                         dari
                                                         <strong class="text-dark"><?= format_kategori_rupiah($budgetNominal) ?></strong>
                                                     </p>
-                                                    <div class="progress budget-category-progress mb-1">
+                                                    <div class="progress budget-category-progress category-budget-progress mb-1">
                                                         <div class="progress-bar <?= htmlspecialchars($budgetStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
                                                             role="progressbar"
                                                             style="width: <?= htmlspecialchars((string) $budgetStatus['width'], ENT_QUOTES, 'UTF-8') ?>%;"
@@ -170,26 +173,78 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                             aria-valuemin="0"
                                                             aria-valuemax="100"></div>
                                                     </div>
-                                                    <p class="text-xs text-secondary mb-2">
-                                                        <?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai
-                                                        <span class="mx-1">|</span>
-                                                        Sisa <?= format_kategori_rupiah($sisaBudget) ?>
-                                                    </p>
-                                                    <form action="aksi_budget.php" method="post" class="budget-category-form">
-                                                        <?= csrf_input() ?>
-                                                        <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
-                                                        <input type="hidden" name="bulan" value="<?= (int) $budgetBulan ?>">
-                                                        <input type="hidden" name="tahun" value="<?= (int) $budgetTahun ?>">
-                                                        <div class="input-group input-group-outline budget-category-input">
-                                                            <input type="text"
-                                                                name="nominal_budget"
-                                                                class="form-control js-budget-nominal"
-                                                                inputmode="numeric"
-                                                                placeholder="0"
-                                                                value="<?= $budgetNominal > 0 ? htmlspecialchars(number_format($budgetNominal, 0, ',', '.'), ENT_QUOTES, 'UTF-8') : '' ?>">
-                                                            <button type="submit" class="btn btn-sm btn-info mb-0">Simpan</button>
+                                                    <div class="category-budget-meta">
+                                                        <span><?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai</span>
+                                                        <span>Sisa <?= format_kategori_rupiah($sisaBudget) ?></span>
+                                                    </div>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-outline-info mb-0 btn-budget-modal"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>">
+                                                        Atur Budget
+                                                    </button>
+                                                </div>
+
+                                                <div class="modal fade category-budget-modal" id="<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>" tabindex="-1"
+                                                    aria-labelledby="<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>Label" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered modal-sm">
+                                                        <div class="modal-content">
+                                                            <form action="aksi_budget.php" method="post" class="budget-category-form category-budget-form">
+                                                                <?= csrf_input() ?>
+                                                                <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
+                                                                <input type="hidden" name="bulan" value="<?= (int) $budgetBulan ?>">
+                                                                <input type="hidden" name="tahun" value="<?= (int) $budgetTahun ?>">
+
+                                                                <div class="modal-header category-budget-modal-header">
+                                                                    <div>
+                                                                        <h6 class="modal-title mb-1" id="<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>Label">Atur Budget Bulan Ini</h6>
+                                                                        <p class="text-xs text-secondary mb-0"><?= $namaKategoriEsc ?> &bull; <?= htmlspecialchars($periodeBudgetLabel, ENT_QUOTES, 'UTF-8') ?></p>
+                                                                    </div>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+
+                                                                <div class="modal-body category-budget-modal-body">
+                                                                    <div class="category-budget-modal-status">
+                                                                        <span class="badge badge-sm <?= htmlspecialchars($budgetStatus['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
+                                                                            <?= htmlspecialchars($budgetStatus['label']) ?>
+                                                                        </span>
+                                                                    </div>
+                                                                    <p class="text-xs text-secondary mb-2">
+                                                                        Terpakai
+                                                                        <strong class="text-dark"><?= format_kategori_rupiah($totalTerpakai) ?></strong>
+                                                                        dari
+                                                                        <strong class="text-dark"><?= format_kategori_rupiah($budgetNominal) ?></strong>
+                                                                    </p>
+                                                                    <div class="progress budget-category-progress category-budget-progress mb-2">
+                                                                        <div class="progress-bar <?= htmlspecialchars($budgetStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                            role="progressbar"
+                                                                            style="width: <?= htmlspecialchars((string) $budgetStatus['width'], ENT_QUOTES, 'UTF-8') ?>%;"
+                                                                            aria-valuenow="<?= htmlspecialchars((string) round($budgetStatus['width'], 2), ENT_QUOTES, 'UTF-8') ?>"
+                                                                            aria-valuemin="0"
+                                                                            aria-valuemax="100"></div>
+                                                                    </div>
+                                                                    <div class="category-budget-meta mb-3">
+                                                                        <span><?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai</span>
+                                                                        <span>Sisa <?= format_kategori_rupiah($sisaBudget) ?></span>
+                                                                    </div>
+                                                                    <label class="form-label">Nominal Budget</label>
+                                                                    <div class="input-group input-group-outline budget-category-input category-budget-control">
+                                                                        <input type="text"
+                                                                            name="nominal_budget"
+                                                                            class="form-control js-budget-nominal category-budget-input-field"
+                                                                            inputmode="numeric"
+                                                                            placeholder="0"
+                                                                            value="<?= $budgetNominal > 0 ? htmlspecialchars(number_format($budgetNominal, 0, ',', '.'), ENT_QUOTES, 'UTF-8') : '' ?>">
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="modal-footer category-budget-modal-footer">
+                                                                    <button type="button" class="btn btn-secondary mb-0" data-bs-dismiss="modal">Batal</button>
+                                                                    <button type="submit" class="btn btn-info mb-0 category-budget-submit">Simpan Budget</button>
+                                                                </div>
+                                                            </form>
                                                         </div>
-                                                    </form>
+                                                    </div>
                                                 </div>
                                             <?php } else { ?>
                                                 <p class="text-xs text-secondary mb-0">Tidak berlaku untuk pemasukan</p>

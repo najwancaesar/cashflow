@@ -12,6 +12,7 @@ $kategoriOptions = [
     'pemasukan' => [],
     'pengeluaran' => [],
 ];
+$walletOptions = [];
 $reportLogoPath = 'assets/img/logocv.jpg';
 $hasReportLogo = is_file(__DIR__ . '/' . $reportLogoPath);
 
@@ -36,6 +37,27 @@ if ($userYangSedangLogin > 0) {
     }
 
     mysqli_stmt_close($kategoriStmt);
+
+    $walletQuery = "SELECT id_wallet, nama_wallet, tipe_wallet, is_default, is_active
+                    FROM wallet
+                    WHERE user_id = ?
+                    ORDER BY is_default DESC, is_active DESC, nama_wallet ASC";
+    $walletStmt = mysqli_prepare($con, $walletQuery);
+    mysqli_stmt_bind_param($walletStmt, "i", $userYangSedangLogin);
+    mysqli_stmt_execute($walletStmt);
+    $walletResult = mysqli_stmt_get_result($walletStmt);
+
+    while ($row = mysqli_fetch_assoc($walletResult)) {
+        $walletOptions[] = [
+            'id_wallet' => (int) $row['id_wallet'],
+            'nama_wallet' => $row['nama_wallet'],
+            'tipe_wallet' => $row['tipe_wallet'],
+            'is_default' => (int) ($row['is_default'] ?? 0),
+            'is_active' => (int) ($row['is_active'] ?? 0),
+        ];
+    }
+
+    mysqli_stmt_close($walletStmt);
 }
 ?>
 
@@ -128,6 +150,36 @@ if ($userYangSedangLogin > 0) {
                                 </div>
                                 <small class="text-secondary d-block mt-2" id="kategori-help">
                                     Filter kategori tersedia untuk laporan pemasukan dan pengeluaran.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="row mt-4">
+                            <div class="col-sm-6 text-center">
+                                Wallet
+                            </div>
+                            <div class="col-sm-5">
+                                <div class="input-group input-group-outline">
+                                    <select class="form-control" name="id_wallet" id="id_wallet">
+                                        <option value="">Semua Wallet</option>
+                                        <?php foreach ($walletOptions as $walletOption) { ?>
+                                            <?php
+                                            $walletLabelParts = [$walletOption['nama_wallet']];
+                                            if ((int) $walletOption['is_default'] === 1) {
+                                                $walletLabelParts[] = 'Default';
+                                            }
+                                            if ((int) $walletOption['is_active'] !== 1) {
+                                                $walletLabelParts[] = 'Nonaktif';
+                                            }
+                                            $walletLabel = implode(' - ', $walletLabelParts);
+                                            ?>
+                                            <option value="<?= (int) $walletOption['id_wallet'] ?>">
+                                                <?= htmlspecialchars($walletLabel, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                                <small class="text-secondary d-block mt-2" id="wallet-help">
+                                    Filter wallet tersedia untuk laporan pemasukan dan pengeluaran.
                                 </small>
                             </div>
                         </div>
@@ -238,6 +290,26 @@ if ($userYangSedangLogin > 0) {
             }
         }
 
+        function updateWalletFilter() {
+            var selectedTable = $('input[name="tabel"]:checked').val();
+            var walletSelect = $('#id_wallet');
+            var walletHelp = $('#wallet-help');
+
+            if (selectedTable !== 'pemasukan' && selectedTable !== 'pengeluaran') {
+                walletSelect.prop('disabled', true);
+                walletHelp.text('Filter wallet hanya tersedia untuk laporan pemasukan dan pengeluaran.');
+                return;
+            }
+
+            walletSelect.prop('disabled', false);
+
+            if (walletSelect.find('option').length <= 1) {
+                walletHelp.text('Belum ada wallet. Laporan tetap bisa dicetak tanpa filter wallet.');
+            } else {
+                walletHelp.text('Pilih wallet tertentu atau biarkan "Semua Wallet" untuk melihat seluruh data.');
+            }
+        }
+
         $('#tanggal').daterangepicker({
             startDate: start,
             endDate: end,
@@ -258,9 +330,11 @@ if ($userYangSedangLogin > 0) {
 
         cb(start, end);
         updateKategoriFilter();
+        updateWalletFilter();
 
         $('input[name="tabel"]').on('change', function() {
             updateKategoriFilter();
+            updateWalletFilter();
         });
 
         $('.report-action').on('click', function() {

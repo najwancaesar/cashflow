@@ -334,6 +334,84 @@ body.g-sidenav-show {
     border-radius: 0.65rem;
 }
 
+.app-main-content .category-budget-summary {
+    width: 100%;
+    min-width: 0;
+    max-width: 360px;
+    box-sizing: border-box;
+}
+
+.app-main-content .category-budget-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.35rem;
+}
+
+.app-main-content .category-budget-title {
+    color: #344767;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+}
+
+.app-main-content .category-budget-period,
+.app-main-content .category-budget-meta {
+    color: #64748b;
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.app-main-content .category-budget-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    margin-bottom: 0.65rem;
+}
+
+.app-main-content .category-budget-form,
+.app-main-content .category-budget-control {
+    width: 100%;
+    min-width: 0;
+}
+
+.app-main-content .btn-budget-modal {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0.65rem;
+    border-radius: 0.65rem;
+    white-space: nowrap;
+}
+
+.app-main-content .category-budget-modal .modal-content {
+    border: 0;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.app-main-content .category-budget-modal-header,
+.app-main-content .category-budget-modal-footer {
+    padding: 1rem;
+}
+
+.app-main-content .category-budget-modal-body {
+    padding: 1rem;
+}
+
+.app-main-content .category-budget-modal-status {
+    margin-bottom: 0.75rem;
+}
+
+.app-main-content .category-budget-modal .category-budget-input-field {
+    min-height: 46px;
+    padding: 0.7rem 0.8rem;
+    font-size: 16px;
+}
+
 @media (max-width: 1199.98px) {
     body.g-sidenav-show .app-main-content {
         width: 100%;
@@ -1086,15 +1164,200 @@ body.g-sidenav-show {
     }
 
     .app-main-content .cashflow-responsive-table .budget-category-box {
+        display: block;
+        width: 100%;
         min-width: 0;
         max-width: 100%;
+        box-sizing: border-box;
+        text-align: left;
+        overflow: hidden;
     }
 
     .app-main-content .cashflow-responsive-table .budget-category-input {
+        width: 100%;
+        min-width: 0;
         flex-direction: column;
+        align-items: stretch;
+        gap: 0.55rem;
+    }
+
+    .app-main-content .cashflow-responsive-table .budget-category-input .form-control {
+        width: 100% !important;
+        min-width: 0;
+        min-height: 44px;
+        flex: 1 1 auto;
+        padding: 0.65rem 0.75rem;
+        font-size: 16px;
+        line-height: 1.4;
+        text-align: left;
     }
 
     .app-main-content .cashflow-responsive-table .budget-category-input .btn {
         width: 100%;
+        min-height: 42px;
+        margin-top: 0;
+        border-radius: 0.65rem;
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        text-align: left !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"]::before {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.55rem;
+        text-align: left;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box {
+        padding: 0.85rem;
+        border-radius: 0.9rem;
+        background: #f8fafc;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-summary {
+        width: 100%;
+        max-width: 100%;
+        padding: 0.85rem;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-summary-header {
+        display: flex;
+        width: 100%;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.6rem;
+        margin-bottom: 0.45rem;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box p,
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box span:not(.badge),
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box strong {
+        text-align: left !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-form {
+        display: block;
+        width: 100%;
+        margin-top: 0.65rem;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-progress {
+        width: 100%;
+        height: 0.5rem;
+        margin-top: 0.45rem;
+        margin-bottom: 0.45rem !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-title {
+        font-size: 0.75rem;
+        line-height: 1.35;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-period {
+        margin-bottom: 0.55rem;
+        text-align: left !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-amount {
+        margin-bottom: 0.55rem !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-meta {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        gap: 0.15rem;
+        margin-bottom: 0.45rem;
+        text-align: left !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .btn-budget-modal {
+        display: inline-flex;
+        width: 100%;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 0.45rem;
+        border-radius: 0.75rem;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-control,
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-form {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-input-field {
+        display: block;
+        width: 100% !important;
+        min-width: 0;
+        min-height: 46px;
+        flex: 1 1 auto;
+        padding: 0.7rem 0.8rem;
+        border-radius: 0.75rem !important;
+        font-size: 16px !important;
+        line-height: 1.4;
+        text-align: left !important;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-submit {
+        display: inline-flex;
+        width: 100%;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
+        border-radius: 0.75rem;
+    }
+
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal,
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal p,
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal span:not(.badge),
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal strong,
+    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal .text-xs {
+        text-align: left !important;
+    }
+
+    .app-main-content .category-budget-modal .modal-dialog {
+        max-width: calc(100% - 1.5rem);
+        margin: 0.75rem auto;
+    }
+
+    .app-main-content .category-budget-modal .modal-header,
+    .app-main-content .category-budget-modal .modal-body,
+    .app-main-content .category-budget-modal .modal-footer {
+        padding-right: 0.9rem;
+        padding-left: 0.9rem;
+    }
+
+    .app-main-content .category-budget-modal .modal-footer {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+    }
+
+    .app-main-content .category-budget-modal .budget-category-form {
+        display: block;
+        margin-top: 0;
+    }
+
+    .app-main-content .category-budget-modal .modal-footer .btn {
+        width: 100%;
+        min-height: 44px;
+        margin: 0 !important;
     }
 }
