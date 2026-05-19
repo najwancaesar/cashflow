@@ -210,6 +210,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
             <form action="aksi_pengeluaran.php?act=t" method="post">
+                <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
                         class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">

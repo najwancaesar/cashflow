@@ -103,6 +103,33 @@ if (isset($_POST['kirim'])) {
     include "includes/default_categories.php";
     include "includes/avatar_helper.php";
 
+    if (!function_exists('create_default_wallet_for_registered_user')) {
+        function create_default_wallet_for_registered_user($con, $userId)
+        {
+            $userId = (int) $userId;
+            if ($userId <= 0) {
+                return false;
+            }
+
+            $namaWallet = 'Dompet Utama';
+            $tipeWallet = 'cash';
+            $saldoAwal = 0.00;
+            $isDefault = 1;
+            $isActive = 1;
+
+            $walletStmt = $con->prepare("INSERT INTO wallet (user_id, nama_wallet, tipe_wallet, saldo_awal, is_default, is_active) VALUES (?, ?, ?, ?, ?, ?)");
+            if (!$walletStmt) {
+                return false;
+            }
+
+            $walletStmt->bind_param("issdii", $userId, $namaWallet, $tipeWallet, $saldoAwal, $isDefault, $isActive);
+            $created = $walletStmt->execute();
+            $walletStmt->close();
+
+            return $created;
+        }
+    }
+
     $username = trim($_POST["username"] ?? '');
     $nama = trim($_POST["nama"] ?? '');
     $email = trim($_POST["email"] ?? '');
@@ -128,15 +155,25 @@ if (isset($_POST['kirim'])) {
             $newUserId = (int) $stmt->insert_id;
             seed_default_categories_for_user($con, $newUserId);
 
-            echo "<script>
-                Swal.fire({
-                    icon:'success',
-                    title:'Akun berhasil dibuat',
-                    text:'Silakan login untuk mulai menggunakan aplikasi.'
-                }).then(function () {
-                    window.location.href='login.php';
-                });
-            </script>";
+            if (!create_default_wallet_for_registered_user($con, $newUserId)) {
+                echo "<script>
+                    Swal.fire({
+                        icon:'error',
+                        title:'Pendaftaran belum lengkap',
+                        text:'Akun berhasil dibuat, tetapi Dompet Utama gagal disiapkan. Silakan hubungi admin atau coba buat wallet setelah login.'
+                    });
+                </script>";
+            } else {
+                echo "<script>
+                    Swal.fire({
+                        icon:'success',
+                        title:'Akun berhasil dibuat',
+                        text:'Silakan login untuk mulai menggunakan aplikasi.'
+                    }).then(function () {
+                        window.location.href='login.php';
+                    });
+                </script>";
+            }
         } else {
             echo "<script>Swal.fire({icon:'error',title:'Pendaftaran gagal',text:'Akun gagal dibuat. Silakan coba lagi.'});</script>";
         }

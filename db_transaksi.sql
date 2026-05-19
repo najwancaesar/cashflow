@@ -1163,9 +1163,6 @@ JOIN `wallet` w
 SET p.`id_wallet` = w.`id_wallet`
 WHERE p.`id_wallet` IS NULL;
 
-/*!40000 ALTER TABLE `wallet` ENABLE KEYS */;
-UNLOCK TABLES;
-
 --
 -- Dumping events for database 'cashflow'
 --

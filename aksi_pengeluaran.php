@@ -122,6 +122,14 @@ if (isset($_GET['act'])) {
 
     switch ($action) {
         case 't': // Tambah atau Update
+            if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+                show_sweetalert_and_redirect('Akses ditolak', 'Tambah atau edit pengeluaran wajib melalui form yang valid.', 'warning', 'main.php?module=pengeluaran');
+            }
+
+            if (!verify_csrf_token()) {
+                show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pengeluaran');
+            }
+
             $tanggal = clean_input($_POST['tanggal'] ?? '');
             $catatan = clean_input($_POST['catatan'] ?? '');
             $jumlah = nominal_input_to_number($_POST['jumlah'] ?? '');

@@ -121,6 +121,14 @@ $act = $_GET['act'] ?? '';
 $user = (int) $_SESSION['id_user'];
 
 if ($act == 't') {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        show_sweetalert_and_redirect('Akses ditolak', 'Tambah atau edit pemasukan wajib melalui form yang valid.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    if (!verify_csrf_token()) {
+        show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pemasukan');
+    }
+
     $tanggal = clean_input($_POST['tanggal'] ?? '');
     $catatan = clean_input($_POST['catatan'] ?? '');
     $jumlah = nominal_input_to_number($_POST['jumlah'] ?? '');
