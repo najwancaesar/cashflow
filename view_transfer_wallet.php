@@ -60,6 +60,9 @@ while ($wallet = mysqli_fetch_assoc($walletResult)) {
 
 mysqli_stmt_close($walletStmt);
 
+$jumlahWalletAktif = count($walletAktif);
+$transferFormDisabled = $jumlahWalletAktif < 2;
+
 $transferQuery = "SELECT
                     transfer_wallet.*,
                     wallet_asal.nama_wallet AS nama_wallet_asal,
@@ -103,12 +106,17 @@ mysqli_stmt_close($transferStmt);
                             Pindahkan saldo antar wallet tanpa mencatatnya sebagai pemasukan atau pengeluaran.
                         </p>
                         <p class="text-sm text-secondary mb-0">
-                            Transfer berstatus selesai akan memengaruhi saldo akhir wallet di dashboard.
+                            Transfer berstatus selesai akan memindahkan saldo antar wallet dan tidak masuk laporan pemasukan/pengeluaran.
                         </p>
                     </div>
+                    <?php if ($transferFormDisabled) { ?>
+                        <div class="alert alert-warning text-white mx-4 mt-3 mb-0" role="alert">
+                            Transfer wallet membutuhkan minimal 2 wallet aktif.
+                        </div>
+                    <?php } ?>
                     <div class="text-end me-3 mt-3">
                         <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
-                            data-bs-target="#modalTransferWallet">
+                            data-bs-target="#modalTransferWallet" <?= $transferFormDisabled ? 'disabled' : '' ?>>
                             <i class="fa fa-exchange" aria-hidden="true"></i> Tambah Transfer
                         </button>
                     </div>
@@ -174,19 +182,35 @@ mysqli_stmt_close($transferStmt);
                                                     <i class="fa fa-pencil" aria-hidden="true"></i>
                                                 </a>
 
-                                                <form action="aksi_transfer_wallet.php?act=h" method="post" class="d-inline">
-                                                    <?= csrf_input() ?>
-                                                    <input type="hidden" name="id_transfer" value="<?= (int) $row['id_transfer'] ?>">
-                                                    <button type="submit"
-                                                        data-confirm="true"
-                                                        data-confirm-title="Hapus transfer ini?"
-                                                        data-confirm-text="Transfer yang dihapus tidak akan dihitung lagi pada saldo wallet."
-                                                        data-confirm-confirm-text="Ya, hapus"
-                                                        data-confirm-cancel-text="Batal"
-                                                        class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
-                                                        <i class="fa fa-trash" aria-hidden="true"></i>
-                                                    </button>
-                                                </form>
+                                                <?php if ($statusTransfer === 'selesai') { ?>
+                                                    <form action="aksi_transfer_wallet.php?act=h" method="post" class="d-inline">
+                                                        <?= csrf_input() ?>
+                                                        <input type="hidden" name="id_transfer" value="<?= (int) $row['id_transfer'] ?>">
+                                                        <button type="submit"
+                                                            data-confirm="true"
+                                                            data-confirm-title="Batalkan transfer ini?"
+                                                            data-confirm-text="Transfer akan diubah menjadi status batal dan tidak dihitung pada saldo wallet."
+                                                            data-confirm-confirm-text="Ya, batalkan"
+                                                            data-confirm-cancel-text="Batal"
+                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                            <i class="fa fa-ban" aria-hidden="true"></i> Batalkan
+                                                        </button>
+                                                    </form>
+                                                <?php } elseif (in_array($statusTransfer, ['pending', 'batal'], true)) { ?>
+                                                    <form action="aksi_transfer_wallet.php?act=hp" method="post" class="d-inline">
+                                                        <?= csrf_input() ?>
+                                                        <input type="hidden" name="id_transfer" value="<?= (int) $row['id_transfer'] ?>">
+                                                        <button type="submit"
+                                                            data-confirm="true"
+                                                            data-confirm-title="Hapus permanen transfer ini?"
+                                                            data-confirm-text="Transfer yang dihapus permanen tidak bisa dikembalikan."
+                                                            data-confirm-confirm-text="Ya, hapus permanen"
+                                                            data-confirm-cancel-text="Batal"
+                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                            <i class="fa fa-trash" aria-hidden="true"></i> Hapus Permanen
+                                                        </button>
+                                                    </form>
+                                                <?php } ?>
                                             </td>
                                         </tr>
                                     <?php } ?>
@@ -219,13 +243,13 @@ mysqli_stmt_close($transferStmt);
                     <div class="row">
                         <label class="form-label">Tanggal</label>
                         <div class="input-group input-group-outline">
-                            <input type="date" name="tanggal" id="tanggal" class="form-control" value="<?= htmlspecialchars($tanggalHariIni, ENT_QUOTES, 'UTF-8') ?>" required>
+                            <input type="date" name="tanggal" id="tanggal" class="form-control" value="<?= htmlspecialchars($tanggalHariIni, ENT_QUOTES, 'UTF-8') ?>" required <?= $transferFormDisabled ? 'disabled' : '' ?>>
                         </div>
                     </div>
                     <div class="row my-3">
                         <label class="form-label">Wallet Asal</label>
                         <div class="input-group input-group-outline">
-                            <select class="form-control" name="wallet_asal_id" id="wallet_asal_id" required>
+                            <select class="form-control" name="wallet_asal_id" id="wallet_asal_id" required <?= $transferFormDisabled ? 'disabled' : '' ?>>
                                 <option value="">Pilih Wallet Asal</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>">
@@ -238,7 +262,7 @@ mysqli_stmt_close($transferStmt);
                     <div class="row my-3">
                         <label class="form-label">Wallet Tujuan</label>
                         <div class="input-group input-group-outline">
-                            <select class="form-control" name="wallet_tujuan_id" id="wallet_tujuan_id" required>
+                            <select class="form-control" name="wallet_tujuan_id" id="wallet_tujuan_id" required <?= $transferFormDisabled ? 'disabled' : '' ?>>
                                 <option value="">Pilih Wallet Tujuan</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>">
@@ -254,13 +278,13 @@ mysqli_stmt_close($transferStmt);
                     <div class="row my-3">
                         <label class="form-label">Jumlah Transfer</label>
                         <div class="input-group input-group-outline">
-                            <input type="text" name="jumlah" id="jumlah" class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 500.000" required>
+                            <input type="text" name="jumlah" id="jumlah" class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 500.000" required <?= $transferFormDisabled ? 'disabled' : '' ?>>
                         </div>
                     </div>
                     <div class="row my-3">
                         <label class="form-label">Status</label>
                         <div class="input-group input-group-outline">
-                            <select class="form-control" name="status" id="status" required>
+                            <select class="form-control" name="status" id="status" required <?= $transferFormDisabled ? 'disabled' : '' ?>>
                                 <option value="selesai">Selesai</option>
                                 <option value="pending">Pending</option>
                                 <option value="batal">Batal</option>
@@ -270,13 +294,13 @@ mysqli_stmt_close($transferStmt);
                     <div class="row my-3">
                         <label class="form-label">Catatan</label>
                         <div class="input-group input-group-outline">
-                            <textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3"></textarea>
+                            <textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3" <?= $transferFormDisabled ? 'disabled' : '' ?>></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" name="simpan" class="btn btn-info">Simpan</button>
+                    <button type="submit" name="simpan" class="btn btn-info" <?= $transferFormDisabled ? 'disabled' : '' ?>>Simpan</button>
                 </div>
             </form>
         </div>
