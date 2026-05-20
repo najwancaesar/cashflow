@@ -122,20 +122,43 @@ if ($userYangSedangLogin > 0) {
                         </div>
                         <div class="row mt-4">
                             <div class="col-sm-6 text-center">
-                                Tanggal
+                                Periode Tanggal
                             </div>
                             <div class="col-sm-5">
-                                <div class="input-group input-group-outline">
-                                    <input
-                                        type="text"
-                                        class="form-control text-center report-date-range"
-                                        name="tanggal"
-                                        id="tanggal"
-                                        readonly
-                                        autocomplete="off"
-                                        aria-label="Pilih rentang tanggal laporan"
-                                    >
+                                <input type="hidden" name="tanggal" id="tanggal">
+                                <div class="row g-2">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label text-xs text-secondary mb-1" for="tanggal_awal">Tanggal awal</label>
+                                        <div class="input-group input-group-outline">
+                                            <input
+                                                type="date"
+                                                class="form-control report-date-input"
+                                                name="tanggal_awal"
+                                                id="tanggal_awal"
+                                                autocomplete="off"
+                                                aria-label="Tanggal awal laporan"
+                                                required
+                                            >
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label text-xs text-secondary mb-1" for="tanggal_akhir">Tanggal akhir</label>
+                                        <div class="input-group input-group-outline">
+                                            <input
+                                                type="date"
+                                                class="form-control report-date-input"
+                                                name="tanggal_akhir"
+                                                id="tanggal_akhir"
+                                                autocomplete="off"
+                                                aria-label="Tanggal akhir laporan"
+                                                required
+                                            >
+                                        </div>
+                                    </div>
                                 </div>
+                                <small class="text-secondary d-block mt-2">
+                                    Pilih rentang tanggal bebas, termasuk beda bulan atau beda tahun.
+                                </small>
                             </div>
                         </div>
                         <div class="row mt-4">
@@ -209,13 +232,8 @@ if ($userYangSedangLogin > 0) {
     </div>
 </div>
 <style>
-    #tanggal.report-date-range[readonly] {
-        cursor: pointer;
-        background-color: #fff;
-    }
-
-    #tanggal.report-date-range[readonly]:focus {
-        cursor: pointer;
+    .report-date-input {
+        min-height: 42px;
     }
 
     .report-form-brand {
@@ -253,8 +271,15 @@ if ($userYangSedangLogin > 0) {
         var end = moment();
         var kategoriOptions = <?= json_encode($kategoriOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 
-        function cb(start, end) {
-            $('#tanggal').val(start.format('YYYY-MM-DD') + ' - ' + end.format('YYYY-MM-DD'));
+        function syncDateRangeInput() {
+            var tanggalAwal = $('#tanggal_awal').val();
+            var tanggalAkhir = $('#tanggal_akhir').val();
+
+            if (tanggalAwal && tanggalAkhir) {
+                $('#tanggal').val(tanggalAwal + ' - ' + tanggalAkhir);
+            } else {
+                $('#tanggal').val('');
+            }
         }
 
         function updateKategoriFilter() {
@@ -310,27 +335,15 @@ if ($userYangSedangLogin > 0) {
             }
         }
 
-        $('#tanggal').daterangepicker({
-            startDate: start,
-            endDate: end,
-            locale: {
-                format: 'YYYY-MM-DD'
-            },
-            ranges: {
-                'Hari ini': [moment(), moment()],
-                'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-                '7 hari terakhir': [moment().subtract(6, 'days'), moment()],
-                '30 hari terakhir': [moment().subtract(29, 'days'), moment()],
-                'Bulan ini': [moment().startOf('month'), moment().endOf('month')],
-                'Bulan lalu': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-                'Tahun ini': [moment().startOf('year'), moment().endOf('year')],
-                'Tahun lalu': [moment().subtract(1, 'year').startOf('year'), moment().endOf('year')]
-            }
-        }, cb);
-
-        cb(start, end);
+        $('#tanggal_awal').val(start.format('YYYY-MM-DD'));
+        $('#tanggal_akhir').val(end.format('YYYY-MM-DD'));
+        syncDateRangeInput();
         updateKategoriFilter();
         updateWalletFilter();
+
+        $('#tanggal_awal, #tanggal_akhir').on('change input', function() {
+            syncDateRangeInput();
+        });
 
         $('input[name="tabel"]').on('change', function() {
             updateKategoriFilter();
@@ -342,7 +355,12 @@ if ($userYangSedangLogin > 0) {
         });
 
         $('#formLaporan').on('submit', function(e) {
-            if (!$('#tanggal').val()) {
+            syncDateRangeInput();
+
+            var tanggalAwal = $('#tanggal_awal').val();
+            var tanggalAkhir = $('#tanggal_akhir').val();
+
+            if (!tanggalAwal || !tanggalAkhir) {
                 e.preventDefault();
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
@@ -352,6 +370,20 @@ if ($userYangSedangLogin > 0) {
                     });
                 } else {
                     alert('Silakan pilih rentang tanggal terlebih dahulu');
+                }
+                return;
+            }
+
+            if (tanggalAwal > tanggalAkhir) {
+                e.preventDefault();
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Rentang tanggal tidak valid',
+                        text: 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.'
+                    });
+                } else {
+                    alert('Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
                 }
             }
         });

@@ -10,22 +10,48 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     die("Admin tidak dapat mencetak laporan transaksi user.");
 }
 
-function parse_report_date_range($dateRange)
+function normalize_report_date($value)
 {
+    $value = trim((string) $value);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+        return null;
+    }
+
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+    $errors = DateTimeImmutable::getLastErrors();
+
+    if ($date === false || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
+        return null;
+    }
+
+    return $date->format('Y-m-d') === $value ? $value : null;
+}
+
+function parse_report_date_range($dateRange, $tanggalAwal = '', $tanggalAkhir = '')
+{
+    $tanggalAwalRaw = trim((string) $tanggalAwal);
+    $tanggalAkhirRaw = trim((string) $tanggalAkhir);
+    $tglAwal = normalize_report_date($tanggalAwal);
+    $tglAkhir = normalize_report_date($tanggalAkhir);
+
+    if ($tanggalAwalRaw !== '' || $tanggalAkhirRaw !== '') {
+        if ($tglAwal === null || $tglAkhir === null) {
+            return null;
+        }
+
+        return [$tglAwal, $tglAkhir];
+    }
+
     $dates = explode(' - ', (string) $dateRange);
     if (count($dates) !== 2) {
         return null;
     }
 
-    $timestampAwal = strtotime(trim($dates[0]));
-    $timestampAkhir = strtotime(trim($dates[1]));
-
-    if ($timestampAwal === false || $timestampAkhir === false) {
+    $tglAwal = normalize_report_date($dates[0]);
+    $tglAkhir = normalize_report_date($dates[1]);
+    if ($tglAwal === null || $tglAkhir === null) {
         return null;
     }
-
-    $tglAwal = date('Y-m-d', $timestampAwal);
-    $tglAkhir = date('Y-m-d', $timestampAkhir);
 
     return [$tglAwal, $tglAkhir];
 }
@@ -47,13 +73,21 @@ function build_report_filename($table, $tglAwal, $tglAkhir, $extension)
 }
 
 $id_user = (int) $_SESSION['id_user'];
-$dateRange = parse_report_date_range($_POST['tanggal'] ?? '');
+$dateRange = parse_report_date_range(
+    $_POST['tanggal'] ?? '',
+    $_POST['tanggal_awal'] ?? '',
+    $_POST['tanggal_akhir'] ?? ''
+);
 
 if ($dateRange === null) {
     die("Format tanggal tidak valid");
 }
 
 [$tgl_awal, $tgl_akhir] = $dateRange;
+
+if ($tgl_awal > $tgl_akhir) {
+    die("Tanggal awal tidak boleh lebih besar dari tanggal akhir");
+}
 
 $tabel = $_POST['tabel'] ?? 'pemasukan';
 $allowed_tables = ['pemasukan', 'pengeluaran', 'hutang', 'piutang'];
