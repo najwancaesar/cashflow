@@ -296,6 +296,102 @@ body.g-sidenav-show {
     vertical-align: middle;
 }
 
+.app-main-content .dashboard-latest-table {
+    width: 100%;
+    min-width: 820px;
+    table-layout: fixed;
+}
+
+.app-main-content .dashboard-latest-table th,
+.app-main-content .dashboard-latest-table td {
+    vertical-align: middle !important;
+    padding: 0.7rem 0.85rem !important;
+    line-height: 1.35;
+}
+
+.app-main-content .dashboard-latest-table thead th {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    line-height: 1.25;
+}
+
+.app-main-content .dashboard-latest-table tbody tr {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.app-main-content .dashboard-latest-table .col-status {
+    width: 9%;
+    text-align: center !important;
+    white-space: nowrap;
+}
+
+.app-main-content .dashboard-latest-table .col-date {
+    width: 12%;
+    text-align: center !important;
+    white-space: nowrap;
+}
+
+.app-main-content .dashboard-latest-table .col-note {
+    width: 27%;
+    text-align: left !important;
+}
+
+.app-main-content .dashboard-latest-table .col-category {
+    width: 16%;
+    text-align: left !important;
+}
+
+.app-main-content .dashboard-latest-table .col-amount {
+    width: 16%;
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+.app-main-content .dashboard-latest-table .col-wallet {
+    width: 20%;
+    text-align: left !important;
+}
+
+.app-main-content .dashboard-latest-table .dashboard-status-badge {
+    min-width: 4.75rem;
+    justify-content: center;
+}
+
+.app-main-content .dashboard-latest-table .dashboard-date,
+.app-main-content .dashboard-latest-table .dashboard-amount {
+    display: block;
+    white-space: nowrap;
+}
+
+.app-main-content .dashboard-latest-table .dashboard-amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.app-main-content .dashboard-latest-table .dashboard-note,
+.app-main-content .dashboard-latest-table .dashboard-category,
+.app-main-content .dashboard-latest-table .dashboard-wallet-name {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.app-main-content .dashboard-latest-table .dashboard-wallet-name {
+    display: block;
+    color: #344767;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.app-main-content .dashboard-latest-table .dashboard-wallet-type {
+    display: block;
+    margin-top: 0.12rem;
+    color: #64748b;
+    font-size: 0.68rem !important;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
 .app-main-content .badge.bg-gradient-warning {
     color: #fff;
 }

@@ -1878,34 +1878,34 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
             </div>
             <div class="card-body px-0 pb-2">
                 <div class="table-responsive p-0">
-                    <table class="table align-items-center mb-0">
+                    <table class="table align-items-center mb-0 dashboard-latest-table dashboard-income-table">
                         <thead>
                             <tr>
                                 <th
-                                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    class="col-status text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Status</th>
                                 <th
-                                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    class="col-date text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Tanggal</th>
-                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                <th class="col-note text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Catatan
                                 </th>
-                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                <th class="col-category text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Kategori
                                 </th>
-                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                                <th class="col-amount text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Jumlah Pemasukan</th>
                                 <th
-                                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    class="col-wallet text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Wallet</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($q_pemasukan_terbaru as $row) { ?>
                             <tr>
-                                <td class="align-middle text-center text-sm">
+                                <td class="col-status align-middle text-sm">
                                     <span
-                                        class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
+                                        class="badge badge-sm dashboard-status-badge <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
                                         <?php if ($row['status'] == 'selesai'): ?>
                                         <?= htmlspecialchars($row['status']) ?>
                                         <?php else : ?>
@@ -1915,22 +1915,22 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                         <?php endif ?>
                                     </span>
                                 </td>
-                                <td class="align-middle text-center">
-                                    <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
+                                <td class="col-date align-middle">
+                                    <span class="text-secondary text-xs font-weight-bold dashboard-date"><?= htmlspecialchars($row['tanggal']) ?></span>
                                 </td>
-                                <td>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
+                                <td class="col-note">
+                                    <p class="text-xs text-secondary mb-0 dashboard-note"><?= htmlspecialchars($row['catatan']) ?></p>
                                 </td>
-                                <td>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama_kategori'] ?? 'Tanpa Kategori', ENT_QUOTES, 'UTF-8') ?></p>
+                                <td class="col-category">
+                                    <p class="text-xs text-secondary mb-0 dashboard-category"><?= htmlspecialchars($row['nama_kategori'] ?? 'Tanpa Kategori', ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
-                                <td>
-                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
+                                <td class="col-amount">
+                                    <p class="text-xs font-weight-bold mb-0 dashboard-amount">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
-                                <td>
-                                    <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
+                                <td class="col-wallet">
+                                    <p class="text-xs font-weight-bold mb-0 dashboard-wallet-name"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-xs text-secondary mb-0 dashboard-wallet-type"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -1949,34 +1949,34 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
             </div>
             <div class="card-body px-0 pb-2">
                 <div class="table-responsive p-0">
-                    <table class="table align-items-center mb-0">
+                    <table class="table align-items-center mb-0 dashboard-latest-table dashboard-expense-table">
                         <thead>
                             <tr>
                                 <th
-                                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    class="col-status text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Status</th>
                                 <th
-                                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    class="col-date text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Tanggal</th>
-                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                <th class="col-note text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Catatan
                                 </th>
-                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                <th class="col-category text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Kategori
                                 </th>
-                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
+                                <th class="col-amount text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Jumlah Pengeluaran</th>
                                 <th
-                                    class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    class="col-wallet text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Wallet</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($q_pengeluaran_terbaru as $row) { ?>
                             <tr>
-                                <td class="align-middle text-center text-sm">
+                                <td class="col-status align-middle text-sm">
                                     <span
-                                        class="badge badge-sm <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
+                                        class="badge badge-sm dashboard-status-badge <?= ($row['status'] == 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
                                         <?php if ($row['status'] == 'selesai'): ?>
                                         <?= htmlspecialchars($row['status']) ?>
                                         <?php else : ?>
@@ -1986,22 +1986,22 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                         <?php endif ?>
                                     </span>
                                 </td>
-                                <td class="align-middle text-center">
-                                    <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
+                                <td class="col-date align-middle">
+                                    <span class="text-secondary text-xs font-weight-bold dashboard-date"><?= htmlspecialchars($row['tanggal']) ?></span>
                                 </td>
-                                <td>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
+                                <td class="col-note">
+                                    <p class="text-xs text-secondary mb-0 dashboard-note"><?= htmlspecialchars($row['catatan']) ?></p>
                                 </td>
-                                <td>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama_kategori'] ?? 'Tanpa Kategori', ENT_QUOTES, 'UTF-8') ?></p>
+                                <td class="col-category">
+                                    <p class="text-xs text-secondary mb-0 dashboard-category"><?= htmlspecialchars($row['nama_kategori'] ?? 'Tanpa Kategori', ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
-                                <td>
-                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
+                                <td class="col-amount">
+                                    <p class="text-xs font-weight-bold mb-0 dashboard-amount">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
-                                <td>
-                                    <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
+                                <td class="col-wallet">
+                                    <p class="text-xs font-weight-bold mb-0 dashboard-wallet-name"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-xs text-secondary mb-0 dashboard-wallet-type"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
