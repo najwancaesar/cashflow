@@ -1164,6 +1164,28 @@ SET p.`id_wallet` = w.`id_wallet`
 WHERE p.`id_wallet` IS NULL;
 
 --
+-- Table structure for table `transfer_wallet`
+--
+
+CREATE TABLE IF NOT EXISTS `transfer_wallet` (
+  `id_transfer` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `wallet_asal_id` int(11) NOT NULL,
+  `wallet_tujuan_id` int(11) NOT NULL,
+  `tanggal` date NOT NULL,
+  `jumlah` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `catatan` text DEFAULT NULL,
+  `status` enum('pending','selesai','batal') NOT NULL DEFAULT 'selesai',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_transfer`),
+  KEY `idx_transfer_user` (`user_id`),
+  KEY `idx_transfer_tanggal` (`tanggal`),
+  KEY `idx_transfer_wallet_asal` (`wallet_asal_id`),
+  KEY `idx_transfer_wallet_tujuan` (`wallet_tujuan_id`),
+  KEY `idx_transfer_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+--
 -- Dumping events for database 'cashflow'
 --
 --

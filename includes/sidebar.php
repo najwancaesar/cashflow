@@ -42,6 +42,16 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link text-white <?php if ($module == 'transfer_wallet') {
+													echo 'active bg-gradient-warning';
+												} ?>" href="main.php?module=transfer_wallet">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-exchange" aria-hidden="true"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Transfer Wallet</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'pemasukan') {
 													echo 'active bg-gradient-warning';
 												} ?>" href="main.php?module=pemasukan">
