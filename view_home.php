@@ -187,6 +187,9 @@ function format_datetime_label($value)
 $tglSekarang = date('Y-m-d');
 $bulansekarang = (int) date('m', strtotime($tglSekarang));
 $tahunsekarang = (int) date('Y', strtotime($tglSekarang));
+$mingguBerjalan = new DateTimeImmutable($tglSekarang);
+$tanggalAwalMinggu = $mingguBerjalan->modify('monday this week')->format('Y-m-d');
+$tanggalAkhirMinggu = $mingguBerjalan->modify('sunday this week')->format('Y-m-d');
 $userYangSedangLogin = (int) ($_SESSION["id_user"] ?? 0);
 $isAdmin = strtolower((string) ($_SESSION['role'] ?? '')) === 'admin';
 
@@ -388,39 +391,51 @@ if ($isAdmin) {
     return;
 }
 
-$pendapatan = [
-    'pendapatan_sekarang' => fetch_single_value(
+$pemasukan_minggu_ini = (float) fetch_single_value(
         $con,
-        "SELECT COALESCE(SUM(jumlah), 0) FROM pemasukan WHERE tanggal = ? AND user = ?",
-        "si",
-        [$tglSekarang, $userYangSedangLogin]
-    ),
-];
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM pemasukan
+         WHERE tanggal BETWEEN ? AND ?
+           AND status = 'selesai'
+           AND user = ?",
+        "ssi",
+        [$tanggalAwalMinggu, $tanggalAkhirMinggu, $userYangSedangLogin]
+);
 
-$pengeluaran = [
-    'pengeluaran_sekarang' => fetch_single_value(
+$pengeluaran_minggu_ini = (float) fetch_single_value(
         $con,
-        "SELECT COALESCE(SUM(jumlah), 0) FROM pengeluaran WHERE tanggal = ? AND user = ?",
-        "si",
-        [$tglSekarang, $userYangSedangLogin]
-    ),
-];
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM pengeluaran
+         WHERE tanggal BETWEEN ? AND ?
+           AND status = 'selesai'
+           AND user = ?",
+        "ssi",
+        [$tanggalAwalMinggu, $tanggalAkhirMinggu, $userYangSedangLogin]
+);
 
 $tpemasukan = (int) fetch_single_value(
     $con,
-    "SELECT COUNT(*) FROM pemasukan WHERE tanggal = ? AND user = ?",
-    "si",
-    [$tglSekarang, $userYangSedangLogin]
+    "SELECT COUNT(*)
+     FROM pemasukan
+     WHERE tanggal BETWEEN ? AND ?
+       AND status = 'selesai'
+       AND user = ?",
+    "ssi",
+    [$tanggalAwalMinggu, $tanggalAkhirMinggu, $userYangSedangLogin]
 );
 
 $tpengeluaran = (int) fetch_single_value(
     $con,
-    "SELECT COUNT(*) FROM pengeluaran WHERE tanggal = ? AND user = ?",
-    "si",
-    [$tglSekarang, $userYangSedangLogin]
+    "SELECT COUNT(*)
+     FROM pengeluaran
+     WHERE tanggal BETWEEN ? AND ?
+       AND status = 'selesai'
+       AND user = ?",
+    "ssi",
+    [$tanggalAwalMinggu, $tanggalAkhirMinggu, $userYangSedangLogin]
 );
 
-$transaksi_hariini = $tpemasukan + $tpengeluaran;
+$transaksi_minggu_ini = $tpemasukan + $tpengeluaran;
 
 $tpemasukan_pending = (int) fetch_single_value(
     $con,
@@ -535,11 +550,21 @@ $transaksi_bulan = $tpemasukan_bulan + $tpengeluaran_bulan;
 
 $q_pemasukan_terbaru = fetch_all_rows(
     $con,
-    "SELECT pemasukan.*, user.nama
+    "SELECT
+        pemasukan.*,
+        COALESCE(kategori.nama_kategori, 'Tanpa Kategori') AS nama_kategori,
+        COALESCE(wallet.nama_wallet, 'Dompet Utama') AS nama_wallet,
+        wallet.tipe_wallet
     FROM pemasukan
-    INNER JOIN user ON pemasukan.user = user.id_user
+    LEFT JOIN kategori
+        ON pemasukan.id_kategori = kategori.id_kategori
+       AND kategori.user_id = pemasukan.user
+       AND kategori.tipe_kategori = 'pemasukan'
+    LEFT JOIN wallet
+        ON pemasukan.id_wallet = wallet.id_wallet
+       AND wallet.user_id = pemasukan.user
     WHERE pemasukan.user = ?
-    ORDER BY id_pemasukan DESC
+    ORDER BY pemasukan.id_pemasukan DESC
     LIMIT 5",
     "i",
     [$userYangSedangLogin]
@@ -547,11 +572,21 @@ $q_pemasukan_terbaru = fetch_all_rows(
 
 $q_pengeluaran_terbaru = fetch_all_rows(
     $con,
-    "SELECT pengeluaran.*, user.nama
+    "SELECT
+        pengeluaran.*,
+        COALESCE(kategori.nama_kategori, 'Tanpa Kategori') AS nama_kategori,
+        COALESCE(wallet.nama_wallet, 'Dompet Utama') AS nama_wallet,
+        wallet.tipe_wallet
     FROM pengeluaran
-    INNER JOIN user ON pengeluaran.user = user.id_user
+    LEFT JOIN kategori
+        ON pengeluaran.id_kategori = kategori.id_kategori
+       AND kategori.user_id = pengeluaran.user
+       AND kategori.tipe_kategori = 'pengeluaran'
+    LEFT JOIN wallet
+        ON pengeluaran.id_wallet = wallet.id_wallet
+       AND wallet.user_id = pengeluaran.user
     WHERE pengeluaran.user = ?
-    ORDER BY id_pengeluaran DESC
+    ORDER BY pengeluaran.id_pengeluaran DESC
     LIMIT 5",
     "i",
     [$userYangSedangLogin]
@@ -1077,8 +1112,8 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                         <i class="fa fa-arrow-circle-down" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Pendapatan Hari Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format((float) ($pendapatan['pendapatan_sekarang'] ?? 0)) ?></h4>
+                        <p class="text-sm mb-0 text-capitalize">Pemasukan Minggu Ini</p>
+                        <h4 class="mb-0">Rp. <?= number_format((float) $pemasukan_minggu_ini) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -1094,8 +1129,8 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                         <i class="fa fa-arrow-circle-up" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Pengeluaran Hari Ini</p>
-                        <h4 class="mb-0">Rp. <?= number_format((float) ($pengeluaran['pengeluaran_sekarang'] ?? 0)) ?></h4>
+                        <p class="text-sm mb-0 text-capitalize">Pengeluaran Minggu Ini</p>
+                        <h4 class="mb-0">Rp. <?= number_format((float) $pengeluaran_minggu_ini) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -1111,8 +1146,8 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                         <i class="fa fa-exchange" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Transaksi Hari Ini</p>
-                        <h4 class="mb-0"><?= number_format((float) ($transaksi_hariini ?? 0)) ?></h4>
+                        <p class="text-sm mb-0 text-capitalize">Transaksi Minggu Ini</p>
+                        <h4 class="mb-0"><?= number_format((float) $transaksi_minggu_ini) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -1855,11 +1890,14 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Catatan
                                 </th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    Kategori
+                                </th>
                                 <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
                                     Jumlah Pemasukan</th>
                                 <th
                                     class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                    User</th>
+                                    Wallet</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1884,11 +1922,15 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                     <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
                                 </td>
                                 <td>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama_kategori'] ?? 'Tanpa Kategori', ENT_QUOTES, 'UTF-8') ?></p>
+                                </td>
+                                <td>
                                     <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
                                 <td>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama']) ?></p>
+                                    <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -1919,11 +1961,14 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                     Catatan
                                 </th>
+                                <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                    Kategori
+                                </th>
                                 <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
                                     Jumlah Pengeluaran</th>
                                 <th
                                     class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                    User</th>
+                                    Wallet</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1948,11 +1993,15 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                     <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
                                 </td>
                                 <td>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama_kategori'] ?? 'Tanpa Kategori', ENT_QUOTES, 'UTF-8') ?></p>
+                                </td>
+                                <td>
                                     <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
                                     </p>
                                 </td>
                                 <td>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama']) ?></p>
+                                    <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
