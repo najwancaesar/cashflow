@@ -1185,6 +1185,36 @@ CREATE TABLE IF NOT EXISTS `transfer_wallet` (
   KEY `idx_transfer_wallet_tujuan` (`wallet_tujuan_id`),
   KEY `idx_transfer_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `saving_goal` (
+  `id_goal` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `nama_goal` varchar(150) NOT NULL,
+  `target_nominal` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `target_tanggal` date DEFAULT NULL,
+  `status` enum('aktif','selesai','arsip') NOT NULL DEFAULT 'aktif',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_goal`),
+  KEY `idx_goal_user` (`user_id`),
+  KEY `idx_goal_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `saving_goal_mutasi` (
+  `id_mutasi` int(11) NOT NULL AUTO_INCREMENT,
+  `id_goal` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `tanggal` date NOT NULL,
+  `tipe` enum('setor','tarik') NOT NULL,
+  `jumlah` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `catatan` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_mutasi`),
+  KEY `idx_mutasi_goal` (`id_goal`),
+  KEY `idx_mutasi_user` (`user_id`),
+  KEY `idx_mutasi_tanggal` (`tanggal`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Dumping events for database 'cashflow'
 --
