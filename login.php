@@ -133,6 +133,15 @@ if (isset($_POST['kirim'])) {
             $_SESSION['id_user'] = $sesi['id_user'];
             $_SESSION['role'] = (($sesi['role'] ?? '') === 'admin') ? 'admin' : 'user';
             $_SESSION['foto'] = resolve_profile_photo($sesi['foto'] ?? '');
+            $_SESSION['flash_login_success'] = [
+                'title' => $_SESSION['role'] === 'admin'
+                    ? 'Selamat datang, Admin!'
+                    : 'Selamat datang, ' . (string) $sesi['nama'] . '!',
+                'text' => $_SESSION['role'] === 'admin'
+                    ? 'Panel admin siap digunakan.'
+                    : 'Semoga pencatatan keuanganmu hari ini lancar.',
+                'icon' => 'success',
+            ];
 
             echo "<script>window.location.href='main.php?module=home';</script>";
         } else {
