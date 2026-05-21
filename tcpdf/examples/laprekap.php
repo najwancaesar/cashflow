@@ -90,9 +90,17 @@ if ($tgl_awal > $tgl_akhir) {
 }
 
 $tabel = $_POST['tabel'] ?? 'pemasukan';
-$allowed_tables = ['pemasukan', 'pengeluaran', 'hutang', 'piutang'];
+$allowed_tables = ['pemasukan', 'pengeluaran', 'hutang', 'piutang', 'transfer_wallet', 'saving_goal'];
 $output = $_POST['output'] ?? 'print';
 $allowedOutputs = ['print', 'pdf', 'csv'];
+$reportLabels = [
+    'pemasukan' => 'Pemasukan',
+    'pengeluaran' => 'Pengeluaran',
+    'hutang' => 'Hutang',
+    'piutang' => 'Piutang',
+    'transfer_wallet' => 'Transfer Wallet',
+    'saving_goal' => 'Celengan Virtual',
+];
 
 if (!in_array($tabel, $allowed_tables, true)) {
     die("Tabel tidak valid");
@@ -103,7 +111,9 @@ if (!in_array($output, $allowedOutputs, true)) {
 }
 
 $supportsKategori = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
-$supportsWallet = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
+$supportsWallet = in_array($tabel, ['pemasukan', 'pengeluaran', 'transfer_wallet', 'saving_goal'], true);
+$isTransferReport = $tabel === 'transfer_wallet';
+$isSavingGoalReport = $tabel === 'saving_goal';
 $idKategori = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== '' ? (int) $_POST['id_kategori'] : null;
 $idWallet = isset($_POST['id_wallet']) && $_POST['id_wallet'] !== '' ? (int) $_POST['id_wallet'] : null;
 $selectedKategoriLabel = 'Semua kategori';
@@ -266,6 +276,143 @@ if ($supportsKategori) {
     }
 
     mysqli_stmt_close($stmtSummary);
+} elseif ($isTransferReport) {
+    $mainQuery = "SELECT laporan.*,
+                    COALESCE(wallet_asal.nama_wallet, 'Wallet tidak ditemukan') AS nama_wallet_asal,
+                    COALESCE(wallet_tujuan.nama_wallet, 'Wallet tidak ditemukan') AS nama_wallet_tujuan
+                  FROM transfer_wallet AS laporan
+                  LEFT JOIN wallet AS wallet_asal
+                    ON laporan.wallet_asal_id = wallet_asal.id_wallet
+                   AND wallet_asal.user_id = laporan.user_id
+                  LEFT JOIN wallet AS wallet_tujuan
+                    ON laporan.wallet_tujuan_id = wallet_tujuan.id_wallet
+                   AND wallet_tujuan.user_id = laporan.user_id
+                  WHERE laporan.user_id = ?
+                    AND laporan.tanggal BETWEEN ? AND ?";
+    $mainTypes = "iss";
+    $mainParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $mainQuery .= " AND (laporan.wallet_asal_id = ? OR laporan.wallet_tujuan_id = ?)";
+        $mainTypes .= "ii";
+        $mainParams[] = $idWallet;
+        $mainParams[] = $idWallet;
+    }
+
+    $mainQuery .= " ORDER BY laporan.tanggal ASC, laporan.id_transfer ASC";
+
+    $stmt = mysqli_prepare($con, $mainQuery);
+    mysqli_stmt_bind_param($stmt, $mainTypes, ...$mainParams);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    while ($row = mysqli_fetch_assoc($result)) {
+        $reportRows[] = $row;
+        $total += (float) ($row['jumlah'] ?? 0);
+    }
+
+    mysqli_stmt_close($stmt);
+
+    $summaryQuery = "SELECT
+                        laporan.status AS nama_rekap,
+                        COUNT(*) AS total_transaksi,
+                        COALESCE(SUM(laporan.jumlah), 0) AS total_jumlah
+                    FROM transfer_wallet AS laporan
+                    WHERE laporan.user_id = ?
+                      AND laporan.tanggal BETWEEN ? AND ?";
+    $summaryTypes = "iss";
+    $summaryParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $summaryQuery .= " AND (laporan.wallet_asal_id = ? OR laporan.wallet_tujuan_id = ?)";
+        $summaryTypes .= "ii";
+        $summaryParams[] = $idWallet;
+        $summaryParams[] = $idWallet;
+    }
+
+    $summaryQuery .= " GROUP BY laporan.status
+                       ORDER BY total_jumlah DESC, total_transaksi DESC";
+
+    $stmtSummary = mysqli_prepare($con, $summaryQuery);
+    mysqli_stmt_bind_param($stmtSummary, $summaryTypes, ...$summaryParams);
+    mysqli_stmt_execute($stmtSummary);
+    $summaryResult = mysqli_stmt_get_result($stmtSummary);
+
+    while ($row = mysqli_fetch_assoc($summaryResult)) {
+        $summaryRows[] = $row;
+    }
+
+    mysqli_stmt_close($stmtSummary);
+} elseif ($isSavingGoalReport) {
+    $mainQuery = "SELECT laporan.*,
+                    saving_goal.nama_goal,
+                    COALESCE(wallet.nama_wallet, '-') AS nama_wallet
+                  FROM saving_goal_mutasi AS laporan
+                  INNER JOIN saving_goal
+                    ON laporan.id_goal = saving_goal.id_goal
+                   AND saving_goal.user_id = laporan.user_id
+                  LEFT JOIN wallet
+                    ON laporan.id_wallet = wallet.id_wallet
+                   AND wallet.user_id = laporan.user_id
+                  WHERE laporan.user_id = ?
+                    AND laporan.tanggal BETWEEN ? AND ?";
+    $mainTypes = "iss";
+    $mainParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $mainQuery .= " AND laporan.id_wallet = ?";
+        $mainTypes .= "i";
+        $mainParams[] = $idWallet;
+    }
+
+    $mainQuery .= " ORDER BY laporan.tanggal ASC, laporan.id_mutasi ASC";
+
+    $stmt = mysqli_prepare($con, $mainQuery);
+    mysqli_stmt_bind_param($stmt, $mainTypes, ...$mainParams);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    while ($row = mysqli_fetch_assoc($result)) {
+        $reportRows[] = $row;
+        $total += (float) ($row['jumlah'] ?? 0);
+    }
+
+    mysqli_stmt_close($stmt);
+
+    $summaryQuery = "SELECT
+                        saving_goal.nama_goal AS nama_rekap,
+                        COUNT(*) AS total_transaksi,
+                        COALESCE(SUM(CASE WHEN laporan.tipe = 'setor' THEN laporan.jumlah ELSE 0 END), 0) AS total_setor,
+                        COALESCE(SUM(CASE WHEN laporan.tipe = 'tarik' THEN laporan.jumlah ELSE 0 END), 0) AS total_tarik,
+                        COALESCE(SUM(CASE WHEN laporan.tipe = 'setor' THEN laporan.jumlah ELSE -laporan.jumlah END), 0) AS saldo_bersih
+                    FROM saving_goal_mutasi AS laporan
+                    INNER JOIN saving_goal
+                      ON laporan.id_goal = saving_goal.id_goal
+                     AND saving_goal.user_id = laporan.user_id
+                    WHERE laporan.user_id = ?
+                      AND laporan.tanggal BETWEEN ? AND ?";
+    $summaryTypes = "iss";
+    $summaryParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $summaryQuery .= " AND laporan.id_wallet = ?";
+        $summaryTypes .= "i";
+        $summaryParams[] = $idWallet;
+    }
+
+    $summaryQuery .= " GROUP BY saving_goal.id_goal, saving_goal.nama_goal
+                       ORDER BY saldo_bersih DESC, total_transaksi DESC";
+
+    $stmtSummary = mysqli_prepare($con, $summaryQuery);
+    mysqli_stmt_bind_param($stmtSummary, $summaryTypes, ...$summaryParams);
+    mysqli_stmt_execute($stmtSummary);
+    $summaryResult = mysqli_stmt_get_result($stmtSummary);
+
+    while ($row = mysqli_fetch_assoc($summaryResult)) {
+        $summaryRows[] = $row;
+    }
+
+    mysqli_stmt_close($stmtSummary);
 } else {
     $mainQuery = "SELECT laporan.*, user.username
                   FROM {$tabel} AS laporan
@@ -288,7 +435,7 @@ if ($supportsKategori) {
 
 $jumlahTransaksi = count($reportRows);
 $tanggalCetak = date('d M Y H:i');
-$jenisLaporan = ucfirst($tabel);
+$jenisLaporan = $reportLabels[$tabel] ?? ucfirst($tabel);
 $labelKategoriRingkas = $supportsKategori ? $selectedKategoriLabel : 'Tidak menggunakan kategori';
 $labelWalletRingkas = $supportsWallet ? $selectedWalletLabel : 'Tidak menggunakan wallet';
 $periodeLabel = date('d M Y', strtotime($tgl_awal)) . ' s/d ' . date('d M Y', strtotime($tgl_akhir));
@@ -318,55 +465,110 @@ if ($output === 'csv') {
     fputcsv($csvOutput, ['Total Nominal', (string) $total], ';');
     fputcsv($csvOutput, [], ';');
 
-    $headers = ['No', 'Tanggal'];
-    if ($supportsKategori) {
-        $headers[] = 'Kategori';
-    }
-    if ($supportsWallet) {
-        $headers[] = 'Wallet';
-    }
-    $headers[] = 'Jumlah';
-    $headers[] = 'Catatan';
-    if ($tabel === 'pemasukan') {
-        $headers[] = 'Status';
-    }
+    if ($isTransferReport) {
+        fputcsv($csvOutput, ['Tanggal', 'Wallet Asal', 'Wallet Tujuan', 'Jumlah', 'Status', 'Catatan'], ';');
 
-    fputcsv($csvOutput, $headers, ';');
+        foreach ($reportRows as $row) {
+            fputcsv($csvOutput, [
+                date('d M Y', strtotime($row['tanggal'])),
+                $row['nama_wallet_asal'] ?? 'Wallet tidak ditemukan',
+                $row['nama_wallet_tujuan'] ?? 'Wallet tidak ditemukan',
+                (string) ((float) ($row['jumlah'] ?? 0)),
+                $row['status'] ?? '-',
+                trim((string) ($row['catatan'] ?? '-')),
+            ], ';');
+        }
+    } elseif ($isSavingGoalReport) {
+        fputcsv($csvOutput, ['Tanggal', 'Celengan', 'Tipe', 'Wallet', 'Jumlah', 'Catatan'], ';');
 
-    foreach ($reportRows as $index => $row) {
-        $line = [
-            $index + 1,
-            date('d M Y', strtotime($row['tanggal'])),
-        ];
-
+        foreach ($reportRows as $row) {
+            fputcsv($csvOutput, [
+                date('d M Y', strtotime($row['tanggal'])),
+                $row['nama_goal'] ?? '-',
+                $row['tipe'] ?? '-',
+                $row['nama_wallet'] ?? '-',
+                (string) ((float) ($row['jumlah'] ?? 0)),
+                trim((string) ($row['catatan'] ?? '-')),
+            ], ';');
+        }
+    } else {
+        $headers = ['No', 'Tanggal'];
         if ($supportsKategori) {
-            $line[] = $row['nama_kategori'] ?? 'Belum dikategorikan';
+            $headers[] = 'Kategori';
         }
         if ($supportsWallet) {
-            $line[] = $row['nama_wallet'] ?? 'Tanpa wallet';
+            $headers[] = 'Wallet';
         }
-
-        $line[] = (string) ((float) ($row['jumlah'] ?? 0));
-        $line[] = trim((string) ($row['catatan'] ?? '-'));
-
+        $headers[] = 'Jumlah';
+        $headers[] = 'Catatan';
         if ($tabel === 'pemasukan') {
-            $line[] = $row['status'] ?? '-';
+            $headers[] = 'Status';
         }
 
-        fputcsv($csvOutput, $line, ';');
+        fputcsv($csvOutput, $headers, ';');
+
+        foreach ($reportRows as $index => $row) {
+            $line = [
+                $index + 1,
+                date('d M Y', strtotime($row['tanggal'])),
+            ];
+
+            if ($supportsKategori) {
+                $line[] = $row['nama_kategori'] ?? 'Belum dikategorikan';
+            }
+            if ($supportsWallet) {
+                $line[] = $row['nama_wallet'] ?? 'Tanpa wallet';
+            }
+
+            $line[] = (string) ((float) ($row['jumlah'] ?? 0));
+            $line[] = trim((string) ($row['catatan'] ?? '-'));
+
+            if ($tabel === 'pemasukan') {
+                $line[] = $row['status'] ?? '-';
+            }
+
+            fputcsv($csvOutput, $line, ';');
+        }
     }
 
-    if ($supportsKategori && !empty($summaryRows)) {
+    if (!empty($summaryRows)) {
         fputcsv($csvOutput, [], ';');
-        fputcsv($csvOutput, ['Rekap Total Per Kategori'], ';');
-        fputcsv($csvOutput, ['Kategori', 'Jumlah Transaksi', 'Total'], ';');
 
-        foreach ($summaryRows as $row) {
-            fputcsv($csvOutput, [
-                $row['nama_kategori'] ?? 'Belum dikategorikan',
-                (string) ((int) ($row['total_transaksi'] ?? 0)),
-                (string) ((float) ($row['total_jumlah'] ?? 0)),
-            ], ';');
+        if ($supportsKategori) {
+            fputcsv($csvOutput, ['Rekap Total Per Kategori'], ';');
+            fputcsv($csvOutput, ['Kategori', 'Jumlah Transaksi', 'Total'], ';');
+
+            foreach ($summaryRows as $row) {
+                fputcsv($csvOutput, [
+                    $row['nama_kategori'] ?? 'Belum dikategorikan',
+                    (string) ((int) ($row['total_transaksi'] ?? 0)),
+                    (string) ((float) ($row['total_jumlah'] ?? 0)),
+                ], ';');
+            }
+        } elseif ($isTransferReport) {
+            fputcsv($csvOutput, ['Rekap Transfer Per Status'], ';');
+            fputcsv($csvOutput, ['Status', 'Jumlah Transaksi', 'Total'], ';');
+
+            foreach ($summaryRows as $row) {
+                fputcsv($csvOutput, [
+                    $row['nama_rekap'] ?? '-',
+                    (string) ((int) ($row['total_transaksi'] ?? 0)),
+                    (string) ((float) ($row['total_jumlah'] ?? 0)),
+                ], ';');
+            }
+        } elseif ($isSavingGoalReport) {
+            fputcsv($csvOutput, ['Rekap Celengan Virtual'], ';');
+            fputcsv($csvOutput, ['Celengan', 'Jumlah Transaksi', 'Total Setor', 'Total Tarik', 'Saldo Bersih'], ';');
+
+            foreach ($summaryRows as $row) {
+                fputcsv($csvOutput, [
+                    $row['nama_rekap'] ?? '-',
+                    (string) ((int) ($row['total_transaksi'] ?? 0)),
+                    (string) ((float) ($row['total_setor'] ?? 0)),
+                    (string) ((float) ($row['total_tarik'] ?? 0)),
+                    (string) ((float) ($row['saldo_bersih'] ?? 0)),
+                ], ';');
+            }
         }
     }
 
@@ -507,85 +709,183 @@ if ($output === 'pdf') {
     if (empty($reportRows)) {
         $pdfHtml .= '<p>Tidak ada data laporan untuk filter yang dipilih.</p>';
     } else {
-        $pdfShowStatus = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
-
-        if ($supportsWallet && $supportsKategori) {
-            $pdfWidths = ['no' => '5%', 'tanggal' => '12%', 'kategori' => '15%', 'wallet' => '15%', 'jumlah' => '16%', 'catatan' => '27%', 'status' => '10%'];
-        } elseif ($supportsKategori) {
-            $pdfWidths = ['no' => '5%', 'tanggal' => '13%', 'kategori' => '18%', 'wallet' => '0%', 'jumlah' => '17%', 'catatan' => '35%', 'status' => '12%'];
-        } else {
-            $pdfWidths = ['no' => '5%', 'tanggal' => '15%', 'kategori' => '0%', 'wallet' => '0%', 'jumlah' => '20%', 'catatan' => '60%', 'status' => '0%'];
-        }
-
-        $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
-            <th width="' . $pdfWidths['no'] . '" class="center">No</th>
-            <th width="' . $pdfWidths['tanggal'] . '">Tanggal</th>';
-
-        if ($supportsKategori) {
-            $pdfHtml .= '<th width="' . $pdfWidths['kategori'] . '">Kategori</th>';
-        }
-
-        if ($supportsWallet) {
-            $pdfHtml .= '<th width="' . $pdfWidths['wallet'] . '">Wallet</th>';
-        }
-
-        $pdfHtml .= '<th width="' . $pdfWidths['jumlah'] . '">Jumlah</th>
-            <th width="' . $pdfWidths['catatan'] . '">Catatan</th>';
-
-        if ($pdfShowStatus) {
-            $pdfHtml .= '<th width="' . $pdfWidths['status'] . '">Status</th>';
-        }
-
-        $pdfHtml .= '</tr></thead><tbody>';
-
-        foreach ($reportRows as $index => $row) {
-            $pdfHtml .= '<tr>
-                <td class="center">' . ($index + 1) . '</td>
-                <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>';
-
-            if ($supportsKategori) {
-                $pdfHtml .= '<td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>';
-            }
-
-            if ($supportsWallet) {
-                $pdfHtml .= '<td>' . report_escape($row['nama_wallet'] ?? 'Tanpa wallet') . '</td>';
-            }
-
-            $pdfHtml .= '<td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
-                <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>';
-
-            if ($pdfShowStatus) {
-                $pdfHtml .= '<td>' . report_escape($row['status'] ?? '-') . '</td>';
-            }
-
-            $pdfHtml .= '</tr>';
-        }
-
-        $totalLabelColspan = 2 + ($supportsKategori ? 1 : 0) + ($supportsWallet ? 1 : 0);
-        $pdfHtml .= '<tr class="total-row">
-            <td colspan="' . $totalLabelColspan . '">Total</td>
-            <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
-            <td colspan="' . (1 + ($pdfShowStatus ? 1 : 0)) . '"></td>
-        </tr>';
-        $pdfHtml .= '</tbody></table>';
-
-        if ($supportsKategori && !empty($summaryRows)) {
-            $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Total Per Kategori</h3><div class="spacer-sm"></div>';
+        if ($isTransferReport) {
             $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
-                <th width="50%">Kategori</th>
-                <th width="20%">Jumlah Transaksi</th>
-                <th width="30%">Total</th>
+                <th width="5%" class="center">No</th>
+                <th width="12%">Tanggal</th>
+                <th width="17%">Wallet Asal</th>
+                <th width="17%">Wallet Tujuan</th>
+                <th width="15%">Jumlah</th>
+                <th width="10%">Status</th>
+                <th width="24%">Catatan</th>
             </tr></thead><tbody>';
 
-            foreach ($summaryRows as $row) {
+            foreach ($reportRows as $index => $row) {
                 $pdfHtml .= '<tr>
-                    <td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>
-                    <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
-                    <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    <td class="center">' . ($index + 1) . '</td>
+                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
+                    <td>' . report_escape($row['nama_wallet_asal'] ?? 'Wallet tidak ditemukan') . '</td>
+                    <td>' . report_escape($row['nama_wallet_tujuan'] ?? 'Wallet tidak ditemukan') . '</td>
+                    <td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    <td>' . report_escape($row['status'] ?? '-') . '</td>
+                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
                 </tr>';
             }
 
+            $pdfHtml .= '<tr class="total-row">
+                <td colspan="4">Total</td>
+                <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+                <td colspan="2"></td>
+            </tr></tbody></table>';
+        } elseif ($isSavingGoalReport) {
+            $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+                <th width="5%" class="center">No</th>
+                <th width="12%">Tanggal</th>
+                <th width="20%">Celengan</th>
+                <th width="10%">Tipe</th>
+                <th width="16%">Wallet</th>
+                <th width="15%">Jumlah</th>
+                <th width="22%">Catatan</th>
+            </tr></thead><tbody>';
+
+            foreach ($reportRows as $index => $row) {
+                $pdfHtml .= '<tr>
+                    <td class="center">' . ($index + 1) . '</td>
+                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
+                    <td>' . report_escape($row['nama_goal'] ?? '-') . '</td>
+                    <td>' . report_escape($row['tipe'] ?? '-') . '</td>
+                    <td>' . report_escape($row['nama_wallet'] ?? '-') . '</td>
+                    <td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
+                </tr>';
+            }
+
+            $pdfHtml .= '<tr class="total-row">
+                <td colspan="5">Total</td>
+                <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+                <td></td>
+            </tr></tbody></table>';
+        } else {
+            $pdfShowStatus = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
+
+            if ($supportsWallet && $supportsKategori) {
+                $pdfWidths = ['no' => '5%', 'tanggal' => '12%', 'kategori' => '15%', 'wallet' => '15%', 'jumlah' => '16%', 'catatan' => '27%', 'status' => '10%'];
+            } elseif ($supportsKategori) {
+                $pdfWidths = ['no' => '5%', 'tanggal' => '13%', 'kategori' => '18%', 'wallet' => '0%', 'jumlah' => '17%', 'catatan' => '35%', 'status' => '12%'];
+            } else {
+                $pdfWidths = ['no' => '5%', 'tanggal' => '15%', 'kategori' => '0%', 'wallet' => '0%', 'jumlah' => '20%', 'catatan' => '60%', 'status' => '0%'];
+            }
+
+            $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+                <th width="' . $pdfWidths['no'] . '" class="center">No</th>
+                <th width="' . $pdfWidths['tanggal'] . '">Tanggal</th>';
+
+            if ($supportsKategori) {
+                $pdfHtml .= '<th width="' . $pdfWidths['kategori'] . '">Kategori</th>';
+            }
+
+            if ($supportsWallet) {
+                $pdfHtml .= '<th width="' . $pdfWidths['wallet'] . '">Wallet</th>';
+            }
+
+            $pdfHtml .= '<th width="' . $pdfWidths['jumlah'] . '">Jumlah</th>
+                <th width="' . $pdfWidths['catatan'] . '">Catatan</th>';
+
+            if ($pdfShowStatus) {
+                $pdfHtml .= '<th width="' . $pdfWidths['status'] . '">Status</th>';
+            }
+
+            $pdfHtml .= '</tr></thead><tbody>';
+
+            foreach ($reportRows as $index => $row) {
+                $pdfHtml .= '<tr>
+                    <td class="center">' . ($index + 1) . '</td>
+                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>';
+
+                if ($supportsKategori) {
+                    $pdfHtml .= '<td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>';
+                }
+
+                if ($supportsWallet) {
+                    $pdfHtml .= '<td>' . report_escape($row['nama_wallet'] ?? 'Tanpa wallet') . '</td>';
+                }
+
+                $pdfHtml .= '<td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>';
+
+                if ($pdfShowStatus) {
+                    $pdfHtml .= '<td>' . report_escape($row['status'] ?? '-') . '</td>';
+                }
+
+                $pdfHtml .= '</tr>';
+            }
+
+            $totalLabelColspan = 2 + ($supportsKategori ? 1 : 0) + ($supportsWallet ? 1 : 0);
+            $pdfHtml .= '<tr class="total-row">
+                <td colspan="' . $totalLabelColspan . '">Total</td>
+                <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+                <td colspan="' . (1 + ($pdfShowStatus ? 1 : 0)) . '"></td>
+            </tr>';
             $pdfHtml .= '</tbody></table>';
+        }
+
+        if (!empty($summaryRows)) {
+            if ($supportsKategori) {
+                $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Total Per Kategori</h3><div class="spacer-sm"></div>';
+                $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+                    <th width="50%">Kategori</th>
+                    <th width="20%">Jumlah Transaksi</th>
+                    <th width="30%">Total</th>
+                </tr></thead><tbody>';
+
+                foreach ($summaryRows as $row) {
+                    $pdfHtml .= '<tr>
+                        <td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>
+                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                        <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    </tr>';
+                }
+
+                $pdfHtml .= '</tbody></table>';
+            } elseif ($isTransferReport) {
+                $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Transfer Per Status</h3><div class="spacer-sm"></div>';
+                $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+                    <th width="50%">Status</th>
+                    <th width="20%">Jumlah Transaksi</th>
+                    <th width="30%">Total</th>
+                </tr></thead><tbody>';
+
+                foreach ($summaryRows as $row) {
+                    $pdfHtml .= '<tr>
+                        <td>' . report_escape($row['nama_rekap'] ?? '-') . '</td>
+                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                        <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    </tr>';
+                }
+
+                $pdfHtml .= '</tbody></table>';
+            } elseif ($isSavingGoalReport) {
+                $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Celengan Virtual</h3><div class="spacer-sm"></div>';
+                $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+                    <th width="28%">Celengan</th>
+                    <th width="14%">Transaksi</th>
+                    <th width="19%">Total Setor</th>
+                    <th width="19%">Total Tarik</th>
+                    <th width="20%">Saldo Bersih</th>
+                </tr></thead><tbody>';
+
+                foreach ($summaryRows as $row) {
+                    $pdfHtml .= '<tr>
+                        <td>' . report_escape($row['nama_rekap'] ?? '-') . '</td>
+                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                        <td class="right">Rp ' . number_format((float) ($row['total_setor'] ?? 0), 0, ',', '.') . '</td>
+                        <td class="right">Rp ' . number_format((float) ($row['total_tarik'] ?? 0), 0, ',', '.') . '</td>
+                        <td class="right">Rp ' . number_format((float) ($row['saldo_bersih'] ?? 0), 0, ',', '.') . '</td>
+                    </tr>';
+                }
+
+                $pdfHtml .= '</tbody></table>';
+            }
         }
     }
 
@@ -599,7 +899,7 @@ if ($output === 'pdf') {
 <html>
 
 <head>
-    <title>Laporan <?= ucfirst($tabel) ?></title>
+    <title>Laporan <?= htmlspecialchars($jenisLaporan) ?></title>
     <style>
     body {
         font-family: Arial, sans-serif;
@@ -846,8 +1146,8 @@ if ($output === 'pdf') {
             </td>
             <td>
                 <div class="summary-box">
-                    <p class="summary-label">Kategori</p>
-                    <p class="summary-value"><?= htmlspecialchars($labelKategoriRingkas) ?></p>
+                    <p class="summary-label"><?= $supportsKategori ? 'Kategori' : ($supportsWallet ? 'Wallet' : 'Kategori') ?></p>
+                    <p class="summary-value"><?= htmlspecialchars($supportsKategori ? $labelKategoriRingkas : ($supportsWallet ? $labelWalletRingkas : $labelKategoriRingkas)) ?></p>
                 </div>
             </td>
             <td>
@@ -868,73 +1168,185 @@ if ($output === 'pdf') {
     <?php if (empty($reportRows)) { ?>
         <div class="empty-state">
             <h4>Data laporan tidak ditemukan</h4>
-            <p>Tidak ada transaksi <?= htmlspecialchars($tabel) ?> pada periode dan filter yang dipilih.</p>
+            <p>Tidak ada data <?= htmlspecialchars($jenisLaporan) ?> pada periode dan filter yang dipilih.</p>
         </div>
     <?php } else { ?>
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Tanggal</th>
-                    <?php if ($supportsKategori) { ?>
-                        <th>Kategori</th>
-                    <?php } ?>
-                    <?php if ($supportsWallet) { ?>
-                        <th>Wallet</th>
-                    <?php } ?>
-                    <th>Jumlah</th>
-                    <th>Catatan</th>
-                    <?php if ($tabel == 'pemasukan'): ?>
-                        <th>Status</th>
-                    <?php endif; ?>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($reportRows as $index => $row) { ?>
-                    <tr>
-                        <td><?= $index + 1 ?></td>
-                        <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
-                        <?php if ($supportsKategori) { ?>
-                            <td><?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?></td>
-                        <?php } ?>
-                        <?php if ($supportsWallet) { ?>
-                            <td><?= htmlspecialchars($row['nama_wallet'] ?? 'Tanpa wallet') ?></td>
-                        <?php } ?>
-                        <td align="right">Rp <?= number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') ?></td>
-                        <td><?= htmlspecialchars($row['catatan'] ?? '-') ?></td>
-                        <?php if ($tabel == 'pemasukan'): ?>
-                            <td><?= htmlspecialchars($row['status'] ?? '-') ?></td>
-                        <?php endif; ?>
-                    </tr>
-                <?php } ?>
-                <tr class="total-row">
-                    <td colspan="<?= 2 + ($supportsKategori ? 1 : 0) + ($supportsWallet ? 1 : 0) ?>">Total</td>
-                    <td align="right">Rp <?= number_format((float) $total, 0, ',', '.') ?></td>
-                    <td colspan="<?= ($supportsKategori ? ($tabel == 'pemasukan' ? '2' : '1') : ($tabel == 'pemasukan' ? '2' : '1')) ?>"></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <?php if ($supportsKategori) { ?>
-            <h4 class="summary-title">Rekap Total Per Kategori</h4>
+        <?php if ($isTransferReport) { ?>
             <table>
                 <thead>
                     <tr>
-                        <th>Kategori</th>
-                        <th>Jumlah Transaksi</th>
-                        <th>Total</th>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Wallet Asal</th>
+                        <th>Wallet Tujuan</th>
+                        <th>Jumlah</th>
+                        <th>Status</th>
+                        <th>Catatan</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($summaryRows as $row) { ?>
+                    <?php foreach ($reportRows as $index => $row) { ?>
                         <tr>
-                            <td><?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?></td>
-                            <td><?= number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') ?></td>
-                            <td align="right">Rp <?= number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') ?></td>
+                            <td><?= $index + 1 ?></td>
+                            <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
+                            <td><?= htmlspecialchars($row['nama_wallet_asal'] ?? 'Wallet tidak ditemukan') ?></td>
+                            <td><?= htmlspecialchars($row['nama_wallet_tujuan'] ?? 'Wallet tidak ditemukan') ?></td>
+                            <td align="right">Rp <?= number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') ?></td>
+                            <td><?= htmlspecialchars($row['status'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($row['catatan'] ?? '-') ?></td>
                         </tr>
                     <?php } ?>
+                    <tr class="total-row">
+                        <td colspan="4">Total</td>
+                        <td align="right">Rp <?= number_format((float) $total, 0, ',', '.') ?></td>
+                        <td colspan="2"></td>
+                    </tr>
                 </tbody>
             </table>
+        <?php } elseif ($isSavingGoalReport) { ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Celengan</th>
+                        <th>Tipe</th>
+                        <th>Wallet</th>
+                        <th>Jumlah</th>
+                        <th>Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($reportRows as $index => $row) { ?>
+                        <tr>
+                            <td><?= $index + 1 ?></td>
+                            <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
+                            <td><?= htmlspecialchars($row['nama_goal'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($row['tipe'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($row['nama_wallet'] ?? '-') ?></td>
+                            <td align="right">Rp <?= number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') ?></td>
+                            <td><?= htmlspecialchars($row['catatan'] ?? '-') ?></td>
+                        </tr>
+                    <?php } ?>
+                    <tr class="total-row">
+                        <td colspan="5">Total</td>
+                        <td align="right">Rp <?= number_format((float) $total, 0, ',', '.') ?></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        <?php } else { ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <?php if ($supportsKategori) { ?>
+                            <th>Kategori</th>
+                        <?php } ?>
+                        <?php if ($supportsWallet) { ?>
+                            <th>Wallet</th>
+                        <?php } ?>
+                        <th>Jumlah</th>
+                        <th>Catatan</th>
+                        <?php if ($tabel == 'pemasukan'): ?>
+                            <th>Status</th>
+                        <?php endif; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($reportRows as $index => $row) { ?>
+                        <tr>
+                            <td><?= $index + 1 ?></td>
+                            <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
+                            <?php if ($supportsKategori) { ?>
+                                <td><?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?></td>
+                            <?php } ?>
+                            <?php if ($supportsWallet) { ?>
+                                <td><?= htmlspecialchars($row['nama_wallet'] ?? 'Tanpa wallet') ?></td>
+                            <?php } ?>
+                            <td align="right">Rp <?= number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') ?></td>
+                            <td><?= htmlspecialchars($row['catatan'] ?? '-') ?></td>
+                            <?php if ($tabel == 'pemasukan'): ?>
+                                <td><?= htmlspecialchars($row['status'] ?? '-') ?></td>
+                            <?php endif; ?>
+                        </tr>
+                    <?php } ?>
+                    <tr class="total-row">
+                        <td colspan="<?= 2 + ($supportsKategori ? 1 : 0) + ($supportsWallet ? 1 : 0) ?>">Total</td>
+                        <td align="right">Rp <?= number_format((float) $total, 0, ',', '.') ?></td>
+                        <td colspan="<?= ($supportsKategori ? ($tabel == 'pemasukan' ? '2' : '1') : ($tabel == 'pemasukan' ? '2' : '1')) ?>"></td>
+                    </tr>
+                </tbody>
+            </table>
+        <?php } ?>
+
+        <?php if (!empty($summaryRows)) { ?>
+            <?php if ($supportsKategori) { ?>
+                <h4 class="summary-title">Rekap Total Per Kategori</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kategori</th>
+                            <th>Jumlah Transaksi</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($summaryRows as $row) { ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?></td>
+                                <td><?= number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') ?></td>
+                                <td align="right">Rp <?= number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') ?></td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+            <?php } elseif ($isTransferReport) { ?>
+                <h4 class="summary-title">Rekap Transfer Per Status</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Jumlah Transaksi</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($summaryRows as $row) { ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['nama_rekap'] ?? '-') ?></td>
+                                <td><?= number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') ?></td>
+                                <td align="right">Rp <?= number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') ?></td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+            <?php } elseif ($isSavingGoalReport) { ?>
+                <h4 class="summary-title">Rekap Celengan Virtual</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Celengan</th>
+                            <th>Jumlah Transaksi</th>
+                            <th>Total Setor</th>
+                            <th>Total Tarik</th>
+                            <th>Saldo Bersih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($summaryRows as $row) { ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['nama_rekap'] ?? '-') ?></td>
+                                <td><?= number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') ?></td>
+                                <td align="right">Rp <?= number_format((float) ($row['total_setor'] ?? 0), 0, ',', '.') ?></td>
+                                <td align="right">Rp <?= number_format((float) ($row['total_tarik'] ?? 0), 0, ',', '.') ?></td>
+                                <td align="right">Rp <?= number_format((float) ($row['saldo_bersih'] ?? 0), 0, ',', '.') ?></td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+            <?php } ?>
         <?php } ?>
     <?php } ?>
 

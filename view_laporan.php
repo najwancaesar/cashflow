@@ -118,6 +118,20 @@ if ($userYangSedangLogin > 0) {
                                         Piutang
                                     </label>
                                 </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tabel"
+                                        id="transfer_wallet" value="transfer_wallet">
+                                    <label class="form-check-label" for="transfer_wallet">
+                                        Transfer Wallet
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tabel"
+                                        id="saving_goal" value="saving_goal">
+                                    <label class="form-check-label" for="saving_goal">
+                                        Celengan Virtual
+                                    </label>
+                                </div>
                             </div>
                         </div>
                         <div class="row mt-4">
@@ -293,7 +307,7 @@ if ($userYangSedangLogin > 0) {
             if (selectedTable !== 'pemasukan' && selectedTable !== 'pengeluaran') {
                 categorySelect.append('<option value="">Tidak menggunakan kategori</option>');
                 categorySelect.prop('disabled', true);
-                categoryHelp.text('Filter kategori hanya tersedia untuk laporan pemasukan dan pengeluaran.');
+                categoryHelp.text('Filter kategori tidak digunakan untuk jenis laporan ini.');
                 return;
             }
 
@@ -320,9 +334,9 @@ if ($userYangSedangLogin > 0) {
             var walletSelect = $('#id_wallet');
             var walletHelp = $('#wallet-help');
 
-            if (selectedTable !== 'pemasukan' && selectedTable !== 'pengeluaran') {
+            if (selectedTable === 'hutang' || selectedTable === 'piutang') {
                 walletSelect.prop('disabled', true);
-                walletHelp.text('Filter wallet hanya tersedia untuk laporan pemasukan dan pengeluaran.');
+                walletHelp.text('Filter wallet tidak digunakan untuk laporan utang dan piutang.');
                 return;
             }
 
@@ -330,6 +344,10 @@ if ($userYangSedangLogin > 0) {
 
             if (walletSelect.find('option').length <= 1) {
                 walletHelp.text('Belum ada wallet. Laporan tetap bisa dicetak tanpa filter wallet.');
+            } else if (selectedTable === 'transfer_wallet') {
+                walletHelp.text('Pilih wallet tertentu untuk melihat transfer yang melibatkan wallet tersebut.');
+            } else if (selectedTable === 'saving_goal') {
+                walletHelp.text('Pilih wallet tertentu untuk melihat mutasi celengan dari wallet tersebut.');
             } else {
                 walletHelp.text('Pilih wallet tertentu atau biarkan "Semua Wallet" untuk melihat seluruh data.');
             }
