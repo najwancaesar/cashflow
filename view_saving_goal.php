@@ -82,7 +82,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
     <table class="table align-items-center mb-0" id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>">
         <thead>
             <tr>
-                <th>Target</th>
+                <th>Celengan</th>
                 <th>Progress</th>
                 <th>Target Tanggal</th>
                 <th>Status</th>
@@ -177,8 +177,8 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                     <input type="hidden" name="status" value="selesai">
                                     <button type="submit"
                                         data-confirm="true"
-                                        data-confirm-title="Tandai target selesai?"
-                                        data-confirm-text="Target selesai akan dikunci dari setor dan tarik sampai diaktifkan kembali."
+                                        data-confirm-title="Tandai celengan selesai?"
+                                        data-confirm-text="Celengan selesai akan dikunci dari setor dan tarik sampai diaktifkan kembali."
                                         data-confirm-confirm-text="Ya, tandai selesai"
                                         data-confirm-cancel-text="Batal"
                                         class="text-secondary text-success font-weight-bold text-xs border-0 bg-transparent p-0">
@@ -194,8 +194,8 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                     <input type="hidden" name="status" value="aktif">
                                     <button type="submit"
                                         data-confirm="true"
-                                        data-confirm-title="Aktifkan kembali target ini?"
-                                        data-confirm-text="Target akan kembali aktif dan bisa menerima setor/tarik."
+                                        data-confirm-title="Aktifkan kembali celengan ini?"
+                                        data-confirm-text="Celengan akan kembali aktif dan bisa menerima setor/tarik."
                                         data-confirm-confirm-text="Ya, aktifkan"
                                         data-confirm-cancel-text="Batal"
                                         class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0">
@@ -211,8 +211,8 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                     <input type="hidden" name="status" value="arsip">
                                     <button type="submit"
                                         data-confirm="true"
-                                        data-confirm-title="Arsipkan target ini?"
-                                        data-confirm-text="Target akan dipindahkan ke status arsip tanpa menghapus riwayat mutasi."
+                                        data-confirm-title="Arsipkan celengan ini?"
+                                        data-confirm-text="Celengan akan dipindahkan ke status arsip tanpa menghapus riwayat mutasi."
                                         data-confirm-confirm-text="Ya, arsipkan"
                                         data-confirm-cancel-text="Batal"
                                         class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
@@ -241,7 +241,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                     </div>
                     <div class="modal-body">
                         <?php if (empty($goalMutasi)) { ?>
-                            <p class="text-sm text-secondary mb-0">Belum ada riwayat mutasi untuk target ini.</p>
+                            <p class="text-sm text-secondary mb-0">Belum ada riwayat mutasi untuk celengan ini.</p>
                         <?php } else { ?>
                             <div class="table-responsive">
                                 <table class="table align-items-center mb-0">
@@ -415,7 +415,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                         <i class="fa fa-bullseye" aria-hidden="true"></i>
                     </div>
                     <div class="text-end pt-1">
-                        <p class="text-sm mb-0 text-capitalize">Target Aktif</p>
+                        <p class="text-sm mb-0 text-capitalize">Celengan Aktif</p>
                         <h4 class="mb-0"><?= number_format((float) count($goalAktif)) ?></h4>
                     </div>
                 </div>
@@ -462,13 +462,13 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3">
-                        <h6 class="text-white text-capitalize ps-3">Celengan / Target Tabungan</h6>
+                        <h6 class="text-white text-capitalize ps-3">Celengan Virtual</h6>
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
                     <div class="px-4 pt-2">
                         <p class="text-sm text-secondary mb-0">
-                            Kelola target tabungan pribadi dengan alokasi dana dari wallet aktif.
+                            Kelola celengan virtual pribadi dengan alokasi dana dari wallet aktif.
                         </p>
                         <p class="text-xs text-secondary mb-0">
                             Setor celengan mengurangi saldo wallet, sedangkan tarik celengan menambah saldo wallet.
@@ -482,11 +482,11 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                     <div class="text-end me-3 mt-3">
                         <button type="button" class="btn btn-secondary" id="btnTambahSavingGoal" data-bs-toggle="modal"
                             data-bs-target="#modalSavingGoal">
-                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Target
+                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Celengan
                         </button>
                     </div>
                     <div class="table-responsive p-4 mx-2">
-                        <?php render_saving_goal_table('datatableSavingGoal', $goalAktif, $mutasiByGoal, 'Belum ada target tabungan. Mulai buat target pertamamu, misalnya Dana Darurat atau Beli Laptop.', $hasWalletAktif); ?>
+                        <?php render_saving_goal_table('datatableSavingGoal', $goalAktif, $mutasiByGoal, 'Belum ada celengan virtual. Mulai buat celengan pertamamu, misalnya Dana Darurat atau Beli Laptop.', $hasWalletAktif); ?>
                     </div>
                 </div>
             </div>
@@ -499,12 +499,12 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                 <div class="card my-4">
                     <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                         <div class="bg-gradient-secondary shadow-secondary border-radius-lg pt-4 pb-3">
-                            <h6 class="text-white text-capitalize ps-3">Arsip Target Tabungan</h6>
+                            <h6 class="text-white text-capitalize ps-3">Arsip Celengan Virtual</h6>
                         </div>
                     </div>
                     <div class="card-body px-0 pb-2">
                         <div class="table-responsive p-4 mx-2">
-                            <?php render_saving_goal_table('datatableSavingGoalArchive', $goalArsip, $mutasiByGoal, 'Belum ada target tabungan yang diarsipkan.', $hasWalletAktif); ?>
+                            <?php render_saving_goal_table('datatableSavingGoalArchive', $goalArsip, $mutasiByGoal, 'Belum ada celengan virtual yang diarsipkan.', $hasWalletAktif); ?>
                         </div>
                     </div>
                 </div>
@@ -521,14 +521,14 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
-                        <h6 class="modal-title text-white text-capitalize ps-3" id="saving_goal_modal_title">Target Tabungan</h6>
+                        <h6 class="modal-title text-white text-capitalize ps-3" id="saving_goal_modal_title">Celengan Virtual</h6>
                         <button type="button" class="btn-close me-2" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" name="id_goal" id="id_goal" class="form-control">
                     <div class="row">
-                        <label class="form-label">Nama Target</label>
+                        <label class="form-label">Nama Celengan</label>
                         <div class="input-group input-group-outline">
                             <input type="text" name="nama_goal" id="nama_goal" class="form-control" maxlength="150" required>
                         </div>
@@ -695,7 +695,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
         });
 
         $('#btnTambahSavingGoal').on('click', function() {
-            $('#saving_goal_modal_title').text('Tambah Target Tabungan');
+            $('#saving_goal_modal_title').text('Tambah Celengan Virtual');
             $('#id_goal').val('');
             $('#nama_goal').val('');
             $('#target_nominal').val('');
@@ -705,7 +705,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
 
         $(document).on('click', '.btneditsavinggoal', function() {
             $('#modalSavingGoal').modal('show');
-            $('#saving_goal_modal_title').text('Edit Target Tabungan');
+            $('#saving_goal_modal_title').text('Edit Celengan Virtual');
             $('#id_goal').val($(this).attr('data-id'));
             $('#nama_goal').val($(this).attr('data-nama'));
             $('#target_nominal').val($(this).attr('data-target'));
@@ -720,7 +720,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
         $(document).on('click', '.btnsetorsavinggoal', function() {
             $('#modalSetorSavingGoal').modal('show');
             $('#setor_id_goal').val($(this).attr('data-id'));
-            $('#setor_goal_name').text('Target: ' + ($(this).attr('data-nama') || '-'));
+            $('#setor_goal_name').text('Celengan: ' + ($(this).attr('data-nama') || '-'));
             $('#setor_tanggal').val('<?= htmlspecialchars($tanggalHariIni, ENT_QUOTES, 'UTF-8') ?>');
             $('#setor_id_wallet').val(defaultWalletId || '');
             $('#setor_jumlah').val('');
@@ -730,7 +730,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
         $(document).on('click', '.btntariksavinggoal', function() {
             $('#modalTarikSavingGoal').modal('show');
             $('#tarik_id_goal').val($(this).attr('data-id'));
-            $('#tarik_goal_name').text('Target: ' + ($(this).attr('data-nama') || '-'));
+            $('#tarik_goal_name').text('Celengan: ' + ($(this).attr('data-nama') || '-'));
             $('#tarik_goal_saldo').text('Saldo terkumpul: Rp. ' + Number($(this).attr('data-saldo') || 0).toLocaleString('id-ID'));
             $('#tarik_tanggal').val('<?= htmlspecialchars($tanggalHariIni, ENT_QUOTES, 'UTF-8') ?>');
             $('#tarik_id_wallet').val(defaultWalletId || '');
@@ -739,7 +739,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
         });
 
         $('#modalSavingGoal').on('hidden.bs.modal', function() {
-            $('#saving_goal_modal_title').text('Target Tabungan');
+            $('#saving_goal_modal_title').text('Celengan Virtual');
             $('#id_goal').val('');
             $('#nama_goal').val('');
             $('#target_nominal').val('');

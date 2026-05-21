@@ -800,6 +800,78 @@ foreach ($wallet_summary_rows as $walletRow) {
 $wallet_aktif_count = count($wallet_summary_items);
 $has_wallet_summary = $wallet_aktif_count > 0;
 
+$celengan_virtual_rows = fetch_all_rows(
+    $con,
+    "SELECT
+        saving_goal.id_goal,
+        saving_goal.nama_goal,
+        saving_goal.target_nominal,
+        saving_goal.target_tanggal,
+        saving_goal.updated_at,
+        COALESCE(mutasi.saldo_terkumpul, 0) AS saldo_terkumpul
+     FROM saving_goal
+     LEFT JOIN (
+        SELECT
+            id_goal,
+            user_id,
+            COALESCE(SUM(CASE
+                WHEN tipe = 'setor' THEN jumlah
+                WHEN tipe = 'tarik' THEN -jumlah
+                ELSE 0
+            END), 0) AS saldo_terkumpul
+        FROM saving_goal_mutasi
+        WHERE user_id = ?
+        GROUP BY id_goal, user_id
+     ) AS mutasi
+        ON mutasi.id_goal = saving_goal.id_goal
+       AND mutasi.user_id = saving_goal.user_id
+     WHERE saving_goal.user_id = ?
+       AND saving_goal.status = 'aktif'
+     ORDER BY saving_goal.updated_at DESC, saving_goal.id_goal DESC",
+    "ii",
+    [$userYangSedangLogin, $userYangSedangLogin]
+);
+
+$celengan_virtual_items = [];
+$celengan_virtual_total_count = 0;
+$celengan_virtual_total_saldo = 0;
+$celengan_virtual_total_target = 0;
+
+foreach ($celengan_virtual_rows as $goalRow) {
+    $targetNominal = (float) ($goalRow['target_nominal'] ?? 0);
+    $saldoTerkumpul = (float) ($goalRow['saldo_terkumpul'] ?? 0);
+    $progressRaw = $targetNominal > 0 ? ($saldoTerkumpul / $targetNominal) * 100 : 0;
+
+    $celengan_virtual_total_count++;
+    $celengan_virtual_total_saldo += $saldoTerkumpul;
+    $celengan_virtual_total_target += $targetNominal;
+    $celengan_virtual_items[] = [
+        'id_goal' => (int) ($goalRow['id_goal'] ?? 0),
+        'nama_goal' => (string) ($goalRow['nama_goal'] ?? '-'),
+        'target_nominal' => $targetNominal,
+        'saldo_terkumpul' => $saldoTerkumpul,
+        'progress_raw' => $progressRaw,
+        'progress_width' => min(100, max(0, $progressRaw)),
+        'target_tercapai' => $targetNominal > 0 && $saldoTerkumpul >= $targetNominal,
+        'updated_at' => (string) ($goalRow['updated_at'] ?? ''),
+    ];
+}
+
+usort($celengan_virtual_items, function ($left, $right) {
+    $progressCompare = ($right['progress_raw'] <=> $left['progress_raw']);
+    if ($progressCompare !== 0) {
+        return $progressCompare;
+    }
+
+    return strcmp((string) $right['updated_at'], (string) $left['updated_at']);
+});
+
+$celengan_virtual_top_items = array_slice($celengan_virtual_items, 0, 3);
+$celengan_virtual_total_progress = $celengan_virtual_total_target > 0
+    ? min(100, ($celengan_virtual_total_saldo / $celengan_virtual_total_target) * 100)
+    : 0;
+$has_celengan_virtual = $celengan_virtual_total_count > 0;
+
 $budget_summary_rows = fetch_all_rows(
     $con,
     "SELECT
@@ -1403,6 +1475,95 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                     <?php } ?>
                                 </tbody>
                             </table>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card h-100">
+                <div class="card-header pb-0 p-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                        <div>
+                            <h6 class="mb-0">Celengan Virtual</h6>
+                            <p class="text-sm text-secondary mb-0">Progress celengan virtual aktif yang terhubung dengan saldo wallet.</p>
+                        </div>
+                        <a href="main.php?module=saving_goal" class="btn btn-sm btn-outline-info mb-0 align-self-start align-self-md-center">
+                            Kelola Celengan
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <?php if (!$has_celengan_virtual) { ?>
+                        <div class="border border-radius-lg p-4 text-center">
+                            <i class="fa fa-bullseye text-secondary mb-2" aria-hidden="true"></i>
+                            <p class="text-sm text-secondary mb-1">Belum ada celengan aktif. Buat celengan virtual pertamamu.</p>
+                            <a href="main.php?module=saving_goal" class="btn btn-sm btn-info mb-0 mt-2">Buat Celengan</a>
+                        </div>
+                    <?php } else { ?>
+                        <div class="row">
+                            <div class="col-lg-3 col-sm-6 mb-lg-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Celengan Aktif</p>
+                                    <h6 class="mb-0"><?= number_format((float) $celengan_virtual_total_count) ?> celengan</h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 mb-lg-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Saldo Terkumpul</p>
+                                    <h6 class="mb-0 text-success"><?= format_rupiah($celengan_virtual_total_saldo) ?></h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6 mb-sm-0 mb-4">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Total Target</p>
+                                    <h6 class="mb-0"><?= format_rupiah($celengan_virtual_total_target) ?></h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-sm-6">
+                                <div class="border border-radius-lg p-3 h-100">
+                                    <p class="text-xs text-secondary mb-1">Progress Total</p>
+                                    <h6 class="mb-2"><?= number_format((float) $celengan_virtual_total_progress, 1) ?>%</h6>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-gradient-info" role="progressbar"
+                                            style="width: <?= htmlspecialchars((string) $celengan_virtual_total_progress, ENT_QUOTES, 'UTF-8') ?>%;"
+                                            aria-valuenow="<?= htmlspecialchars((string) $celengan_virtual_total_progress, ENT_QUOTES, 'UTF-8') ?>"
+                                            aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <?php foreach ($celengan_virtual_top_items as $goalItem) { ?>
+                                <div class="col-lg-4 col-md-6 mb-lg-0 mb-3">
+                                    <div class="border border-radius-lg p-3 h-100">
+                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                            <div>
+                                                <p class="text-sm font-weight-bold mb-1"><?= htmlspecialchars($goalItem['nama_goal'], ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0">
+                                                    <?= format_rupiah($goalItem['saldo_terkumpul']) ?> dari <?= format_rupiah($goalItem['target_nominal']) ?>
+                                                </p>
+                                            </div>
+                                            <?php if ($goalItem['target_tercapai']) { ?>
+                                                <span class="badge badge-sm bg-gradient-success">Target Tercapai</span>
+                                            <?php } ?>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="text-xs font-weight-bold"><?= number_format((float) $goalItem['progress_raw'], 1) ?>%</span>
+                                            <div class="progress w-100">
+                                                <div class="progress-bar bg-gradient-info" role="progressbar"
+                                                    style="width: <?= htmlspecialchars((string) $goalItem['progress_width'], ENT_QUOTES, 'UTF-8') ?>%;"
+                                                    aria-valuenow="<?= htmlspecialchars((string) $goalItem['progress_width'], ENT_QUOTES, 'UTF-8') ?>"
+                                                    aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php } ?>
                         </div>
                     <?php } ?>
                 </div>
