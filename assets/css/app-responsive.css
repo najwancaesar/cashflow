@@ -392,6 +392,16 @@ body.g-sidenav-show {
     text-transform: uppercase;
 }
 
+.app-main-content .dashboard-latest-mobile {
+    display: none;
+}
+
+.app-main-content .dashboard-transaction-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 .app-main-content .badge.bg-gradient-warning {
     color: #fff;
 }
@@ -512,6 +522,7 @@ body.g-sidenav-show {
     body.g-sidenav-show .app-main-content {
         width: 100%;
         margin-left: 0 !important;
+        padding-top: 4.35rem !important;
         border-radius: 0 !important;
     }
 
@@ -537,8 +548,23 @@ body.g-sidenav-show {
     }
 
     .navbar-main {
-        margin-right: 0.75rem !important;
-        margin-left: 0.75rem !important;
+        position: fixed !important;
+        top: 0;
+        right: 0;
+        left: 0;
+        z-index: 1060;
+        background: #ffffff;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 0 !important;
+        margin-top: 0 !important;
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+    }
+
+    .navbar-main .dropdown-menu {
+        z-index: 1070;
     }
 }
 
@@ -824,6 +850,119 @@ body.g-sidenav-show {
         word-break: normal;
     }
 
+    .app-main-content .dashboard-latest-desktop {
+        display: none !important;
+    }
+
+    .app-main-content .dashboard-latest-mobile {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        padding: 0.9rem;
+    }
+
+    .app-main-content .dashboard-transaction-card {
+        padding: 0.95rem;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 1rem;
+        background: #ffffff;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+    }
+
+    .app-main-content .dashboard-transaction-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .app-main-content .dashboard-transaction-card .dashboard-status-badge {
+        flex: 0 0 auto;
+        max-width: 48%;
+        white-space: normal;
+        line-height: 1.2;
+        text-align: center;
+    }
+
+    .app-main-content .dashboard-transaction-amount {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: #0f172a;
+        font-size: 0.98rem;
+        font-weight: 800;
+        line-height: 1.25;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+
+    .app-main-content .dashboard-transaction-amount-income {
+        color: #16a34a;
+    }
+
+    .app-main-content .dashboard-transaction-amount-expense {
+        color: #dc2626;
+    }
+
+    .app-main-content .dashboard-transaction-meta {
+        display: grid;
+        gap: 0.55rem;
+    }
+
+    .app-main-content .dashboard-transaction-meta-row {
+        display: grid;
+        grid-template-columns: minmax(74px, 28%) minmax(0, 1fr);
+        gap: 0.65rem;
+        align-items: start;
+    }
+
+    .app-main-content .dashboard-transaction-label {
+        color: #64748b;
+        font-size: 0.76rem;
+        font-weight: 700;
+        line-height: 1.4;
+    }
+
+    .app-main-content .dashboard-transaction-value {
+        min-width: 0;
+        color: #334155;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        overflow-wrap: break-word;
+        word-break: normal;
+    }
+
+    .app-main-content .dashboard-transaction-wallet-name {
+        display: block;
+        color: #1e293b;
+        font-weight: 800;
+        line-height: 1.3;
+        overflow-wrap: break-word;
+    }
+
+    .app-main-content .dashboard-transaction-wallet-type {
+        display: block;
+        margin-top: 0.12rem;
+        color: #64748b;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        line-height: 1.25;
+        text-transform: uppercase;
+    }
+
+    .app-main-content .dashboard-transaction-empty {
+        padding: 1rem;
+        border: 1px dashed rgba(148, 163, 184, 0.42);
+        border-radius: 1rem;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 0.84rem;
+        text-align: center;
+    }
+
     .app-main-content .card-body .row > [class*="col-"] {
         margin-bottom: 0.75rem;
     }
@@ -841,9 +980,9 @@ body.g-sidenav-show {
     }
 
     .navbar-main {
-        margin-top: 0.75rem !important;
-        margin-right: 0.5rem !important;
-        margin-left: 0.5rem !important;
+        margin-top: 0 !important;
+        margin-right: 0 !important;
+        margin-left: 0 !important;
     }
 
     .navbar-main h6 {

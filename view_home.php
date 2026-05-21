@@ -2216,7 +2216,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 </div>
             </div>
             <div class="card-body px-0 pb-2">
-                <div class="table-responsive p-0">
+                <div class="table-responsive p-0 dashboard-latest-desktop">
                     <table class="table align-items-center mb-0 dashboard-latest-table dashboard-income-table">
                         <thead>
                             <tr>
@@ -2276,6 +2276,51 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                         </tbody>
                     </table>
                 </div>
+                <div class="dashboard-latest-mobile">
+                    <?php if (empty($q_pemasukan_terbaru)) { ?>
+                        <div class="dashboard-transaction-empty">
+                            Belum ada pemasukan terbaru.
+                        </div>
+                    <?php } else { ?>
+                        <?php foreach ($q_pemasukan_terbaru as $row) { ?>
+                            <?php
+                            $statusPemasukan = (string) ($row['status'] ?? '-');
+                            $walletTypePemasukan = !empty($row['tipe_wallet']) ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+                            ?>
+                            <article class="dashboard-transaction-card dashboard-transaction-income">
+                                <div class="dashboard-transaction-card-header">
+                                    <span class="badge badge-sm dashboard-status-badge <?= ($statusPemasukan === 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
+                                        <?= htmlspecialchars($statusPemasukan, ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                    <span class="dashboard-transaction-amount dashboard-transaction-amount-income">
+                                        Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
+                                    </span>
+                                </div>
+                                <div class="dashboard-transaction-meta">
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Tanggal</span>
+                                        <span class="dashboard-transaction-value"><?= htmlspecialchars((string) ($row['tanggal'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Kategori</span>
+                                        <span class="dashboard-transaction-value"><?= htmlspecialchars((string) ($row['nama_kategori'] ?? 'Tanpa Kategori'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Wallet</span>
+                                        <span class="dashboard-transaction-value">
+                                            <span class="dashboard-transaction-wallet-name"><?= htmlspecialchars((string) ($row['nama_wallet'] ?? 'Dompet Utama'), ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="dashboard-transaction-wallet-type"><?= htmlspecialchars($walletTypePemasukan, ENT_QUOTES, 'UTF-8') ?></span>
+                                        </span>
+                                    </div>
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Catatan</span>
+                                        <span class="dashboard-transaction-value"><?= htmlspecialchars((string) ($row['catatan'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php } ?>
+                    <?php } ?>
+                </div>
             </div>
         </div>
     </div>
@@ -2287,7 +2332,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 </div>
             </div>
             <div class="card-body px-0 pb-2">
-                <div class="table-responsive p-0">
+                <div class="table-responsive p-0 dashboard-latest-desktop">
                     <table class="table align-items-center mb-0 dashboard-latest-table dashboard-expense-table">
                         <thead>
                             <tr>
@@ -2346,6 +2391,51 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                             <?php } ?>
                         </tbody>
                     </table>
+                </div>
+                <div class="dashboard-latest-mobile">
+                    <?php if (empty($q_pengeluaran_terbaru)) { ?>
+                        <div class="dashboard-transaction-empty">
+                            Belum ada pengeluaran terbaru.
+                        </div>
+                    <?php } else { ?>
+                        <?php foreach ($q_pengeluaran_terbaru as $row) { ?>
+                            <?php
+                            $statusPengeluaran = (string) ($row['status'] ?? '-');
+                            $walletTypePengeluaran = !empty($row['tipe_wallet']) ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+                            ?>
+                            <article class="dashboard-transaction-card dashboard-transaction-expense">
+                                <div class="dashboard-transaction-card-header">
+                                    <span class="badge badge-sm dashboard-status-badge <?= ($statusPengeluaran === 'selesai') ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
+                                        <?= htmlspecialchars($statusPengeluaran, ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                    <span class="dashboard-transaction-amount dashboard-transaction-amount-expense">
+                                        Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
+                                    </span>
+                                </div>
+                                <div class="dashboard-transaction-meta">
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Tanggal</span>
+                                        <span class="dashboard-transaction-value"><?= htmlspecialchars((string) ($row['tanggal'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Kategori</span>
+                                        <span class="dashboard-transaction-value"><?= htmlspecialchars((string) ($row['nama_kategori'] ?? 'Tanpa Kategori'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Wallet</span>
+                                        <span class="dashboard-transaction-value">
+                                            <span class="dashboard-transaction-wallet-name"><?= htmlspecialchars((string) ($row['nama_wallet'] ?? 'Dompet Utama'), ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="dashboard-transaction-wallet-type"><?= htmlspecialchars($walletTypePengeluaran, ENT_QUOTES, 'UTF-8') ?></span>
+                                        </span>
+                                    </div>
+                                    <div class="dashboard-transaction-meta-row">
+                                        <span class="dashboard-transaction-label">Catatan</span>
+                                        <span class="dashboard-transaction-value"><?= htmlspecialchars((string) ($row['catatan'] ?? '-'), ENT_QUOTES, 'UTF-8') ?></span>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php } ?>
+                    <?php } ?>
                 </div>
             </div>
         </div>
