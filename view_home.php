@@ -1,5 +1,6 @@
 <?php
 include "includes/koneksi.php";
+include_once "includes/csrf_helper.php";
 
 function fetch_single_value($con, $sql, $types = '', $params = [])
 {
@@ -800,6 +801,72 @@ foreach ($wallet_summary_rows as $walletRow) {
 $wallet_aktif_count = count($wallet_summary_items);
 $has_wallet_summary = $wallet_aktif_count > 0;
 
+$quick_add_kategori_pemasukan = fetch_all_rows(
+    $con,
+    "SELECT id_kategori, nama_kategori
+     FROM kategori
+     WHERE user_id = ? AND tipe_kategori = 'pemasukan'
+     ORDER BY nama_kategori ASC",
+    "i",
+    [$userYangSedangLogin]
+);
+
+$quick_add_kategori_pengeluaran = fetch_all_rows(
+    $con,
+    "SELECT id_kategori, nama_kategori
+     FROM kategori
+     WHERE user_id = ? AND tipe_kategori = 'pengeluaran'
+     ORDER BY nama_kategori ASC",
+    "i",
+    [$userYangSedangLogin]
+);
+
+$quick_add_wallet_rows = fetch_all_rows(
+    $con,
+    "SELECT id_wallet, nama_wallet, tipe_wallet, is_default
+     FROM wallet
+     WHERE user_id = ? AND is_active = 1
+     ORDER BY is_default DESC, nama_wallet ASC",
+    "i",
+    [$userYangSedangLogin]
+);
+
+$quick_add_celengan_rows = fetch_all_rows(
+    $con,
+    "SELECT id_goal, nama_goal
+     FROM saving_goal
+     WHERE user_id = ? AND status = 'aktif'
+     ORDER BY updated_at DESC, id_goal DESC",
+    "i",
+    [$userYangSedangLogin]
+);
+
+$quick_add_default_wallet_id = 0;
+foreach ($quick_add_wallet_rows as $walletRow) {
+    if ((int) ($walletRow['is_default'] ?? 0) === 1) {
+        $quick_add_default_wallet_id = (int) $walletRow['id_wallet'];
+        break;
+    }
+}
+if ($quick_add_default_wallet_id === 0 && !empty($quick_add_wallet_rows)) {
+    $quick_add_default_wallet_id = (int) $quick_add_wallet_rows[0]['id_wallet'];
+}
+
+$quick_add_transfer_tujuan_default_id = 0;
+foreach ($quick_add_wallet_rows as $walletRow) {
+    $walletId = (int) $walletRow['id_wallet'];
+    if ($walletId !== $quick_add_default_wallet_id) {
+        $quick_add_transfer_tujuan_default_id = $walletId;
+        break;
+    }
+}
+
+$quick_add_has_wallet = count($quick_add_wallet_rows) > 0;
+$quick_add_has_two_wallets = count($quick_add_wallet_rows) >= 2;
+$quick_add_can_pemasukan = $quick_add_has_wallet && count($quick_add_kategori_pemasukan) > 0;
+$quick_add_can_pengeluaran = $quick_add_has_wallet && count($quick_add_kategori_pengeluaran) > 0;
+$quick_add_can_celengan = $quick_add_has_wallet && count($quick_add_celengan_rows) > 0;
+
 $celengan_virtual_rows = fetch_all_rows(
     $con,
     "SELECT
@@ -1363,6 +1430,55 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
                     <p class="mb-0 text-sm text-secondary">Semua pemasukan dikurangi semua pengeluaran.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card h-100">
+                <div class="card-header pb-0 p-3">
+                    <div>
+                        <h6 class="mb-0">Quick Add</h6>
+                        <p class="text-sm text-secondary mb-0">Catat transaksi lebih cepat dari dashboard.</p>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-xl-3 col-md-6 mb-xl-0 mb-3">
+                            <button type="button" class="btn w-100 border border-radius-lg p-3 text-start h-100 bg-white"
+                                data-bs-toggle="modal" data-bs-target="#modalQuickAddPemasukan">
+                                <span class="badge bg-gradient-success mb-2"><i class="fa fa-arrow-circle-down" aria-hidden="true"></i></span>
+                                <h6 class="mb-1">Pemasukan</h6>
+                                <p class="text-xs text-secondary mb-0">Catat dana masuk selesai.</p>
+                            </button>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-xl-0 mb-3">
+                            <button type="button" class="btn w-100 border border-radius-lg p-3 text-start h-100 bg-white"
+                                data-bs-toggle="modal" data-bs-target="#modalQuickAddPengeluaran">
+                                <span class="badge bg-gradient-danger mb-2"><i class="fa fa-arrow-circle-up" aria-hidden="true"></i></span>
+                                <h6 class="mb-1">Pengeluaran</h6>
+                                <p class="text-xs text-secondary mb-0">Catat dana keluar selesai.</p>
+                            </button>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-md-0 mb-3">
+                            <button type="button" class="btn w-100 border border-radius-lg p-3 text-start h-100 bg-white"
+                                data-bs-toggle="modal" data-bs-target="#modalQuickAddTransfer">
+                                <span class="badge bg-gradient-info mb-2"><i class="fa fa-exchange" aria-hidden="true"></i></span>
+                                <h6 class="mb-1">Transfer Wallet</h6>
+                                <p class="text-xs text-secondary mb-0">Pindahkan saldo antar wallet.</p>
+                            </button>
+                        </div>
+                        <div class="col-xl-3 col-md-6">
+                            <button type="button" class="btn w-100 border border-radius-lg p-3 text-start h-100 bg-white"
+                                data-bs-toggle="modal" data-bs-target="#modalQuickAddSetorCelengan">
+                                <span class="badge bg-gradient-primary mb-2"><i class="fa fa-bullseye" aria-hidden="true"></i></span>
+                                <h6 class="mb-1">Setor Celengan</h6>
+                                <p class="text-xs text-secondary mb-0">Tambah saldo Celengan Virtual.</p>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2232,6 +2348,291 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalQuickAddPemasukan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <form action="aksi_pemasukan.php?act=t" method="post">
+                <?= csrf_input() ?>
+                <div class="modal-header">
+                    <h6 class="modal-title">Quick Add Pemasukan</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php if (!$quick_add_can_pemasukan) { ?>
+                        <div class="alert alert-warning text-white" role="alert">
+                            Pemasukan membutuhkan minimal satu kategori pemasukan dan satu wallet aktif.
+                        </div>
+                    <?php } ?>
+                    <input type="hidden" name="user" value="<?= (int) $userYangSedangLogin ?>">
+                    <input type="hidden" name="id_pemasukan" value="">
+                    <input type="hidden" name="status" value="selesai">
+                    <div class="row">
+                        <label class="form-label">Tanggal</label>
+                        <div class="input-group input-group-outline">
+                            <input type="date" name="tanggal" class="form-control" value="<?= htmlspecialchars($tglSekarang, ENT_QUOTES, 'UTF-8') ?>" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Kategori Pemasukan</label>
+                        <div class="input-group input-group-outline">
+                            <select name="id_kategori" class="form-control" required <?= empty($quick_add_kategori_pemasukan) ? 'disabled' : '' ?>>
+                                <option value="">Pilih Kategori</option>
+                                <?php foreach ($quick_add_kategori_pemasukan as $kategori) { ?>
+                                    <option value="<?= (int) $kategori['id_kategori'] ?>">
+                                        <?= htmlspecialchars($kategori['nama_kategori'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Wallet Tujuan</label>
+                        <div class="input-group input-group-outline">
+                            <select name="id_wallet" class="form-control" required <?= !$quick_add_has_wallet ? 'disabled' : '' ?>>
+                                <option value="">Pilih Wallet</option>
+                                <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
+                                    <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Jumlah</label>
+                        <div class="input-group input-group-outline">
+                            <input type="text" name="jumlah" class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 1.000.000" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Catatan</label>
+                        <div class="input-group input-group-outline">
+                            <textarea name="catatan" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-success" <?= !$quick_add_can_pemasukan ? 'disabled' : '' ?>>Simpan Pemasukan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalQuickAddPengeluaran" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <form action="aksi_pengeluaran.php?act=t" method="post">
+                <?= csrf_input() ?>
+                <div class="modal-header">
+                    <h6 class="modal-title">Quick Add Pengeluaran</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php if (!$quick_add_can_pengeluaran) { ?>
+                        <div class="alert alert-warning text-white" role="alert">
+                            Pengeluaran membutuhkan minimal satu kategori pengeluaran dan satu wallet aktif.
+                        </div>
+                    <?php } ?>
+                    <input type="hidden" name="user" value="<?= (int) $userYangSedangLogin ?>">
+                    <input type="hidden" name="id_pengeluaran" value="">
+                    <input type="hidden" name="status" value="selesai">
+                    <div class="row">
+                        <label class="form-label">Tanggal</label>
+                        <div class="input-group input-group-outline">
+                            <input type="date" name="tanggal" class="form-control" value="<?= htmlspecialchars($tglSekarang, ENT_QUOTES, 'UTF-8') ?>" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Kategori Pengeluaran</label>
+                        <div class="input-group input-group-outline">
+                            <select name="id_kategori" class="form-control" required <?= empty($quick_add_kategori_pengeluaran) ? 'disabled' : '' ?>>
+                                <option value="">Pilih Kategori</option>
+                                <?php foreach ($quick_add_kategori_pengeluaran as $kategori) { ?>
+                                    <option value="<?= (int) $kategori['id_kategori'] ?>">
+                                        <?= htmlspecialchars($kategori['nama_kategori'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Wallet Sumber</label>
+                        <div class="input-group input-group-outline">
+                            <select name="id_wallet" class="form-control" required <?= !$quick_add_has_wallet ? 'disabled' : '' ?>>
+                                <option value="">Pilih Wallet</option>
+                                <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
+                                    <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Jumlah</label>
+                        <div class="input-group input-group-outline">
+                            <input type="text" name="jumlah" class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 250.000" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Catatan</label>
+                        <div class="input-group input-group-outline">
+                            <textarea name="catatan" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-danger" <?= !$quick_add_can_pengeluaran ? 'disabled' : '' ?>>Simpan Pengeluaran</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalQuickAddTransfer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <form action="aksi_transfer_wallet.php?act=t" method="post">
+                <?= csrf_input() ?>
+                <div class="modal-header">
+                    <h6 class="modal-title">Quick Add Transfer Wallet</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php if (!$quick_add_has_two_wallets) { ?>
+                        <div class="alert alert-warning text-white" role="alert">
+                            Transfer membutuhkan minimal 2 wallet aktif.
+                        </div>
+                    <?php } ?>
+                    <input type="hidden" name="id_transfer" value="">
+                    <input type="hidden" name="status" value="selesai">
+                    <div class="row">
+                        <label class="form-label">Tanggal</label>
+                        <div class="input-group input-group-outline">
+                            <input type="date" name="tanggal" class="form-control" value="<?= htmlspecialchars($tglSekarang, ENT_QUOTES, 'UTF-8') ?>" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Wallet Asal</label>
+                        <div class="input-group input-group-outline">
+                            <select name="wallet_asal_id" class="form-control" required <?= !$quick_add_has_two_wallets ? 'disabled' : '' ?>>
+                                <option value="">Pilih Wallet Asal</option>
+                                <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
+                                    <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Wallet Tujuan</label>
+                        <div class="input-group input-group-outline">
+                            <select name="wallet_tujuan_id" class="form-control" required <?= !$quick_add_has_two_wallets ? 'disabled' : '' ?>>
+                                <option value="">Pilih Wallet Tujuan</option>
+                                <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
+                                    <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_transfer_tujuan_default_id ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Jumlah Transfer</label>
+                        <div class="input-group input-group-outline">
+                            <input type="text" name="jumlah" class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 500.000" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Catatan</label>
+                        <div class="input-group input-group-outline">
+                            <textarea name="catatan" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-info" <?= !$quick_add_has_two_wallets ? 'disabled' : '' ?>>Simpan Transfer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalQuickAddSetorCelengan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <form action="aksi_saving_goal.php?act=setor" method="post">
+                <?= csrf_input() ?>
+                <div class="modal-header">
+                    <h6 class="modal-title">Quick Add Setor Celengan</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <?php if (!$quick_add_has_wallet) { ?>
+                        <div class="alert alert-warning text-white" role="alert">Belum ada wallet aktif.</div>
+                    <?php } ?>
+                    <?php if (empty($quick_add_celengan_rows)) { ?>
+                        <div class="alert alert-warning text-white" role="alert">Belum ada celengan aktif.</div>
+                    <?php } ?>
+                    <div class="row">
+                        <label class="form-label">Tanggal</label>
+                        <div class="input-group input-group-outline">
+                            <input type="date" name="tanggal" class="form-control" value="<?= htmlspecialchars($tglSekarang, ENT_QUOTES, 'UTF-8') ?>" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Celengan Virtual</label>
+                        <div class="input-group input-group-outline">
+                            <select name="id_goal" class="form-control" required <?= empty($quick_add_celengan_rows) ? 'disabled' : '' ?>>
+                                <option value="">Pilih Celengan</option>
+                                <?php foreach ($quick_add_celengan_rows as $goal) { ?>
+                                    <option value="<?= (int) $goal['id_goal'] ?>">
+                                        <?= htmlspecialchars($goal['nama_goal'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Wallet Sumber</label>
+                        <div class="input-group input-group-outline">
+                            <select name="id_wallet" class="form-control" required <?= !$quick_add_has_wallet ? 'disabled' : '' ?>>
+                                <option value="">Pilih Wallet</option>
+                                <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
+                                    <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Jumlah Setor</label>
+                        <div class="input-group input-group-outline">
+                            <input type="text" name="jumlah" class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 500.000" required>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label class="form-label">Catatan</label>
+                        <div class="input-group input-group-outline">
+                            <textarea name="catatan" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" <?= !$quick_add_can_celengan ? 'disabled' : '' ?>>Simpan Setor</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
