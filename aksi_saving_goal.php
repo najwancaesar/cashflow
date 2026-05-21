@@ -86,6 +86,108 @@ function hitung_saldo_saving_goal($con, $goalId, $userId)
     return (float) ($row['saldo'] ?? 0);
 }
 
+function saving_goal_single_value($con, $sql, $types = '', $params = [])
+{
+    $stmt = $con->prepare($sql);
+    if ($types !== '' && !empty($params)) {
+        $bindParams = [$types];
+        foreach ($params as $key => $value) {
+            $bindParams[] = &$params[$key];
+        }
+        call_user_func_array([$stmt, 'bind_param'], $bindParams);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_row() : null;
+    $stmt->close();
+
+    return (float) ($row[0] ?? 0);
+}
+
+function fetch_active_wallet_for_saving_goal($con, $walletId, $userId)
+{
+    $stmt = $con->prepare("SELECT id_wallet
+                           FROM wallet
+                           WHERE id_wallet = ? AND user_id = ? AND is_active = 1
+                           LIMIT 1");
+    $stmt->bind_param("ii", $walletId, $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $wallet = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    return $wallet ?: null;
+}
+
+function hitung_saldo_wallet_saving_goal($con, $userId, $walletId)
+{
+    $saldoAwal = saving_goal_single_value(
+        $con,
+        "SELECT COALESCE(saldo_awal, 0)
+         FROM wallet
+         WHERE id_wallet = ? AND user_id = ?
+         LIMIT 1",
+        "ii",
+        [$walletId, $userId]
+    );
+
+    $totalPemasukan = saving_goal_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM pemasukan
+         WHERE user = ? AND id_wallet = ? AND status = 'selesai'",
+        "ii",
+        [$userId, $walletId]
+    );
+
+    $totalPengeluaran = saving_goal_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM pengeluaran
+         WHERE user = ? AND id_wallet = ? AND status = 'selesai'",
+        "ii",
+        [$userId, $walletId]
+    );
+
+    $totalTransferMasuk = saving_goal_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM transfer_wallet
+         WHERE user_id = ? AND wallet_tujuan_id = ? AND status = 'selesai'",
+        "ii",
+        [$userId, $walletId]
+    );
+
+    $totalTransferKeluar = saving_goal_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM transfer_wallet
+         WHERE user_id = ? AND wallet_asal_id = ? AND status = 'selesai'",
+        "ii",
+        [$userId, $walletId]
+    );
+
+    $totalSetorCelengan = saving_goal_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM saving_goal_mutasi
+         WHERE user_id = ? AND id_wallet = ? AND tipe = 'setor'",
+        "ii",
+        [$userId, $walletId]
+    );
+
+    $totalTarikCelengan = saving_goal_single_value(
+        $con,
+        "SELECT COALESCE(SUM(jumlah), 0)
+         FROM saving_goal_mutasi
+         WHERE user_id = ? AND id_wallet = ? AND tipe = 'tarik'",
+        "ii",
+        [$userId, $walletId]
+    );
+
+    return $saldoAwal + $totalPemasukan - $totalPengeluaran + $totalTransferMasuk - $totalTransferKeluar - $totalSetorCelengan + $totalTarikCelengan;
+}
+
 if (!isset($_SESSION['id_user'])) {
     show_sweetalert_and_redirect('Login diperlukan', 'Silakan login terlebih dahulu.', 'warning', 'login.php');
 }
@@ -167,6 +269,7 @@ if ($act === 'setor' || $act === 'tarik') {
     require_saving_goal_post_csrf();
 
     $goalId = (int) ($_POST['id_goal'] ?? 0);
+    $walletId = (int) ($_POST['id_wallet'] ?? 0);
     $tanggal = validate_saving_goal_date($_POST['tanggal'] ?? '');
     $jumlahRaw = (string) ($_POST['jumlah'] ?? '');
     $catatan = clean_saving_goal_text($_POST['catatan'] ?? '');
@@ -180,8 +283,12 @@ if ($act === 'setor' || $act === 'tarik') {
         show_sweetalert_and_redirect('Akses ditolak', 'Target tabungan tidak ditemukan.', 'warning', saving_goal_redirect());
     }
 
-    if (($goal['status'] ?? '') === 'arsip') {
-        show_sweetalert_and_redirect('Aksi dibatasi', 'Target tabungan arsip tidak bisa menerima mutasi.', 'warning', saving_goal_redirect());
+    if (in_array(($goal['status'] ?? ''), ['selesai', 'arsip'], true)) {
+        show_sweetalert_and_redirect('Aksi dibatasi', 'Target tabungan selesai atau arsip tidak bisa menerima setor/tarik.', 'warning', saving_goal_redirect());
+    }
+
+    if ($walletId <= 0 || !fetch_active_wallet_for_saving_goal($con, $walletId, $userId)) {
+        show_sweetalert_and_redirect('Akses ditolak', 'Wallet tidak valid, tidak aktif, atau bukan milik Anda.', 'error', saving_goal_redirect());
     }
 
     if ($tanggal === false) {
@@ -197,6 +304,13 @@ if ($act === 'setor' || $act === 'tarik') {
         show_sweetalert_and_redirect('Data tidak valid', 'Jumlah mutasi harus lebih dari 0.', 'error', saving_goal_redirect());
     }
 
+    if ($act === 'setor') {
+        $saldoWallet = hitung_saldo_wallet_saving_goal($con, $userId, $walletId);
+        if ($saldoWallet + 0.0001 < $jumlah) {
+            show_sweetalert_and_redirect('Saldo tidak cukup', 'Saldo wallet tidak mencukupi untuk setor ke target tabungan.', 'warning', saving_goal_redirect());
+        }
+    }
+
     if ($act === 'tarik') {
         $saldoTerkumpul = hitung_saldo_saving_goal($con, $goalId, $userId);
         if ($saldoTerkumpul + 0.0001 < $jumlah) {
@@ -205,9 +319,9 @@ if ($act === 'setor' || $act === 'tarik') {
     }
 
     $tipe = $act === 'setor' ? 'setor' : 'tarik';
-    $stmt = $con->prepare("INSERT INTO saving_goal_mutasi (id_goal, user_id, tanggal, tipe, jumlah, catatan, created_at)
-                           VALUES (?, ?, ?, ?, ?, ?, NOW())");
-    $stmt->bind_param("iissds", $goalId, $userId, $tanggal, $tipe, $jumlah, $catatan);
+    $stmt = $con->prepare("INSERT INTO saving_goal_mutasi (id_goal, user_id, id_wallet, tanggal, tipe, jumlah, catatan, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+    $stmt->bind_param("iiissds", $goalId, $userId, $walletId, $tanggal, $tipe, $jumlah, $catatan);
     $result = $stmt->execute();
     $stmt->close();
 

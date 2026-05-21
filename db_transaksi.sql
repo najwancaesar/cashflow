@@ -1204,6 +1204,7 @@ CREATE TABLE IF NOT EXISTS `saving_goal_mutasi` (
   `id_mutasi` int(11) NOT NULL AUTO_INCREMENT,
   `id_goal` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
+  `id_wallet` int(11) DEFAULT NULL,
   `tanggal` date NOT NULL,
   `tipe` enum('setor','tarik') NOT NULL,
   `jumlah` decimal(15,2) NOT NULL DEFAULT 0.00,
@@ -1212,6 +1213,7 @@ CREATE TABLE IF NOT EXISTS `saving_goal_mutasi` (
   PRIMARY KEY (`id_mutasi`),
   KEY `idx_mutasi_goal` (`id_goal`),
   KEY `idx_mutasi_user` (`user_id`),
+  KEY `idx_mutasi_wallet` (`id_wallet`),
   KEY `idx_mutasi_tanggal` (`tanggal`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

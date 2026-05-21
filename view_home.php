@@ -699,7 +699,9 @@ $wallet_summary_rows = fetch_all_rows(
         COALESCE(pemasukan_wallet.total_pemasukan, 0) AS total_pemasukan,
         COALESCE(pengeluaran_wallet.total_pengeluaran, 0) AS total_pengeluaran,
         COALESCE(transfer_masuk_wallet.total_transfer_masuk, 0) AS total_transfer_masuk,
-        COALESCE(transfer_keluar_wallet.total_transfer_keluar, 0) AS total_transfer_keluar
+        COALESCE(transfer_keluar_wallet.total_transfer_keluar, 0) AS total_transfer_keluar,
+        COALESCE(celengan_setor_wallet.total_celengan_setor, 0) AS total_celengan_setor,
+        COALESCE(celengan_tarik_wallet.total_celengan_tarik, 0) AS total_celengan_tarik
      FROM wallet
      LEFT JOIN (
         SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_pemasukan
@@ -735,11 +737,29 @@ $wallet_summary_rows = fetch_all_rows(
         GROUP BY wallet_asal_id
      ) AS transfer_keluar_wallet
         ON transfer_keluar_wallet.id_wallet = wallet.id_wallet
+     LEFT JOIN (
+        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_celengan_setor
+        FROM saving_goal_mutasi
+        WHERE user_id = ?
+          AND tipe = 'setor'
+          AND id_wallet IS NOT NULL
+        GROUP BY id_wallet
+     ) AS celengan_setor_wallet
+        ON celengan_setor_wallet.id_wallet = wallet.id_wallet
+     LEFT JOIN (
+        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_celengan_tarik
+        FROM saving_goal_mutasi
+        WHERE user_id = ?
+          AND tipe = 'tarik'
+          AND id_wallet IS NOT NULL
+        GROUP BY id_wallet
+     ) AS celengan_tarik_wallet
+        ON celengan_tarik_wallet.id_wallet = wallet.id_wallet
      WHERE wallet.user_id = ?
        AND wallet.is_active = 1
      ORDER BY wallet.is_default DESC, wallet.nama_wallet ASC",
-    "iiiii",
-    [$userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin]
+    "iiiiiii",
+    [$userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin]
 );
 
 $wallet_summary_items = [];
@@ -752,7 +772,9 @@ foreach ($wallet_summary_rows as $walletRow) {
     $walletTotalPengeluaran = (float) ($walletRow['total_pengeluaran'] ?? 0);
     $walletTotalTransferMasuk = (float) ($walletRow['total_transfer_masuk'] ?? 0);
     $walletTotalTransferKeluar = (float) ($walletRow['total_transfer_keluar'] ?? 0);
-    $walletSaldoAkhir = $walletSaldoAwal + $walletTotalPemasukan - $walletTotalPengeluaran + $walletTotalTransferMasuk - $walletTotalTransferKeluar;
+    $walletTotalCelenganSetor = (float) ($walletRow['total_celengan_setor'] ?? 0);
+    $walletTotalCelenganTarik = (float) ($walletRow['total_celengan_tarik'] ?? 0);
+    $walletSaldoAkhir = $walletSaldoAwal + $walletTotalPemasukan - $walletTotalPengeluaran + $walletTotalTransferMasuk - $walletTotalTransferKeluar - $walletTotalCelenganSetor + $walletTotalCelenganTarik;
     $walletIsDefault = (int) ($walletRow['is_default'] ?? 0) === 1;
 
     if ($walletIsDefault) {
@@ -768,6 +790,8 @@ foreach ($wallet_summary_rows as $walletRow) {
         'total_pengeluaran' => $walletTotalPengeluaran,
         'total_transfer_masuk' => $walletTotalTransferMasuk,
         'total_transfer_keluar' => $walletTotalTransferKeluar,
+        'total_celengan_setor' => $walletTotalCelenganSetor,
+        'total_celengan_tarik' => $walletTotalCelenganTarik,
         'saldo_akhir' => $walletSaldoAkhir,
         'is_default' => $walletIsDefault,
     ];
@@ -1328,6 +1352,8 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                         <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Pengeluaran</th>
                                         <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Transfer Masuk</th>
                                         <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Transfer Keluar</th>
+                                        <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Setor Celengan</th>
+                                        <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tarik Celengan</th>
                                         <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo Akhir</th>
                                     </tr>
                                 </thead>
@@ -1361,6 +1387,12 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                             </td>
                                             <td class="align-middle text-end">
                                                 <p class="text-sm text-danger mb-0"><?= format_rupiah($walletRow['total_transfer_keluar']) ?></p>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <p class="text-sm text-danger mb-0"><?= format_rupiah($walletRow['total_celengan_setor']) ?></p>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <p class="text-sm text-success mb-0"><?= format_rupiah($walletRow['total_celengan_tarik']) ?></p>
                                             </td>
                                             <td class="align-middle text-end">
                                                 <p class="text-sm font-weight-bold mb-0 <?= $walletRow['saldo_akhir'] < 0 ? 'text-danger' : 'text-success' ?>">
