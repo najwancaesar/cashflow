@@ -573,38 +573,40 @@ UNLOCK TABLES;
 --
 -- Table structure for table `budget_kategori`
 --
-
-
 DROP TABLE IF EXISTS `budget_kategori`;
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
+
 /*!40101 SET character_set_client = utf8 */;
 
-CREATE TABLE `budget_kategori` (
-  `id_budget` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `id_kategori` int(11) NOT NULL,
-  `bulan` tinyint unsigned NOT NULL,
-  `tahun` smallint unsigned NOT NULL,
-  `nominal_budget` bigint unsigned NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_budget`),
-  UNIQUE KEY `uniq_budget_periode` (`user_id`, `id_kategori`, `bulan`, `tahun`),
-  KEY `idx_budget_user_periode` (`user_id`, `bulan`, `tahun`),
-  KEY `idx_budget_kategori` (`id_kategori`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE
+  `budget_kategori` (
+    `id_budget` int (11) NOT NULL AUTO_INCREMENT,
+    `user_id` int (11) NOT NULL,
+    `id_kategori` int (11) NOT NULL,
+    `bulan` tinyint unsigned NOT NULL,
+    `tahun` smallint unsigned NOT NULL,
+    `nominal_budget` bigint unsigned NOT NULL DEFAULT 0,
+    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id_budget`),
+    UNIQUE KEY `uniq_budget_periode` (`user_id`, `id_kategori`, `bulan`, `tahun`),
+    KEY `idx_budget_user_periode` (`user_id`, `bulan`, `tahun`),
+    KEY `idx_budget_kategori` (`id_kategori`)
+  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `budget_kategori`
 --
-
 LOCK TABLES `budget_kategori` WRITE;
-/*!40000 ALTER TABLE `budget_kategori` DISABLE KEYS */;
-/*!40000 ALTER TABLE `budget_kategori` ENABLE KEYS */;
-UNLOCK TABLES;
 
+/*!40000 ALTER TABLE `budget_kategori` DISABLE KEYS */;
+
+/*!40000 ALTER TABLE `budget_kategori` ENABLE KEYS */;
+
+UNLOCK TABLES;
 
 --
 -- Table structure for table `pemasukan`
@@ -1099,41 +1101,43 @@ UNLOCK TABLES;
 --
 -- Table structure for table `wallet`
 --
-
 DROP TABLE IF EXISTS `wallet`;
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
+
 /*!40101 SET character_set_client = utf8 */;
 
-CREATE TABLE `wallet` (
-  `id_wallet` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `nama_wallet` varchar(100) NOT NULL,
-  `tipe_wallet` enum('cash','bank','e_wallet','tabungan','lainnya') NOT NULL DEFAULT 'lainnya',
-  `saldo_awal` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `is_default` tinyint(1) NOT NULL DEFAULT 0,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_wallet`),
-  KEY `idx_wallet_user` (`user_id`),
-  KEY `idx_wallet_user_active` (`user_id`, `is_active`),
-  UNIQUE KEY `uniq_wallet_user_name` (`user_id`, `nama_wallet`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE
+  `wallet` (
+    `id_wallet` int (11) NOT NULL AUTO_INCREMENT,
+    `user_id` int (11) NOT NULL,
+    `nama_wallet` varchar(100) NOT NULL,
+    `tipe_wallet` enum ('cash', 'bank', 'e_wallet', 'tabungan', 'lainnya') NOT NULL DEFAULT 'lainnya',
+    `saldo_awal` decimal(15, 2) NOT NULL DEFAULT 0.00,
+    `is_default` tinyint (1) NOT NULL DEFAULT 0,
+    `is_active` tinyint (1) NOT NULL DEFAULT 1,
+    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+    `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id_wallet`),
+    KEY `idx_wallet_user` (`user_id`),
+    KEY `idx_wallet_user_active` (`user_id`, `is_active`),
+    UNIQUE KEY `uniq_wallet_user_name` (`user_id`, `nama_wallet`)
+  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `wallet`
 --
-
-INSERT INTO `wallet` (
-  `user_id`,
-  `nama_wallet`,
-  `tipe_wallet`,
-  `saldo_awal`,
-  `is_default`,
-  `is_active`
-)
+INSERT INTO
+  `wallet` (
+    `user_id`,
+    `nama_wallet`,
+    `tipe_wallet`,
+    `saldo_awal`,
+    `is_default`,
+    `is_active`
+  )
 SELECT
   u.`id_user`,
   'Dompet Utama',
@@ -1141,81 +1145,90 @@ SELECT
   0.00,
   1,
   1
-FROM `user` u
-WHERE u.`role` = 'user'
+FROM
+  `user` u
+WHERE
+  u.`role` = 'user'
   AND NOT EXISTS (
-    SELECT 1
-    FROM `wallet` w
-    WHERE w.`user_id` = u.`id_user`
+    SELECT
+      1
+    FROM
+      `wallet` w
+    WHERE
+      w.`user_id` = u.`id_user`
   );
 
 UPDATE `pemasukan` p
-JOIN `wallet` w
-  ON w.`user_id` = p.`user`
- AND w.`is_default` = 1
-SET p.`id_wallet` = w.`id_wallet`
-WHERE p.`id_wallet` IS NULL;
+JOIN `wallet` w ON w.`user_id` = p.`user`
+AND w.`is_default` = 1
+SET
+  p.`id_wallet` = w.`id_wallet`
+WHERE
+  p.`id_wallet` IS NULL;
 
 UPDATE `pengeluaran` p
-JOIN `wallet` w
-  ON w.`user_id` = p.`user`
- AND w.`is_default` = 1
-SET p.`id_wallet` = w.`id_wallet`
-WHERE p.`id_wallet` IS NULL;
+JOIN `wallet` w ON w.`user_id` = p.`user`
+AND w.`is_default` = 1
+SET
+  p.`id_wallet` = w.`id_wallet`
+WHERE
+  p.`id_wallet` IS NULL;
 
 --
 -- Table structure for table `transfer_wallet`
 --
+CREATE TABLE
+  IF NOT EXISTS `transfer_wallet` (
+    `id_transfer` int (11) NOT NULL AUTO_INCREMENT,
+    `user_id` int (11) NOT NULL,
+    `wallet_asal_id` int (11) NOT NULL,
+    `wallet_tujuan_id` int (11) NOT NULL,
+    `tanggal` date NOT NULL,
+    `jumlah` decimal(15, 2) NOT NULL DEFAULT 0.00,
+    `catatan` text DEFAULT NULL,
+    `status` enum ('pending', 'selesai', 'batal') NOT NULL DEFAULT 'selesai',
+    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+    `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id_transfer`),
+    KEY `idx_transfer_user` (`user_id`),
+    KEY `idx_transfer_tanggal` (`tanggal`),
+    KEY `idx_transfer_wallet_asal` (`wallet_asal_id`),
+    KEY `idx_transfer_wallet_tujuan` (`wallet_tujuan_id`),
+    KEY `idx_transfer_status` (`status`)
+  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `transfer_wallet` (
-  `id_transfer` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `wallet_asal_id` int(11) NOT NULL,
-  `wallet_tujuan_id` int(11) NOT NULL,
-  `tanggal` date NOT NULL,
-  `jumlah` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `catatan` text DEFAULT NULL,
-  `status` enum('pending','selesai','batal') NOT NULL DEFAULT 'selesai',
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_transfer`),
-  KEY `idx_transfer_user` (`user_id`),
-  KEY `idx_transfer_tanggal` (`tanggal`),
-  KEY `idx_transfer_wallet_asal` (`wallet_asal_id`),
-  KEY `idx_transfer_wallet_tujuan` (`wallet_tujuan_id`),
-  KEY `idx_transfer_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE
+  IF NOT EXISTS `saving_goal` (
+    `id_goal` int (11) NOT NULL AUTO_INCREMENT,
+    `user_id` int (11) NOT NULL,
+    `nama_goal` varchar(150) NOT NULL,
+    `target_nominal` decimal(15, 2) NOT NULL DEFAULT 0.00,
+    `target_tanggal` date DEFAULT NULL,
+    `status` enum ('aktif', 'selesai', 'arsip') NOT NULL DEFAULT 'aktif',
+    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+    `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    PRIMARY KEY (`id_goal`),
+    KEY `idx_goal_user` (`user_id`),
+    KEY `idx_goal_status` (`status`)
+  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `saving_goal` (
-  `id_goal` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `nama_goal` varchar(150) NOT NULL,
-  `target_nominal` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `target_tanggal` date DEFAULT NULL,
-  `status` enum('aktif','selesai','arsip') NOT NULL DEFAULT 'aktif',
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_goal`),
-  KEY `idx_goal_user` (`user_id`),
-  KEY `idx_goal_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `saving_goal_mutasi` (
-  `id_mutasi` int(11) NOT NULL AUTO_INCREMENT,
-  `id_goal` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `id_wallet` int(11) DEFAULT NULL,
-  `tanggal` date NOT NULL,
-  `tipe` enum('setor','tarik') NOT NULL,
-  `jumlah` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `catatan` text DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_mutasi`),
-  KEY `idx_mutasi_goal` (`id_goal`),
-  KEY `idx_mutasi_user` (`user_id`),
-  KEY `idx_mutasi_wallet` (`id_wallet`),
-  KEY `idx_mutasi_tanggal` (`tanggal`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE
+  IF NOT EXISTS `saving_goal_mutasi` (
+    `id_mutasi` int (11) NOT NULL AUTO_INCREMENT,
+    `id_goal` int (11) NOT NULL,
+    `user_id` int (11) NOT NULL,
+    `id_wallet` int (11) DEFAULT NULL,
+    `tanggal` date NOT NULL,
+    `tipe` enum ('setor', 'tarik') NOT NULL,
+    `jumlah` decimal(15, 2) NOT NULL DEFAULT 0.00,
+    `catatan` text DEFAULT NULL,
+    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+    PRIMARY KEY (`id_mutasi`),
+    KEY `idx_mutasi_goal` (`id_goal`),
+    KEY `idx_mutasi_user` (`user_id`),
+    KEY `idx_mutasi_wallet` (`id_wallet`),
+    KEY `idx_mutasi_tanggal` (`tanggal`)
+  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 --
 -- Dumping events for database 'cashflow'
