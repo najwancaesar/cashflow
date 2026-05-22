@@ -241,6 +241,20 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                 <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2">
                                                     <i class="fa fa-eye" aria-hidden="true"></i>
                                                 </a>
+                                                <form action="aksi_backup.php" method="post" class="d-inline">
+                                                    <?= csrf_input() ?>
+                                                    <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
+                                                    <button type="submit"
+                                                        title="Backup Data"
+                                                        data-confirm="true"
+                                                        data-confirm-title="Backup data user?"
+                                                        data-confirm-text="File SQL akan dibuat dan langsung diunduh."
+                                                        data-confirm-confirm-text="Ya, Backup"
+                                                        data-confirm-cancel-text="Batal"
+                                                        class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0 me-2">
+                                                        <i class="fa fa-download" aria-hidden="true"></i> Backup Data
+                                                    </button>
+                                                </form>
                                                 <?php if (!$isSelf) { ?>
                                                     <a type="button"
                                                         class="text-secondary text-warning font-weight-bold text-xs me-2 btnedituser"
