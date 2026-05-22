@@ -196,7 +196,7 @@ if ($act === 't') {
     $statusDefault = clean_recurring_text($_POST['status_transaksi_default'] ?? 'pending');
     $mulaiDari = validate_recurring_date($_POST['mulai_dari'] ?? '');
     $berakhirPada = validate_recurring_date($_POST['berakhir_pada'] ?? '', true);
-    $isActive = isset($_POST['is_active']) ? (int) $_POST['is_active'] : 1;
+    $isActiveRaw = $_POST['is_active'] ?? '1';
 
     if ($namaRecurring === '') {
         show_sweetalert_and_redirect('Data belum lengkap', 'Nama transaksi berulang wajib diisi.', 'warning', recurring_redirect());
@@ -231,6 +231,10 @@ if ($act === 't') {
         show_sweetalert_and_redirect('Data tidak valid', 'Status transaksi default tidak valid.', 'error', recurring_redirect());
     }
 
+    if (!in_array((string) $isActiveRaw, ['0', '1'], true)) {
+        show_sweetalert_and_redirect('Data tidak valid', 'Status template transaksi berulang tidak valid.', 'error', recurring_redirect());
+    }
+
     if ($mulaiDari === false || $berakhirPada === false) {
         show_sweetalert_and_redirect('Data tidak valid', 'Tanggal mulai atau tanggal berakhir tidak valid.', 'error', recurring_redirect());
     }
@@ -239,7 +243,7 @@ if ($act === 't') {
         show_sweetalert_and_redirect('Data tidak valid', 'Tanggal mulai tidak boleh lebih besar dari tanggal berakhir.', 'error', recurring_redirect());
     }
 
-    $isActive = $isActive === 1 ? 1 : 0;
+    $isActive = (string) $isActiveRaw === '1' ? 1 : 0;
     $frekuensi = 'bulanan';
 
     if ($recurringId === null) {
@@ -311,15 +315,17 @@ if ($act === 's') {
     require_recurring_post_csrf();
 
     $recurringId = (int) ($_POST['id_recurring'] ?? 0);
-    $isActive = (int) ($_POST['is_active'] ?? -1);
+    $isActiveRaw = $_POST['is_active'] ?? '';
 
-    if ($recurringId <= 0 || !in_array($isActive, [0, 1], true)) {
+    if ($recurringId <= 0 || !in_array((string) $isActiveRaw, ['0', '1'], true)) {
         show_sweetalert_and_redirect('Data tidak valid', 'Permintaan status transaksi berulang tidak valid.', 'error', recurring_redirect());
     }
 
     if (!fetch_recurring_for_user($con, $recurringId, $userId)) {
         show_sweetalert_and_redirect('Akses ditolak', 'Template transaksi berulang tidak ditemukan.', 'warning', recurring_redirect());
     }
+
+    $isActive = (int) $isActiveRaw;
 
     $stmt = $con->prepare("UPDATE recurring_transaction
                            SET is_active = ?, updated_at = NOW()

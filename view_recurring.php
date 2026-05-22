@@ -217,9 +217,20 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                     <?php foreach ($recurringRows as $row) { ?>
                                         <?php
                                         $isActive = (int) ($row['is_active'] ?? 0);
+                                        $editActiveValue = $isActive === 1 ? '1' : '0';
                                         $statusTransaksiDefault = (string) ($row['status_transaksi_default'] ?? 'pending');
                                         $jumlah = (float) ($row['jumlah'] ?? 0);
                                         $logBulanIni = !empty($row['log_bulan_ini']);
+                                        $statusTemplateLabel = $isActive === 1 ? 'AKTIF' : 'NONAKTIF';
+                                        $toggleTargetValue = $isActive === 1 ? 0 : 1;
+                                        $toggleActionLabel = $isActive === 1 ? 'Nonaktifkan' : 'Aktifkan';
+                                        $toggleConfirmTitle = $isActive === 1 ? 'Nonaktifkan template?' : 'Aktifkan template?';
+                                        $toggleConfirmText = $isActive === 1
+                                            ? 'Template ini akan dinonaktifkan dan tidak ikut digenerate.'
+                                            : 'Template ini akan diaktifkan dan ikut digenerate jika memenuhi periode.';
+                                        $toggleConfirmButton = $isActive === 1 ? 'Ya, nonaktifkan' : 'Ya, aktifkan';
+                                        $toggleIcon = $isActive === 1 ? 'fa-ban' : 'fa-check-circle';
+                                        $toggleTextClass = $isActive === 1 ? 'text-danger' : 'text-success';
                                         ?>
                                         <tr>
                                             <td>
@@ -252,7 +263,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                             </td>
                                             <td>
                                                 <span class="badge badge-sm <?= recurring_status_badge($isActive) ?>">
-                                                    <?= $isActive === 1 ? 'Aktif' : 'Nonaktif' ?>
+                                                    <?= $statusTemplateLabel ?>
                                                 </span>
                                             </td>
                                             <td>
@@ -275,23 +286,23 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                                         data-status-default="<?= htmlspecialchars($statusTransaksiDefault, ENT_QUOTES, 'UTF-8') ?>"
                                                         data-mulai="<?= htmlspecialchars($row['mulai_dari'], ENT_QUOTES, 'UTF-8') ?>"
                                                         data-berakhir="<?= htmlspecialchars($row['berakhir_pada'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                                        data-active="<?= $isActive ?>">
+                                                        data-active="<?= htmlspecialchars($editActiveValue, ENT_QUOTES, 'UTF-8') ?>">
                                                         <i class="fa fa-pencil" aria-hidden="true"></i> Edit
                                                     </button>
 
                                                     <form action="aksi_recurring.php?act=s" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_recurring" value="<?= (int) $row['id_recurring'] ?>">
-                                                        <input type="hidden" name="is_active" value="<?= $isActive === 1 ? 0 : 1 ?>">
+                                                        <input type="hidden" name="is_active" value="<?= $toggleTargetValue ?>">
                                                         <button type="submit"
                                                             data-confirm="true"
-                                                            data-confirm-title="<?= $isActive === 1 ? 'Nonaktifkan template?' : 'Aktifkan template?' ?>"
-                                                            data-confirm-text="<?= $isActive === 1 ? 'Template nonaktif tidak akan ikut digenerate.' : 'Template aktif akan ikut digenerate jika memenuhi periode.' ?>"
-                                                            data-confirm-confirm-text="<?= $isActive === 1 ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
+                                                            data-confirm-title="<?= $toggleConfirmTitle ?>"
+                                                            data-confirm-text="<?= $toggleConfirmText ?>"
+                                                            data-confirm-confirm-text="<?= $toggleConfirmButton ?>"
                                                             data-confirm-cancel-text="Batal"
-                                                            class="text-secondary <?= $isActive === 1 ? 'text-danger' : 'text-success' ?> font-weight-bold text-xs border-0 bg-transparent p-0">
-                                                            <i class="fa <?= $isActive === 1 ? 'fa-toggle-off' : 'fa-toggle-on' ?>" aria-hidden="true"></i>
-                                                            <?= $isActive === 1 ? 'Nonaktifkan' : 'Aktifkan' ?>
+                                                            class="<?= $toggleTextClass ?> font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                            <i class="fa <?= $toggleIcon ?>" aria-hidden="true"></i>
+                                                            <?= $toggleActionLabel ?>
                                                         </button>
                                                     </form>
                                                 </div>
@@ -506,7 +517,8 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
             $('#status_transaksi_default').val($(this).attr('data-status-default'));
             $('#mulai_dari').val($(this).attr('data-mulai'));
             $('#berakhir_pada').val($(this).attr('data-berakhir'));
-            $('#is_active_recurring').val($(this).attr('data-active'));
+            var activeValue = String($(this).attr('data-active') || '0') === '1' ? '1' : '0';
+            $('#is_active_recurring').val(activeValue);
 
             if (typeof applyNominalFormatting === 'function') {
                 applyNominalFormatting(document.getElementById('jumlah_recurring'));
