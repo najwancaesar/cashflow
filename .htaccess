@@ -1,0 +1,18 @@
+Options -Indexes
+
+<FilesMatch "(^\.env|\.sql$|\.log$|\.bak$|\.zip$)">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /cashflow/
+
+    RewriteRule ^database/ - [F,L,NC]
+
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^(home|dashboard|wallet|transfer_wallet|saving_goal|recurring|pemasukan|pengeluaran|kategori|hutang|piutang|laporan|profile|pengguna)/?$ main.php?module=$1 [L,QSA,NC]
+</IfModule>

@@ -24,13 +24,96 @@ if (!function_exists('set_sweetalert_flash')) {
     }
 }
 
-if (!function_exists('redirect_with_sweetalert_flash')) {
-    function redirect_with_sweetalert_flash($title, $text, $icon = 'info', $redirect = '')
+if (!function_exists('cashflow_allowed_clean_modules')) {
+    function cashflow_allowed_clean_modules()
+    {
+        return [
+            'home',
+            'dashboard',
+            'wallet',
+            'transfer_wallet',
+            'saving_goal',
+            'recurring',
+            'pemasukan',
+            'pengeluaran',
+            'kategori',
+            'hutang',
+            'piutang',
+            'laporan',
+            'profile',
+            'pengguna',
+        ];
+    }
+}
+
+if (!function_exists('clean_module_url')) {
+    function clean_module_url($module, $queryParams = [])
+    {
+        $module = trim((string) $module);
+        if (!in_array($module, cashflow_allowed_clean_modules(), true)) {
+            return 'home';
+        }
+
+        if (!is_array($queryParams)) {
+            $queryParams = [];
+        }
+
+        unset($queryParams['module']);
+        $queryParams = array_filter($queryParams, static function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        $queryString = http_build_query($queryParams);
+
+        return $queryString === '' ? $module : $module . '?' . $queryString;
+    }
+}
+
+if (!function_exists('normalize_cashflow_redirect_url')) {
+    function normalize_cashflow_redirect_url($redirect)
     {
         $redirect = trim((string) $redirect);
         if ($redirect === '') {
-            $redirect = './';
+            return './';
         }
+
+        if (preg_match('/^[a-z][a-z0-9+\-.]*:/i', $redirect) || strpos($redirect, '//') === 0) {
+            return $redirect;
+        }
+
+        $parts = parse_url($redirect);
+        if (!is_array($parts)) {
+            return $redirect;
+        }
+
+        $path = ltrim((string) ($parts['path'] ?? ''), './');
+        if (strtolower($path) !== 'main.php') {
+            return $redirect;
+        }
+
+        $queryParams = [];
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $queryParams);
+        }
+
+        $module = $queryParams['module'] ?? '';
+        if (!in_array((string) $module, cashflow_allowed_clean_modules(), true)) {
+            return $redirect;
+        }
+
+        $cleanUrl = clean_module_url($module, $queryParams);
+        if (!empty($parts['fragment'])) {
+            $cleanUrl .= '#' . $parts['fragment'];
+        }
+
+        return $cleanUrl;
+    }
+}
+
+if (!function_exists('redirect_with_sweetalert_flash')) {
+    function redirect_with_sweetalert_flash($title, $text, $icon = 'info', $redirect = '')
+    {
+        $redirect = normalize_cashflow_redirect_url($redirect);
 
         set_sweetalert_flash($title, $text, $icon);
 
