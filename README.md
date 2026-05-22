@@ -1,299 +1,209 @@
-# CashFlow Control
+<!--
+  README for CashFlow Control
+  Tips:
+  - Put screenshots inside /img and keep the filenames used below.
+  - This README uses GitHub-flavored Markdown, emoji, shields.io badges, and simple HTML tables.
+-->
 
-**CashFlow Control** adalah aplikasi web berbasis **PHP Native + MySQL** untuk mencatat, memantau, dan mengelola arus kas pribadi. Aplikasi ini dirancang untuk penggunaan harian melalui local server seperti **XAMPP/Laragon**, dengan fitur pencatatan transaksi, multi-wallet, budget kategori, transfer antar wallet, Celengan Virtual, hingga laporan PDF/CSV.
+<div align="center">
 
-> Project ini dikembangkan sebagai aplikasi personal finance dashboard yang ringan, praktis, dan mudah dijalankan di lingkungan lokal.
+# 💸 CashFlow Control
 
----
+### Personal finance dashboard built with PHP Native, MySQL, and TCPDF.
 
-## Daftar Isi
+Kelola pemasukan, pengeluaran, multi-wallet, transfer saldo, budget kategori, Celengan Virtual, hingga laporan PDF/CSV dalam satu aplikasi web lokal yang ringan dan praktis.
 
-- [Tentang Project](#tentang-project)
-- [Fitur Utama](#fitur-utama)
-- [Preview Aplikasi](#preview-aplikasi)
-- [Teknologi yang Digunakan](#teknologi-yang-digunakan)
-- [Struktur Folder](#struktur-folder)
-- [Panduan Instalasi](#panduan-instalasi)
-- [Cara Menggunakan Aplikasi](#cara-menggunakan-aplikasi)
-- [Catatan Database](#catatan-database)
-- [Tips Penggunaan Harian](#tips-penggunaan-harian)
-- [Catatan Keamanan](#catatan-keamanan)
-- [Roadmap Pengembangan](#roadmap-pengembangan)
-- [Kontribusi](#kontribusi)
-- [Lisensi](#lisensi)
-- [Kontak](#kontak)
+<br>
 
----
+![PHP](https://img.shields.io/badge/PHP-Native-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-Database-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![TCPDF](https://img.shields.io/badge/TCPDF-PDF_Report-E34F26?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
+![XAMPP](https://img.shields.io/badge/XAMPP-Local_Server-FB7A24?style=for-the-badge&logo=xampp&logoColor=white)
+![Responsive](https://img.shields.io/badge/Responsive-Mobile_Ready-14B8A6?style=for-the-badge)
 
-## Tentang Project
+<br>
 
-CashFlow Control dibuat untuk membantu pengguna mencatat dan memahami kondisi keuangan pribadi secara lebih terstruktur. Aplikasi ini tidak hanya mencatat pemasukan dan pengeluaran, tetapi juga mendukung pengelolaan beberapa sumber dana seperti cash, rekening bank, e-wallet, transfer antar wallet, target tabungan, budget bulanan per kategori, serta laporan keuangan.
+[✨ Fitur](#-fitur-unggulan) •
+[🖼️ Preview](#-preview-aplikasi) •
+[⚙️ Instalasi](#️-panduan-instalasi) •
+[🚀 Cara Pakai](#-cara-menggunakan) •
+[📊 Laporan](#-laporan--export)
 
-Aplikasi ini cocok untuk:
-
-- mencatat pemasukan dan pengeluaran harian,
-- memantau saldo dari beberapa wallet,
-- mengatur budget kategori pengeluaran,
-- mencatat perpindahan saldo antar wallet,
-- membuat target tabungan atau Celengan Virtual,
-- memantau hutang dan piutang,
-- membuat laporan keuangan berdasarkan periode tertentu.
+</div>
 
 ---
 
-## Fitur Utama
+## 📌 Tentang Project
 
-### Autentikasi dan Role
+**CashFlow Control** adalah aplikasi web untuk membantu pengguna mencatat, memantau, dan mengelola arus kas pribadi secara lebih terstruktur.
 
-- Login dan register user.
-- Role **admin** dan **user**.
-- Dashboard berbeda untuk admin dan user.
-- Manajemen pengguna untuk admin.
-- SweetAlert welcome setelah login.
-- Logout dengan konfirmasi.
+Aplikasi ini awalnya dibuat sebagai project pembelajaran, lalu dikembangkan menjadi personal finance dashboard dengan fitur yang lebih lengkap seperti **Multi-Wallet**, **Transfer Wallet**, **Budget per Kategori**, **Celengan Virtual**, **Quick Add**, dan **Laporan PDF/CSV**.
 
-### Dashboard User
-
-- Ringkasan pemasukan minggu ini.
-- Ringkasan pengeluaran minggu ini.
-- Jumlah transaksi minggu ini.
-- Saldo wallet aktif.
-- Insight bulan ini.
-- Ringkasan budget bulan ini.
-- Ringkasan Celengan Virtual.
-- Quick Add untuk input cepat:
-  - Pemasukan,
-  - Pengeluaran,
-  - Transfer Wallet,
-  - Setor Celengan.
-- Tampilan mobile dashboard menggunakan card agar lebih responsif.
-- Navbar mobile/tablet fixed agar hamburger dan profile tetap mudah diakses saat scroll.
-
-### Pemasukan dan Pengeluaran
-
-- Tambah, edit, hapus, dan ubah status transaksi.
-- Status transaksi:
-  - `pending`,
-  - `selesai`.
-- Kategori transaksi.
-- Integrasi wallet pada pemasukan dan pengeluaran.
-- Validasi ownership data user.
-- Proteksi CSRF untuk aksi penting.
-- Format nominal otomatis pada input.
-
-### Kategori dan Budget
-
-- Kelola kategori pemasukan dan pengeluaran.
-- Budget bulanan khusus kategori pengeluaran.
-- Modal untuk atur budget kategori.
-- Progress pemakaian budget.
-- Status budget:
-  - Aman,
-  - Warning,
-  - Over Budget.
-- Dashboard budget summary:
-  - total budget,
-  - terpakai,
-  - sisa budget,
-  - persentase pemakaian,
-  - kategori warning/over budget.
-
-### Multi-Wallet
-
-- Kelola beberapa wallet/dompet:
-  - Cash,
-  - Bank,
-  - E-Wallet,
-  - Tabungan,
-  - Lainnya.
-- Set default wallet.
-- Aktif/nonaktif wallet.
-- Saldo wallet dihitung dari:
-  - saldo awal,
-  - pemasukan selesai,
-  - pengeluaran selesai,
-  - transfer masuk/keluar,
-  - setor/tarik Celengan Virtual.
-
-### Transfer Wallet
-
-- Transfer saldo antar wallet.
-- Contoh:
-  - Cash ke Bank BCA,
-  - DANA ke ShopeePay,
-  - Bank ke Cash.
-- Transfer tidak dihitung sebagai pemasukan atau pengeluaran.
-- Status transfer:
-  - pending,
-  - selesai,
-  - batal.
-- Validasi saldo cukup untuk transfer selesai.
-- Transfer selesai dapat dibatalkan.
-- Transfer pending/batal dapat dihapus permanen.
-
-### Celengan Virtual
-
-- Membuat target tabungan personal.
-- Contoh:
-  - Dana Darurat,
-  - Beli Laptop,
-  - Liburan,
-  - Servis Motor.
-- Setor ke celengan dari wallet.
-- Tarik dari celengan ke wallet.
-- Progress target tabungan.
-- Riwayat mutasi celengan.
-- Status:
-  - aktif,
-  - selesai,
-  - arsip.
-- Setor/tarik memengaruhi saldo wallet.
-
-### Hutang dan Piutang
-
-- Pencatatan hutang.
-- Pencatatan piutang.
-- Status pelunasan.
-- Cocok untuk memantau kewajiban dan tagihan personal.
-
-### Laporan
-
-- Laporan berdasarkan custom date range.
-- Mendukung range lintas hari, bulan, dan tahun.
-- Jenis laporan:
-  - Pemasukan,
-  - Pengeluaran,
-  - Hutang,
-  - Piutang,
-  - Transfer Wallet,
-  - Celengan Virtual.
-- Filter wallet untuk laporan yang relevan.
-- Filter kategori untuk pemasukan/pengeluaran.
-- Preview laporan.
-- Export PDF menggunakan TCPDF.
-- Export CSV.
-- Header dan footer laporan dibuat lebih formal.
-
-### Profile dan Upload Foto
-
-- Edit profile.
-- Ubah password dengan validasi server-side.
-- Upload foto profil dengan validasi:
-  - ekstensi,
-  - MIME type,
-  - ukuran file,
-  - nama file random.
+> Cocok untuk penggunaan pribadi, pencatatan keuangan harian, monitoring saldo, budgeting bulanan, dan rekap laporan keuangan lokal menggunakan XAMPP/Laragon.
 
 ---
 
-## Preview Aplikasi
+## ✨ Fitur Unggulan
 
-Simpan screenshot aplikasi pada folder `img/`, lalu sesuaikan nama file dengan daftar di bawah ini.
-
-| Preview | Deskripsi | Path Gambar |
-|---|---|---|
-| Dashboard Desktop | Tampilan dashboard utama versi desktop, berisi ringkasan cashflow, wallet, budget, quick add, dan insight. | `img/preview-dashboard-desktop.png` |
-| Dashboard Mobile | Tampilan dashboard versi mobile dengan card transaksi terbaru dan navbar fixed. | `img/preview-dashboard-mobile.png` |
-| Wallet dan Transfer | Tampilan modul wallet serta transfer antar wallet. | `img/preview-wallet-transfer.png` |
-| Celengan Virtual | Tampilan target tabungan, progress, setor/tarik, dan riwayat mutasi celengan. | `img/preview-celengan-virtual.png` |
-| Laporan PDF | Tampilan preview atau hasil export laporan PDF/CSV. | `img/preview-report-pdf.png` |
-
-### Contoh Penempatan Gambar
-
-```md
-![Dashboard Desktop](img/preview-dashboard-desktop.png)
-![Dashboard Mobile](img/preview-dashboard-mobile.png)
-![Wallet dan Transfer](img/preview-wallet-transfer.png)
-![Celengan Virtual](img/preview-celengan-virtual.png)
-![Laporan PDF](img/preview-report-pdf.png)
-```
-
-> Jika nama file screenshot berbeda, ubah path gambar pada README sesuai nama file yang kamu gunakan.
-
----
-
-## Teknologi yang Digunakan
-
-### Backend
-
-- PHP Native
-- MySQL / MariaDB
-
-### Frontend
-
-- HTML
-- CSS
-- JavaScript
-- jQuery
-- Bootstrap / template admin existing
-- SweetAlert
-- DataTables
-
-### Library dan Tools
-
-- TCPDF untuk export PDF
-- XAMPP / Laragon / LAMP / WAMP
-- phpMyAdmin
-- Git dan GitHub
+<table>
+  <tr>
+    <td width="33%">
+      <h3>💰 Transaksi Harian</h3>
+      <p>Catat pemasukan dan pengeluaran dengan kategori, wallet, status transaksi, catatan, dan nominal terformat otomatis.</p>
+    </td>
+    <td width="33%">
+      <h3>🏦 Multi-Wallet</h3>
+      <p>Kelola Cash, Bank, E-Wallet, Tabungan, dan dompet lainnya dalam satu dashboard saldo.</p>
+    </td>
+    <td width="33%">
+      <h3>🔁 Transfer Wallet</h3>
+      <p>Pindahkan saldo antar wallet tanpa dianggap sebagai pemasukan atau pengeluaran.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="33%">
+      <h3>🎯 Budget Kategori</h3>
+      <p>Atur budget bulanan per kategori pengeluaran dengan status Aman, Warning, dan Over Budget.</p>
+    </td>
+    <td width="33%">
+      <h3>🐷 Celengan Virtual</h3>
+      <p>Buat target tabungan, setor dari wallet, tarik ke wallet, dan pantau progress tabungan.</p>
+    </td>
+    <td width="33%">
+      <h3>📊 Laporan PDF/CSV</h3>
+      <p>Buat laporan custom date range, preview, export PDF via TCPDF, dan export CSV.</p>
+    </td>
+  </tr>
+</table>
 
 ---
 
-## Struktur Folder
+## 🧩 Modul Aplikasi
+
+| Modul | Deskripsi |
+|---|---|
+| 🔐 **Auth & Role** | Login, register, role admin/user, SweetAlert welcome, logout confirmation. |
+| 🏠 **Dashboard User** | Ringkasan mingguan, saldo wallet, budget, insight, Celengan Virtual, Quick Add, transaksi terbaru. |
+| 👥 **Dashboard Admin** | Monitoring user dan manajemen pengguna. |
+| 💵 **Pemasukan** | Tambah/edit/hapus pemasukan, kategori, wallet tujuan, status pending/selesai. |
+| 🧾 **Pengeluaran** | Tambah/edit/hapus pengeluaran, kategori, wallet sumber, status pending/selesai. |
+| 🏷️ **Kategori & Budget** | Kelola kategori dan budget bulanan kategori pengeluaran. |
+| 🏦 **Wallet** | Tambah/edit wallet, set default, aktif/nonaktif wallet. |
+| 🔁 **Transfer Wallet** | Transfer saldo antar wallet, validasi saldo cukup, batal/hapus permanen sesuai status. |
+| 🐷 **Celengan Virtual** | Target tabungan, setor/tarik via wallet, progress, riwayat mutasi, arsip. |
+| 🤝 **Hutang & Piutang** | Pencatatan hutang/piutang dan status pelunasan. |
+| 📄 **Laporan** | Pemasukan, pengeluaran, hutang, piutang, transfer, dan celengan dengan preview/PDF/CSV. |
+| 👤 **Profile** | Edit profile, ganti password, upload foto profil tervalidasi. |
+
+---
+
+## 🖼️ Preview Aplikasi
+
+> Simpan screenshot kamu ke folder `img/` dengan nama file berikut, atau ubah path gambar sesuai kebutuhan.
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="img/preview-dashboard-desktop.png" alt="Dashboard desktop preview" width="100%">
+      <br>
+      <b>🖥️ Dashboard Desktop</b>
+      <br>
+      <sub>Ringkasan wallet, budget, insight, quick add, dan transaksi terbaru.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="img/preview-dashboard-mobile.png" alt="Dashboard mobile preview" width="100%">
+      <br>
+      <b>📱 Dashboard Mobile</b>
+      <br>
+      <sub>Card transaksi terbaru dan navbar fixed untuk akses hamburger/profile.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="img/preview-wallet-transfer.png" alt="Wallet transfer preview" width="100%">
+      <br>
+      <b>🔁 Transfer Wallet</b>
+      <br>
+      <sub>Perpindahan saldo antar wallet tanpa mengubah laporan pemasukan/pengeluaran.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="img/preview-celengan-virtual.png" alt="Celengan virtual preview" width="100%">
+      <br>
+      <b>🐷 Celengan Virtual</b>
+      <br>
+      <sub>Target tabungan, progress, setor/tarik, dan riwayat mutasi.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="img/preview-report-pdf.png" alt="Report PDF preview" width="80%">
+      <br>
+      <b>📄 Laporan PDF & CSV</b>
+      <br>
+      <sub>Preview laporan, custom date range, filter wallet, export PDF, dan export CSV.</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
+## 🛠️ Tech Stack
+
+| Kategori | Teknologi |
+|---|---|
+| Backend | PHP Native |
+| Database | MySQL / MariaDB |
+| Frontend | HTML, CSS, JavaScript, jQuery |
+| PDF Export | TCPDF |
+| UI Interaction | SweetAlert, Bootstrap-style components, DataTables |
+| Local Server | XAMPP / Laragon / WAMP / LAMP |
+| Version Control | Git & GitHub |
+
+---
+
+## 📁 Struktur Folder
 
 ```text
 cashflow/
-├── assets/
-│   ├── css/                    # Styling aplikasi dan responsive CSS
-│   ├── img/                    # Asset gambar aplikasi
-│   └── js/                     # JavaScript custom
-├── bower_components/           # Dependency frontend bawaan template
-├── includes/                   # Sidebar, navbar, routing content, helper
-├── tcpdf/                      # Library TCPDF untuk export PDF
-├── img/                        # Folder screenshot README / dokumentasi
-├── db_transaksi.sql            # Struktur database aplikasi
-├── index.php                   # Entry point / redirect awal
-├── login.php                   # Halaman dan proses login
-├── register.php                # Halaman dan proses register
-├── main.php                    # Layout utama setelah login
-├── view_home.php               # Dashboard
-├── view_kategori.php           # Halaman kategori dan budget
-├── view_pemasukan.php          # Halaman pemasukan
-├── view_pengeluaran.php        # Halaman pengeluaran
-├── view_wallet.php             # Halaman wallet/dompet
-├── view_transfer_wallet.php    # Halaman transfer antar wallet
-├── view_saving_goal.php        # Halaman Celengan Virtual
-├── view_laporan.php            # Form dan preview laporan
-├── aksi_*.php                  # Handler aksi CRUD dan transaksi
-└── README.md                   # Dokumentasi project
+├── assets/                 # CSS, JS, images, profile uploads, responsive fixes
+├── bower_components/       # Frontend dependencies
+├── css/                    # Stylesheet bawaan template
+├── fonts/                  # Font assets
+├── img/                    # Screenshot README dan image project
+├── includes/               # Koneksi, navbar, sidebar, content routing, helpers
+├── js/                     # JavaScript project/template
+├── tcpdf/                  # Library TCPDF untuk export PDF
+├── db_transaksi.sql        # Struktur database utama
+├── index.php               # Entry point / landing
+├── login.php               # Login handler/page
+├── register.php            # Register user
+├── main.php                # Layout utama setelah login
+├── view_*.php              # Halaman tampilan modul
+├── aksi_*.php              # Handler aksi CRUD / proses data
+└── README.md               # Dokumentasi project
 ```
 
 ---
 
-## Panduan Instalasi
+## ⚙️ Panduan Instalasi
 
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/username/cashflow.git
-```
-
-Masuk ke folder project:
+### 1. Clone repository
 
 ```bash
-cd cashflow
+git clone https://github.com/yourusername/cashflow.git
 ```
 
-> Ganti `username/cashflow` sesuai URL repository kamu.
+Atau download ZIP dari GitHub, lalu extract ke folder web server lokal.
 
-### 2. Pindahkan Project ke Web Server Lokal
+### 2. Pindahkan ke folder local server
 
-Jika menggunakan XAMPP, letakkan folder project di:
+Untuk XAMPP:
 
 ```text
 C:/xampp/htdocs/cashflow
 ```
 
-Jika menggunakan Laragon, letakkan di folder:
+Untuk Laragon:
 
 ```text
 C:/laragon/www/cashflow
@@ -301,12 +211,14 @@ C:/laragon/www/cashflow
 
 ### 3. Jalankan Apache dan MySQL
 
-Buka XAMPP Control Panel atau Laragon, lalu jalankan:
+Buka XAMPP Control Panel, lalu start:
 
-- Apache
-- MySQL
+```text
+Apache
+MySQL
+```
 
-### 4. Buat Database
+### 4. Buat database
 
 Buka phpMyAdmin:
 
@@ -314,13 +226,13 @@ Buka phpMyAdmin:
 http://localhost/phpmyadmin
 ```
 
-Buat database baru, misalnya:
+Buat database baru, contoh:
 
 ```sql
 CREATE DATABASE cashflow;
 ```
 
-### 5. Import Database
+### 5. Import database
 
 Import file:
 
@@ -330,23 +242,15 @@ db_transaksi.sql
 
 melalui menu **Import** di phpMyAdmin.
 
-Pastikan tabel penting seperti berikut sudah terbentuk:
+### 6. Konfigurasi koneksi database
 
-- `user`
-- `kategori`
-- `pemasukan`
-- `pengeluaran`
-- `wallet`
-- `transfer_wallet`
-- `saving_goal`
-- `saving_goal_mutasi`
-- tabel hutang/piutang sesuai struktur project
+Sesuaikan konfigurasi database pada file koneksi project, misalnya:
 
-### 6. Konfigurasi Koneksi Database
+```text
+includes/koneksi.php
+```
 
-Sesuaikan konfigurasi koneksi database pada file koneksi project.
-
-Contoh umum:
+Contoh konfigurasi umum:
 
 ```php
 $host = "localhost";
@@ -355,9 +259,9 @@ $pass = "";
 $db   = "cashflow";
 ```
 
-> Nama file koneksi bisa berbeda tergantung struktur project. Cek file koneksi yang digunakan oleh aplikasi, lalu sesuaikan nama database, username, dan password MySQL kamu.
+> Nama variabel bisa berbeda tergantung struktur file koneksi di project. Intinya sesuaikan host, username, password, dan nama database.
 
-### 7. Jalankan Aplikasi
+### 7. Jalankan aplikasi
 
 Buka browser:
 
@@ -365,197 +269,213 @@ Buka browser:
 http://localhost/cashflow/
 ```
 
-Atau jika folder project memiliki nama berbeda:
+---
+
+## 🚀 Cara Menggunakan
+
+### 🧑‍💻 Untuk User
+
+1. **Register atau login** ke aplikasi.
+2. Buka menu **Wallet** dan pastikan memiliki minimal satu wallet aktif.
+3. Buat kategori pemasukan dan pengeluaran jika diperlukan.
+4. Catat transaksi melalui:
+   - menu **Pemasukan**,
+   - menu **Pengeluaran**,
+   - atau **Quick Add** dari dashboard.
+5. Atur budget kategori pengeluaran melalui menu **Kategori**.
+6. Gunakan **Transfer Wallet** untuk memindahkan saldo antar wallet.
+7. Gunakan **Celengan Virtual** untuk target tabungan.
+8. Pantau ringkasan melalui dashboard.
+9. Cetak atau export laporan melalui menu **Laporan**.
+
+### 🛡️ Untuk Admin
+
+1. Login sebagai admin.
+2. Buka dashboard admin.
+3. Kelola data pengguna.
+4. Pantau status user dan aktivitas aplikasi secara umum.
+
+---
+
+## ⚡ Quick Add Dashboard
+
+Dashboard user menyediakan tombol cepat untuk:
+
+| Aksi | Fungsi |
+|---|---|
+| ➕ **Pemasukan** | Catat pemasukan langsung dari dashboard. |
+| ➖ **Pengeluaran** | Catat pengeluaran tanpa masuk menu transaksi. |
+| 🔁 **Transfer Wallet** | Pindahkan saldo antar wallet secara cepat. |
+| 🐷 **Setor Celengan** | Setor dana ke Celengan Virtual dari wallet aktif. |
+
+---
+
+## 🏦 Rumus Saldo Wallet
+
+Saldo wallet dihitung dari beberapa sumber:
 
 ```text
-http://localhost/nama-folder-project/
+Saldo Akhir Wallet =
+Saldo Awal
++ Pemasukan Selesai
+- Pengeluaran Selesai
++ Transfer Masuk Selesai
+- Transfer Keluar Selesai
+- Setor Celengan
++ Tarik Celengan
 ```
 
----
-
-## Cara Menggunakan Aplikasi
-
-### 1. Register dan Login
-
-1. Buka halaman aplikasi.
-2. Buat akun melalui halaman register.
-3. Login menggunakan akun yang sudah dibuat.
-4. Setelah login, user akan diarahkan ke dashboard.
-
-### 2. Setup Wallet
-
-1. Buka menu **Wallet**.
-2. Tambahkan wallet seperti:
-   - Cash,
-   - Bank BCA,
-   - DANA,
-   - ShopeePay,
-   - Tabungan.
-3. Tentukan salah satu wallet sebagai default.
-4. Wallet default akan otomatis dipakai sebagai pilihan awal di beberapa form transaksi.
-
-### 3. Setup Kategori
-
-1. Buka menu **Kategori**.
-2. Tambahkan kategori pemasukan, misalnya:
-   - Gaji,
-   - Bonus,
-   - Freelance.
-3. Tambahkan kategori pengeluaran, misalnya:
-   - Makan & Minum,
-   - Transportasi,
-   - Internet,
-   - Belanja.
-4. Untuk kategori pengeluaran, atur budget bulanan jika diperlukan.
-
-### 4. Catat Pemasukan
-
-1. Buka menu **Pemasukan** atau gunakan **Quick Add** di dashboard.
-2. Pilih tanggal.
-3. Pilih kategori pemasukan.
-4. Pilih wallet tujuan.
-5. Masukkan nominal dan catatan.
-6. Simpan transaksi.
-
-### 5. Catat Pengeluaran
-
-1. Buka menu **Pengeluaran** atau gunakan **Quick Add** di dashboard.
-2. Pilih tanggal.
-3. Pilih kategori pengeluaran.
-4. Pilih wallet sumber.
-5. Masukkan nominal dan catatan.
-6. Simpan transaksi.
-7. Jika kategori memiliki budget, dashboard akan menghitung progress pemakaian budget.
-
-### 6. Transfer Antar Wallet
-
-1. Buka menu **Transfer Wallet**.
-2. Pilih wallet asal.
-3. Pilih wallet tujuan.
-4. Masukkan nominal transfer.
-5. Pilih status transfer.
-6. Simpan.
-7. Jika status `selesai`, saldo wallet asal akan berkurang dan wallet tujuan akan bertambah.
-
-### 7. Gunakan Celengan Virtual
-
-1. Buka menu **Celengan Virtual**.
-2. Buat celengan baru, misalnya **Dana Darurat**.
-3. Tentukan target nominal.
-4. Setor saldo dari wallet sumber.
-5. Tarik saldo ke wallet tujuan jika diperlukan.
-6. Pantau progress target melalui halaman Celengan Virtual atau dashboard.
-
-### 8. Kelola Hutang dan Piutang
-
-1. Buka menu hutang atau piutang.
-2. Tambahkan data sesuai kebutuhan.
-3. Perbarui status jika sudah lunas atau selesai.
-
-### 9. Buat Laporan
-
-1. Buka menu **Laporan**.
-2. Pilih jenis laporan:
-   - Pemasukan,
-   - Pengeluaran,
-   - Hutang,
-   - Piutang,
-   - Transfer Wallet,
-   - Celengan Virtual.
-3. Pilih tanggal awal dan tanggal akhir.
-4. Gunakan filter wallet atau kategori jika diperlukan.
-5. Tampilkan preview.
-6. Export laporan ke PDF atau CSV.
+Status `pending` dan `batal` tidak dihitung sebagai saldo aktual.
 
 ---
 
-## Catatan Database
+## 📊 Laporan & Export
 
-File `db_transaksi.sql` berisi struktur database yang diperlukan oleh aplikasi. Jika kamu menambahkan fitur baru, pastikan struktur tabel pada file SQL ikut diperbarui agar project bisa di-import ulang dari awal.
+Laporan mendukung custom date range lintas hari, bulan, dan tahun.
 
-Beberapa tabel penting:
+### Jenis laporan
 
-| Tabel | Fungsi |
+- 💵 Pemasukan
+- 🧾 Pengeluaran
+- 🤝 Hutang
+- 🤲 Piutang
+- 🔁 Transfer Wallet
+- 🐷 Celengan Virtual
+
+### Output laporan
+
+| Output | Deskripsi |
 |---|---|
-| `user` | Data akun user dan admin |
-| `kategori` | Kategori pemasukan/pengeluaran |
-| `pemasukan` | Data transaksi pemasukan |
-| `pengeluaran` | Data transaksi pengeluaran |
-| `wallet` | Data wallet/dompet user |
-| `transfer_wallet` | Data transfer antar wallet |
-| `saving_goal` | Data Celengan Virtual |
-| `saving_goal_mutasi` | Riwayat setor/tarik Celengan Virtual |
+| 👁️ Preview | Menampilkan laporan langsung di browser. |
+| 📄 PDF | Export laporan formal menggunakan TCPDF. |
+| 📑 CSV | Export data agar bisa dibuka di spreadsheet. |
+
+### Filter laporan
+
+- Tanggal awal dan tanggal akhir.
+- Kategori untuk pemasukan/pengeluaran.
+- Wallet untuk laporan yang relevan.
 
 ---
 
-## Tips Penggunaan Harian
+## 🔐 Catatan Keamanan
 
-- Gunakan **Quick Add** di dashboard untuk mencatat transaksi lebih cepat.
-- Gunakan status `pending` jika transaksi belum benar-benar terjadi.
-- Gunakan status `selesai` untuk transaksi yang sudah final.
-- Atur budget hanya pada kategori pengeluaran yang ingin dikontrol.
-- Gunakan transfer wallet untuk perpindahan saldo antar sumber dana.
-- Gunakan Celengan Virtual untuk target tabungan.
-- Export laporan PDF/CSV secara berkala untuk backup data keuangan.
+Beberapa bagian aplikasi sudah dilengkapi hardening:
 
----
+- Validasi session login.
+- Role guard admin/user.
+- Validasi ownership data user.
+- Prepared statement pada query penting.
+- CSRF protection untuk banyak aksi mutasi.
+- Upload foto profil dengan validasi ekstensi, MIME type, dan ukuran.
+- Aksi hapus/status penting memakai POST.
+- SweetAlert untuk konfirmasi aksi.
 
-## Catatan Keamanan
-
-Aplikasi ini dirancang untuk penggunaan lokal/personal. Jika ingin digunakan di hosting publik, pertimbangkan hal berikut:
-
-- Gunakan HTTPS.
-- Ganti credential database default.
-- Batasi akses file sensitif.
-- Pastikan upload file tetap tervalidasi.
-- Jangan expose folder backup/database ke publik.
-- Review ulang konfigurasi error reporting pada mode production.
-- Lakukan backup database secara berkala.
+> Tetap gunakan aplikasi ini di environment yang aman, terutama jika masih berjalan secara lokal menggunakan XAMPP.
 
 ---
 
-## Roadmap Pengembangan
+## 📱 Mobile Experience
 
-Beberapa ide pengembangan yang bisa dipertimbangkan:
+CashFlow Control sudah dipoles agar lebih nyaman di HP:
 
-- Backup dan restore database.
-- Filter dashboard berdasarkan wallet.
-- PWA Basic untuk Add to Home Screen.
-- Recurring transaction untuk transaksi rutin.
-- Laporan analitik lanjutan.
-- Export laporan gabungan.
-- UI polish untuk mobile experience.
+- Dashboard terbaru tampil sebagai card di mobile.
+- Navbar hamburger/profile fixed saat scroll.
+- Modal input dibuat lebih nyaman untuk layar kecil.
+- Budget kategori menggunakan modal.
+- Tabel besar tetap memakai responsive wrapper atau card khusus.
 
 ---
 
-## Kontribusi
+## 🧪 Checklist Testing Setelah Install
 
-Kontribusi, saran, dan issue sangat terbuka.
+Gunakan checklist ini setelah setup:
 
-Langkah kontribusi umum:
+- [ ] Aplikasi bisa dibuka di browser.
+- [ ] Register user baru berhasil.
+- [ ] User baru memiliki wallet default.
+- [ ] Login user berhasil.
+- [ ] Tambah pemasukan berhasil.
+- [ ] Tambah pengeluaran berhasil.
+- [ ] Quick Add dashboard berjalan.
+- [ ] Transfer wallet memengaruhi saldo.
+- [ ] Celengan Virtual bisa setor/tarik via wallet.
+- [ ] Budget kategori bisa disimpan.
+- [ ] Laporan preview tampil.
+- [ ] Export PDF berhasil.
+- [ ] Export CSV berhasil.
+- [ ] Login admin tidak error.
+
+---
+
+## 🗺️ Roadmap
+
+Beberapa pengembangan yang bisa dipertimbangkan:
+
+- [ ] Backup & restore database.
+- [ ] PWA Basic untuk hosting HTTPS.
+- [ ] Filter dashboard berdasarkan wallet.
+- [ ] Statistik/grafik yang lebih detail.
+- [ ] Audit log aktivitas.
+- [ ] Recurring transaction manual.
+- [ ] Dokumentasi deployment hosting.
+
+---
+
+## 🤝 Kontribusi
+
+Kontribusi sangat terbuka.
 
 1. Fork repository.
 2. Buat branch baru.
-3. Lakukan perubahan.
-4. Commit perubahan.
-5. Buat pull request.
+
+```bash
+git checkout -b feature/nama-fitur
+```
+
+3. Commit perubahan.
+
+```bash
+git commit -m "Add new feature"
+```
+
+4. Push branch.
+
+```bash
+git push origin feature/nama-fitur
+```
+
+5. Buat Pull Request.
 
 ---
 
-## Lisensi
+## 🧾 Lisensi
 
-Project ini bersifat open-source dan dapat digunakan untuk pembelajaran maupun pengembangan personal. Jika repository menggunakan lisensi khusus, sesuaikan bagian ini dengan file `LICENSE` yang tersedia.
-
----
-
-## Kontak
-
-Jika ada pertanyaan, saran, atau ingin berdiskusi tentang project ini:
-
-- **Email:** [najwan12311@gmail.com](mailto:najwan12311@gmail.com)
-- **GitHub:** [github.com/najwancaesar](https://github.com/najwancaesar)
-- **LinkedIn:** [linkedin.com/in/najwan-caesar-firstiansyah](https://www.linkedin.com/in/najwan-caesar-firstiansyah-152814266/)
+Project ini menggunakan lisensi **MIT**.  
+Silakan gunakan, pelajari, dan modifikasi sesuai kebutuhan.
 
 ---
 
-Dibuat dan dikembangkan sebagai project pembelajaran sekaligus aplikasi personal finance untuk membantu mengontrol arus kas harian.
+## 👨‍💻 Author
+
+<div align="center">
+
+**Najwan Caesar Firstiansyah**
+
+[![Email](https://img.shields.io/badge/Email-najwan12311%40gmail.com-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:najwan12311@gmail.com)
+[![GitHub](https://img.shields.io/badge/GitHub-najwancaesar-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/najwancaesar)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Najwan_Caesar_Firstiansyah-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/najwan-caesar-firstiansyah-152814266/)
+
+</div>
+
+---
+
+<div align="center">
+
+### ⭐ CashFlow Control
+
+Jika project ini bermanfaat, jangan lupa beri star di repository GitHub kamu.
+
+**Built with passion using PHP Native + MySQL.**
+
+</div>

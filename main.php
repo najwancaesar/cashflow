@@ -72,26 +72,9 @@ if(!isset($_SESSION['nama'])){
     <script src="assets/js/material-dashboard.min.js?v=3.0.0"></script>
     <script src="assets/js/app-ui-fixes.js"></script>
     <?php
-    $flashLoginSuccess = $_SESSION['flash_login_success'] ?? null;
-    unset($_SESSION['flash_login_success']);
-    if (is_array($flashLoginSuccess)) {
-        $flashTitle = json_encode((string) ($flashLoginSuccess['title'] ?? 'Selamat datang!'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $flashText = json_encode((string) ($flashLoginSuccess['text'] ?? ''), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $flashIcon = json_encode((string) ($flashLoginSuccess['icon'] ?? 'success'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        ?>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: <?= $flashTitle ?>,
-                    text: <?= $flashText ?>,
-                    icon: <?= $flashIcon ?>,
-                    confirmButtonColor: '#0ea5e9'
-                });
-            }
-        });
-        </script>
-    <?php } ?>
+    include_once "includes/sweetalert_helper.php";
+    render_sweetalert_flash_script();
+    ?>
 
     <script>
     function getNominalDigits(value) {

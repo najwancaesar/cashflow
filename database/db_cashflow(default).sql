@@ -1230,6 +1230,46 @@ CREATE TABLE
     KEY `idx_mutasi_tanggal` (`tanggal`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
+CREATE TABLE IF NOT EXISTS `recurring_transaction` (
+  `id_recurring` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `tipe_transaksi` enum('pemasukan','pengeluaran') NOT NULL,
+  `id_kategori` int(11) DEFAULT NULL,
+  `id_wallet` int(11) NOT NULL,
+  `nama_recurring` varchar(150) NOT NULL,
+  `catatan` text DEFAULT NULL,
+  `jumlah` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `frekuensi` enum('bulanan') NOT NULL DEFAULT 'bulanan',
+  `tanggal_generate` tinyint(2) NOT NULL DEFAULT 1,
+  `status_transaksi_default` enum('pending','selesai') NOT NULL DEFAULT 'pending',
+  `mulai_dari` date NOT NULL,
+  `berakhir_pada` date DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_recurring`),
+  KEY `idx_recurring_user` (`user_id`),
+  KEY `idx_recurring_active` (`user_id`, `is_active`),
+  KEY `idx_recurring_wallet` (`id_wallet`),
+  KEY `idx_recurring_kategori` (`id_kategori`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `recurring_generation_log` (
+  `id_log` int(11) NOT NULL AUTO_INCREMENT,
+  `id_recurring` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `periode_bulan` tinyint(2) NOT NULL,
+  `periode_tahun` int(4) NOT NULL,
+  `tipe_transaksi` enum('pemasukan','pengeluaran') NOT NULL,
+  `id_transaksi` int(11) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_log`),
+  UNIQUE KEY `uniq_recurring_period` (`id_recurring`, `periode_bulan`, `periode_tahun`),
+  KEY `idx_log_user` (`user_id`),
+  KEY `idx_log_recurring` (`id_recurring`),
+  KEY `idx_log_period` (`periode_bulan`, `periode_tahun`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Dumping events for database 'cashflow'
 --

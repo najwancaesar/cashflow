@@ -6,6 +6,7 @@ $allowedModules = [
     'wallet' => "view_wallet.php",
     'transfer_wallet' => "view_transfer_wallet.php",
     'saving_goal' => "view_saving_goal.php",
+    'recurring' => "view_recurring.php",
     'kategori' => "view_kategori.php",
     'pemasukan' => "view_pemasukan.php",
     'pengeluaran' => "view_pengeluaran.php",
@@ -17,7 +18,7 @@ $allowedModules = [
 ];
 
 $adminOnlyModules = ['pengguna'];
-$userOnlyModules = ['wallet', 'transfer_wallet', 'saving_goal', 'kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang', 'laporan'];
+$userOnlyModules = ['wallet', 'transfer_wallet', 'saving_goal', 'recurring', 'kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang', 'laporan'];
 
 // Jika session nama tidak ada, arahkan ke login
 if (!isset($_SESSION['nama'])) {

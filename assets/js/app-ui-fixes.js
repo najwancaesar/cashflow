@@ -114,6 +114,66 @@
         });
     }
 
+    function setupMobileMicroInteractions() {
+        var tapSelector = [
+            '.app-main-content .btn',
+            '.app-main-content .dropdown-item',
+            '.sidenav .nav-link',
+            '.navbar-main .dropdown-toggle',
+            '#iconNavbarSidenav',
+            '#iconSidenav'
+        ].join(',');
+        var sidebarToggle = document.getElementById('iconNavbarSidenav');
+
+        function clearTapState(element) {
+            if (!element) {
+                return;
+            }
+
+            window.setTimeout(function () {
+                element.classList.remove('cashflow-tap-active');
+            }, 140);
+        }
+
+        function syncSidebarState() {
+            if (!sidebarToggle) {
+                return;
+            }
+
+            sidebarToggle.classList.toggle(
+                'cashflow-sidebar-open',
+                document.body.classList.contains('g-sidenav-pinned')
+            );
+        }
+
+        document.addEventListener('pointerdown', function (event) {
+            var target = event.target.closest(tapSelector);
+
+            if (!target) {
+                return;
+            }
+
+            target.classList.add('cashflow-tap-active');
+        }, true);
+
+        document.addEventListener('pointerup', function (event) {
+            clearTapState(event.target.closest(tapSelector));
+        }, true);
+
+        document.addEventListener('pointercancel', function (event) {
+            clearTapState(event.target.closest(tapSelector));
+        }, true);
+
+        document.addEventListener('click', function (event) {
+            if (event.target.closest('#iconNavbarSidenav, #iconSidenav')) {
+                window.setTimeout(syncSidebarState, 40);
+            }
+        }, true);
+
+        window.addEventListener('resize', syncSidebarState);
+        syncSidebarState();
+    }
+
     document.addEventListener('click', function (event) {
         var trigger = event.target.closest(modalTriggerSelector);
 
@@ -150,4 +210,5 @@
 
     setupDataTableToolbars();
     setupResponsiveTables();
+    setupMobileMicroInteractions();
 })();

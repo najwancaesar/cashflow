@@ -406,6 +406,18 @@ body.g-sidenav-show {
     color: #fff;
 }
 
+@keyframes cashflowDropdownIn {
+    from {
+        opacity: 0;
+        transform: translate3d(0, -8px, 0) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+    }
+}
+
 .app-main-content .budget-category-box {
     width: 100%;
     min-width: 260px;
@@ -526,13 +538,33 @@ body.g-sidenav-show {
         border-radius: 0 !important;
     }
 
+    body.g-sidenav-show::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 1040;
+        background: rgba(15, 23, 42, 0);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.22s ease, background 0.22s ease;
+    }
+
+    body.g-sidenav-show.g-sidenav-pinned::before {
+        background: rgba(15, 23, 42, 0.34);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
     .sidenav.fixed-start {
         width: min(17.125rem, calc(100vw - 1.5rem));
         max-height: calc(100vh - 1.5rem);
+        z-index: 1050;
         margin: 0.75rem !important;
         border-radius: 1rem !important;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
+        transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
     }
 
     .sidenav .sidenav-header {
@@ -545,6 +577,13 @@ body.g-sidenav-show {
         min-height: 44px;
         margin-right: 0.75rem;
         margin-left: 0.75rem;
+        transition: transform 0.16s ease, background-color 0.16s ease, opacity 0.16s ease;
+    }
+
+    .sidenav .navbar-nav .nav-link:active,
+    .sidenav .navbar-nav .nav-link.cashflow-tap-active {
+        transform: scale(0.985);
+        opacity: 0.9;
     }
 
     .navbar-main {
@@ -565,6 +604,40 @@ body.g-sidenav-show {
 
     .navbar-main .dropdown-menu {
         z-index: 1070;
+        transform-origin: top right;
+    }
+
+    .navbar-main .dropdown-menu.show {
+        animation: cashflowDropdownIn 0.18s ease both;
+        box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+    }
+
+    .navbar-main .dropdown-toggle,
+    #iconNavbarSidenav,
+    #iconSidenav {
+        min-width: 42px;
+        min-height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.85rem;
+        transition: transform 0.16s ease, background-color 0.16s ease, opacity 0.16s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .navbar-main .dropdown-toggle:active,
+    .navbar-main .dropdown-toggle.cashflow-tap-active,
+    #iconNavbarSidenav:active,
+    #iconNavbarSidenav.cashflow-tap-active,
+    #iconSidenav:active,
+    #iconSidenav.cashflow-tap-active {
+        background: rgba(14, 165, 233, 0.1);
+        transform: scale(0.96);
+    }
+
+    #iconNavbarSidenav.cashflow-sidebar-open .sidenav-toggler-line,
+    body.g-sidenav-pinned #iconNavbarSidenav .sidenav-toggler-line {
+        background-color: #0ea5e9 !important;
     }
 }
 
@@ -622,6 +695,14 @@ body.g-sidenav-show {
         align-items: center;
         justify-content: center;
         gap: 0.35rem;
+        transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-main-content .btn:active,
+    .app-main-content .btn.cashflow-tap-active {
+        transform: scale(0.985);
+        filter: brightness(0.98);
     }
 
     .app-main-content .btn-sm {
@@ -648,12 +729,22 @@ body.g-sidenav-show {
     .app-main-content .modal-dialog {
         max-width: calc(100% - 1.5rem);
         margin: 0.75rem auto;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .app-main-content .modal.fade .modal-dialog {
+        transform: translateY(10px) scale(0.985);
+    }
+
+    .app-main-content .modal.show .modal-dialog {
+        transform: translateY(0) scale(1);
     }
 
     .app-main-content .modal-content {
         max-height: calc(100vh - 1.5rem);
         overflow: hidden;
         border-radius: 1rem;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
     }
 
     .app-main-content .modal-body {
@@ -672,6 +763,19 @@ body.g-sidenav-show {
     .app-main-content .modal-footer .btn {
         flex: 1 1 100%;
         margin: 0 !important;
+    }
+
+    .app-main-content .dropdown-item {
+        min-height: 42px;
+        border-radius: 0.75rem;
+        transition: transform 0.16s ease, background-color 0.16s ease;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-main-content .dropdown-item:active,
+    .app-main-content .dropdown-item.cashflow-tap-active {
+        transform: scale(0.985);
+        background: rgba(14, 165, 233, 0.08);
     }
 
     .app-main-content div.dataTables_wrapper > .d-flex {

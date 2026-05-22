@@ -1,5 +1,6 @@
 <?php
 session_start();
+include_once "includes/sweetalert_helper.php";
 if (isset($_SESSION['nama'])) {
     header('Location: main.php?module=home');
     exit;
@@ -83,6 +84,7 @@ if (isset($_SESSION['nama'])) {
     }
     </script>
     <script src="assets/js/material-dashboard.min.js?v=3.0.0"></script>
+    <?php render_sweetalert_flash_script(); ?>
 
     <?php include("./includes/footer.php"); ?>
 </body>
