@@ -5,6 +5,7 @@ include "includes/sweetalert_helper.php";
 include "includes/default_categories.php";
 include "includes/avatar_helper.php";
 include "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 $act = $_GET['act'] ?? '';
 $currentUserId = (int) ($_SESSION['id_user'] ?? 0);
@@ -162,6 +163,7 @@ if ($act === 't') {
         seed_default_categories_for_user($con, $newUserId);
     }
 
+    record_activity($con, 'pengguna', 'tambah_user', "Menambahkan user ID {$newUserId}.");
     show_sweetalert_and_redirect('Berhasil', 'Pengguna baru berhasil ditambahkan.', 'success', 'main.php?module=pengguna');
 }
 
@@ -201,6 +203,7 @@ if ($act === 'u') {
     $stmt->execute();
     $stmt->close();
 
+    record_activity($con, 'pengguna', 'edit_user', "Mengubah user ID {$targetUserId}.");
     show_sweetalert_and_redirect('Berhasil', 'Data user berhasil diperbarui.', 'success', "main.php?module=pengguna&detail={$targetUserId}");
 }
 
@@ -225,6 +228,8 @@ if ($act === 's') {
     $stmt->execute();
     $stmt->close();
 
+    $statusLabel = $isActive === '1' ? 'aktif' : 'nonaktif';
+    record_activity($con, 'pengguna', 'ubah_status_user', "Mengubah status user ID {$targetUserId} menjadi {$statusLabel}.");
     show_sweetalert_and_redirect('Berhasil', 'Status akun berhasil diperbarui.', 'success', "main.php?module=pengguna&detail={$targetUserId}");
 }
 
@@ -256,6 +261,7 @@ if ($act === 'r') {
     $stmt->execute();
     $stmt->close();
 
+    record_activity($con, 'pengguna', 'reset_password_user', "Reset password user ID {$targetUserId}.");
     show_sweetalert_and_redirect('Berhasil', 'Password user berhasil direset.', 'success', "main.php?module=pengguna&detail={$targetUserId}");
 }
 
@@ -404,6 +410,7 @@ if ($act === 'h') {
     $stmt->close();
 
     if ($affectedRows > 0) {
+        record_activity($con, 'pengguna', 'hapus_user', "Menghapus user ID {$targetUserId}.");
         show_sweetalert_and_redirect('Berhasil', 'Pengguna berhasil dihapus.', 'success', 'main.php?module=pengguna');
     }
 

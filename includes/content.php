@@ -14,10 +14,11 @@ $allowedModules = [
     'piutang' => "view_piutang.php",
     'laporan' => "view_laporan.php",
     'pengguna' => "view_pengguna.php",
+    'audit_log' => "view_audit_log.php",
     'profile' => "view_profile.php",
 ];
 
-$adminOnlyModules = ['pengguna'];
+$adminOnlyModules = ['pengguna', 'audit_log'];
 $userOnlyModules = ['wallet', 'transfer_wallet', 'saving_goal', 'recurring', 'kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang', 'laporan'];
 
 // Jika session nama tidak ada, arahkan ke login

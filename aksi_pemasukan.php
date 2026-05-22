@@ -4,6 +4,7 @@ include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
 include_once "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 // Fungsi untuk membersihkan input
 function clean_input($data) {
@@ -161,9 +162,11 @@ if ($act == 't') {
         $stmt = mysqli_prepare($con, $query);
         mysqli_stmt_bind_param($stmt, "sssdiii", $tanggal, $catatan, $status, $jumlah, $user, $validatedKategoriId, $validatedWalletId);
         $hasil = mysqli_stmt_execute($stmt);
+        $newPemasukanId = (int) mysqli_insert_id($con);
         mysqli_stmt_close($stmt);
 
         if ($hasil) {
+            record_activity($con, 'pemasukan', 'tambah', "Menambahkan pemasukan ID {$newPemasukanId}.");
             show_sweetalert_and_redirect('Berhasil!', 'Data berhasil ditambahkan.', 'success', 'main.php?module=pemasukan');
         } else {
             show_sweetalert_and_redirect('Gagal!', 'Gagal menambahkan data.', 'error', 'main.php?module=pemasukan');
@@ -183,6 +186,7 @@ if ($act == 't') {
         mysqli_stmt_close($stmt);
 
         if ($hasil) {
+            record_activity($con, 'pemasukan', 'edit', "Mengubah pemasukan ID {$id_pemasukan}.");
             show_sweetalert_and_redirect('Berhasil!', 'Data berhasil diubah.', 'success', 'main.php?module=pemasukan');
         } else {
             show_sweetalert_and_redirect('Gagal!', 'Gagal mengubah data.', 'error', 'main.php?module=pemasukan');
@@ -222,6 +226,7 @@ if ($act == 'l') {
     mysqli_stmt_close($stmt);
 
     if ($hasil && $affectedRows > 0) {
+        record_activity($con, 'pemasukan', 'ubah_status', "Mengubah status pemasukan ID {$id_pemasukan} menjadi {$targetStatus}.");
         show_sweetalert_and_redirect('Berhasil!', 'Status pemasukan berhasil diubah.', 'success', 'main.php?module=pemasukan');
     } else {
         show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
@@ -254,6 +259,7 @@ if ($act == 'h') {
     mysqli_stmt_close($stmt);
 
     if ($hasil && $affectedRows > 0) {
+        record_activity($con, 'pemasukan', 'hapus', "Menghapus pemasukan ID {$id_pemasukan}.");
         show_sweetalert_and_redirect('Berhasil!', 'Data berhasil dihapus.', 'success', 'main.php?module=pemasukan');
     } else {
         show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');

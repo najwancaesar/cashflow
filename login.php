@@ -94,6 +94,7 @@ if (isset($_SESSION['nama'])) {
 if (isset($_POST['kirim'])) {
     include "includes/koneksi.php";
     include "includes/avatar_helper.php";
+    include_once "includes/activity_log_helper.php";
 
     $username = trim($_POST['username'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
@@ -144,6 +145,8 @@ if (isset($_POST['kirim'])) {
                     : 'Semoga pencatatan keuanganmu hari ini lancar.',
                 'icon' => 'success',
             ];
+
+            record_activity($con, 'auth', 'login_success', 'Login berhasil.', (int) $sesi['id_user'], $_SESSION['role']);
 
             echo "<script>window.location.href='main.php?module=home';</script>";
         } else {

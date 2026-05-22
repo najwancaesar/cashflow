@@ -4,6 +4,7 @@ include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
 include_once "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 function require_transfer_post_csrf()
 {
@@ -251,9 +252,11 @@ if ($act === 't') {
                                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
         $stmt->bind_param("iiisdss", $userId, $walletAsalId, $walletTujuanId, $tanggal, $jumlah, $catatan, $status);
         $result = $stmt->execute();
+        $newTransferId = (int) $stmt->insert_id;
         $stmt->close();
 
         if ($result) {
+            record_activity($con, 'transfer_wallet', 'tambah', "Menambahkan transfer wallet ID {$newTransferId}.");
             show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil ditambahkan.', 'success', 'main.php?module=transfer_wallet');
         }
 
@@ -273,6 +276,7 @@ if ($act === 't') {
     $stmt->close();
 
     if ($result && $affectedRows >= 0) {
+        record_activity($con, 'transfer_wallet', 'edit', "Mengubah transfer wallet ID {$transferId}.");
         show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil diperbarui.', 'success', 'main.php?module=transfer_wallet');
     }
 
@@ -300,6 +304,7 @@ if ($act === 'h') {
     $stmt->close();
 
     if ($result && $affectedRows > 0) {
+        record_activity($con, 'transfer_wallet', 'batal', "Membatalkan transfer wallet ID {$transferId}.");
         show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil dibatalkan.', 'success', 'main.php?module=transfer_wallet');
     }
 
@@ -331,6 +336,7 @@ if ($act === 'hp') {
     $stmt->close();
 
     if ($result && $affectedRows > 0) {
+        record_activity($con, 'transfer_wallet', 'hapus_permanen', "Menghapus permanen transfer wallet ID {$transferId}.");
         show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil dihapus permanen.', 'success', 'main.php?module=transfer_wallet');
     }
 

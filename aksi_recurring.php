@@ -4,6 +4,7 @@ include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
 include_once "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 function recurring_redirect()
 {
@@ -267,9 +268,11 @@ if ($act === 't') {
             $isActive
         );
         $result = $stmt->execute();
+        $newRecurringId = (int) $stmt->insert_id;
         $stmt->close();
 
         if ($result) {
+            record_activity($con, 'recurring', 'tambah', "Menambahkan template recurring ID {$newRecurringId}.");
             show_sweetalert_and_redirect('Berhasil', 'Template transaksi berulang berhasil ditambahkan.', 'success', recurring_redirect());
         }
 
@@ -305,6 +308,7 @@ if ($act === 't') {
     $stmt->close();
 
     if ($result && $affectedRows >= 0) {
+        record_activity($con, 'recurring', 'edit', "Mengubah template recurring ID {$recurringId}.");
         show_sweetalert_and_redirect('Berhasil', 'Template transaksi berulang berhasil diperbarui.', 'success', recurring_redirect());
     }
 
@@ -337,6 +341,8 @@ if ($act === 's') {
 
     if ($result && $affectedRows >= 0) {
         $message = $isActive === 1 ? 'Template transaksi berulang berhasil diaktifkan.' : 'Template transaksi berulang berhasil dinonaktifkan.';
+        $statusLabel = $isActive === 1 ? 'aktif' : 'nonaktif';
+        record_activity($con, 'recurring', 'toggle', "Mengubah template recurring ID {$recurringId} menjadi {$statusLabel}.");
         show_sweetalert_and_redirect('Berhasil', $message, 'success', recurring_redirect());
     }
 
@@ -403,10 +409,12 @@ if ($act === 'g') {
         if ($skippedDuplicate > 0) {
             $text .= " {$skippedDuplicate} template dilewati karena sudah pernah digenerate.";
         }
+        record_activity($con, 'recurring', 'generate', "Generate bulan ini: {$generated} dibuat, {$skippedDuplicate} dilewati, {$failed} gagal.");
         show_sweetalert_and_redirect('Generate selesai', $text, 'success', recurring_redirect());
     }
 
     if ($generated > 0) {
+        record_activity($con, 'recurring', 'generate', "Generate bulan ini: {$generated} dibuat, {$skippedDuplicate} dilewati, {$failed} gagal.");
         show_sweetalert_and_redirect('Generate sebagian selesai', "{$generated} transaksi dibuat, {$failed} template gagal diproses, {$skippedDuplicate} template sudah pernah digenerate.", 'warning', recurring_redirect());
     }
 

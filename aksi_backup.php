@@ -5,6 +5,7 @@ session_start();
 include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include_once "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 function backup_redirect()
 {
@@ -204,6 +205,8 @@ $userStmt->close();
 if (!$targetUser) {
     fail_backup('User yang akan dibackup tidak ditemukan.');
 }
+
+record_activity($con, 'backup', 'export_user_backup', "Admin membackup data user ID {$targetUserId}.", (int) $_SESSION['id_user'], 'admin');
 
 $backupTables = [
     'user' => ['id_user'],

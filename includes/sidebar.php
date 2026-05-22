@@ -150,6 +150,16 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
                     <span class="nav-link-text ms-1">User Management</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link text-white <?php if ($module == 'audit_log') {
+														echo 'active bg-gradient-warning';
+													} ?>" href="main.php?module=audit_log">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-history" aria-hidden="true"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Audit Log</span>
+                </a>
+            </li>
             <?php } ?>
 
 

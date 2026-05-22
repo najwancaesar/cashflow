@@ -4,6 +4,7 @@ include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
 include_once "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 function clean_input($data) {
     global $con;
@@ -163,7 +164,9 @@ if (isset($_GET['act'])) {
                 mysqli_stmt_bind_param($stmt, "ssdisii", $tanggal, $catatan, $jumlah, $user, $status, $validatedKategoriId, $validatedWalletId);
 
                 if (mysqli_stmt_execute($stmt)) {
+                    $newPengeluaranId = (int) mysqli_insert_id($con);
                     mysqli_stmt_close($stmt);
+                    record_activity($con, 'pengeluaran', 'tambah', "Menambahkan pengeluaran ID {$newPengeluaranId}.");
                     show_sweetalert_and_redirect('Berhasil!', 'Data berhasil ditambahkan.', 'success', 'main.php?module=pengeluaran');
                 }
 
@@ -183,6 +186,7 @@ if (isset($_GET['act'])) {
 
                 if (mysqli_stmt_execute($stmt)) {
                     mysqli_stmt_close($stmt);
+                    record_activity($con, 'pengeluaran', 'edit', "Mengubah pengeluaran ID {$id_pengeluaran}.");
                     show_sweetalert_and_redirect('Berhasil!', 'Data berhasil diubah.', 'success', 'main.php?module=pengeluaran');
                 }
 
@@ -225,6 +229,7 @@ if (isset($_GET['act'])) {
                 $affectedRows = mysqli_stmt_affected_rows($stmt);
                 mysqli_stmt_close($stmt);
                 if ($affectedRows > 0) {
+                    record_activity($con, 'pengeluaran', 'ubah_status', "Mengubah status pengeluaran ID {$id_pengeluaran} menjadi {$targetStatus}.");
                     show_sweetalert_and_redirect('Berhasil!', 'Data berhasil diubah.', 'success', 'main.php?module=pengeluaran');
                 }
 
@@ -262,6 +267,7 @@ if (isset($_GET['act'])) {
                 $affectedRows = mysqli_stmt_affected_rows($stmt);
                 mysqli_stmt_close($stmt);
                 if ($affectedRows > 0) {
+                    record_activity($con, 'pengeluaran', 'hapus', "Menghapus pengeluaran ID {$id_pengeluaran}.");
                     show_sweetalert_and_redirect('Berhasil!', 'Data berhasil dihapus.', 'success', 'main.php?module=pengeluaran');
                 }
 

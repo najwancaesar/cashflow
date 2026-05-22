@@ -4,6 +4,7 @@ include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
 include_once "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 function saving_goal_redirect()
 {
@@ -237,9 +238,11 @@ if ($act === 'goal') {
                                VALUES (?, ?, ?, ?, ?, NOW(), NOW())");
         $stmt->bind_param("isdss", $userId, $namaGoal, $targetNominal, $targetTanggal, $status);
         $result = $stmt->execute();
+        $newGoalId = (int) $stmt->insert_id;
         $stmt->close();
 
         if ($result) {
+            record_activity($con, 'saving_goal', 'tambah_goal', "Menambahkan celengan ID {$newGoalId}.");
             show_sweetalert_and_redirect('Berhasil', 'Target tabungan berhasil ditambahkan.', 'success', saving_goal_redirect());
         }
 
@@ -259,6 +262,7 @@ if ($act === 'goal') {
     $stmt->close();
 
     if ($result && $affectedRows >= 0) {
+        record_activity($con, 'saving_goal', 'edit_goal', "Mengubah celengan ID {$goalId}.");
         show_sweetalert_and_redirect('Berhasil', 'Target tabungan berhasil diperbarui.', 'success', saving_goal_redirect());
     }
 
@@ -323,9 +327,11 @@ if ($act === 'setor' || $act === 'tarik') {
                            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
     $stmt->bind_param("iiissds", $goalId, $userId, $walletId, $tanggal, $tipe, $jumlah, $catatan);
     $result = $stmt->execute();
+    $newMutasiId = (int) $stmt->insert_id;
     $stmt->close();
 
     if ($result) {
+        record_activity($con, 'saving_goal', $tipe, "Mencatat {$tipe} celengan ID {$goalId}, mutasi ID {$newMutasiId}.");
         $message = $tipe === 'setor' ? 'Setor celengan berhasil ditambahkan.' : 'Tarik celengan berhasil ditambahkan.';
         show_sweetalert_and_redirect('Berhasil', $message, 'success', saving_goal_redirect());
     }
@@ -354,6 +360,7 @@ if ($act === 'status') {
     $stmt->close();
 
     if ($result && $affectedRows >= 0) {
+        record_activity($con, 'saving_goal', 'ubah_status', "Mengubah status celengan ID {$goalId} menjadi {$status}.");
         show_sweetalert_and_redirect('Berhasil', 'Status target tabungan berhasil diperbarui.', 'success', saving_goal_redirect());
     }
 

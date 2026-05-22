@@ -1,6 +1,11 @@
 <?php
 session_start();
+include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
+$logoutUserId = (int) ($_SESSION['id_user'] ?? 0);
+$logoutRole = strtolower((string) ($_SESSION['role'] ?? ''));
+include_once "includes/activity_log_helper.php";
+record_activity($con, 'auth', 'logout', 'Logout dari aplikasi.', $logoutUserId, $logoutRole);
 $_SESSION = [];
 session_unset();
 session_destroy();

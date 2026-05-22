@@ -4,6 +4,7 @@ include "includes/koneksi.php";
 include "includes/sweetalert_helper.php";
 include "includes/nominal_helper.php";
 include_once "includes/csrf_helper.php";
+include_once "includes/activity_log_helper.php";
 
 function clean_wallet_text($value)
 {
@@ -111,9 +112,11 @@ if ($act === 't') {
                                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
         $stmt->bind_param("issdii", $userId, $namaWallet, $tipeWallet, $saldoAwal, $isDefault, $isActive);
         $result = $stmt->execute();
+        $newWalletId = (int) $stmt->insert_id;
         $stmt->close();
 
         if ($result) {
+            record_activity($con, 'wallet', 'tambah', "Menambahkan wallet ID {$newWalletId}.");
             show_sweetalert_and_redirect('Berhasil', 'Wallet berhasil ditambahkan.', 'success', 'main.php?module=wallet');
         }
 
@@ -133,6 +136,7 @@ if ($act === 't') {
     $stmt->close();
 
     if ($result && $affectedRows >= 0) {
+        record_activity($con, 'wallet', 'edit', "Mengubah wallet ID {$walletId}.");
         show_sweetalert_and_redirect('Berhasil', 'Wallet berhasil diperbarui.', 'success', 'main.php?module=wallet');
     }
 
@@ -172,6 +176,8 @@ if ($act === 's') {
     $stmt->close();
 
     if ($result && $affectedRows >= 0) {
+        $statusLabel = $targetStatusInt === 1 ? 'aktif' : 'nonaktif';
+        record_activity($con, 'wallet', 'ubah_status', "Mengubah wallet ID {$walletId} menjadi {$statusLabel}.");
         show_sweetalert_and_redirect('Berhasil', 'Status wallet berhasil diperbarui.', 'success', 'main.php?module=wallet');
     }
 
@@ -215,6 +221,7 @@ if ($act === 'd') {
         }
 
         mysqli_commit($con);
+        record_activity($con, 'wallet', 'set_default', "Menjadikan wallet ID {$walletId} sebagai default.");
         show_sweetalert_and_redirect('Berhasil', 'Wallet default berhasil diperbarui.', 'success', 'main.php?module=wallet');
     } catch (Throwable $exception) {
         mysqli_rollback($con);
