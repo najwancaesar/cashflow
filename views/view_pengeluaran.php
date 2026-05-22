@@ -1,6 +1,6 @@
 <?php
-include "includes/koneksi.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 
@@ -9,7 +9,7 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     exit;
 }
 
-function pemasukan_wallet_type_label($type)
+function pengeluaran_wallet_type_label($type)
 {
     $labels = [
         'cash' => 'Cash',
@@ -22,10 +22,10 @@ function pemasukan_wallet_type_label($type)
     return $labels[$type] ?? 'Lainnya';
 }
 
-$kategoriPemasukan = [];
+$kategoriPengeluaran = [];
 $kategoriQuery = "SELECT id_kategori, nama_kategori
                   FROM kategori
-                  WHERE user_id = ? AND tipe_kategori = 'pemasukan'
+                  WHERE user_id = ? AND tipe_kategori = 'pengeluaran'
                   ORDER BY nama_kategori ASC";
 $kategoriStmt = mysqli_prepare($con, $kategoriQuery);
 mysqli_stmt_bind_param($kategoriStmt, "i", $userYangSedangLogin);
@@ -33,7 +33,7 @@ mysqli_stmt_execute($kategoriStmt);
 $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
 
 while ($kategori = mysqli_fetch_assoc($kategoriResult)) {
-    $kategoriPemasukan[] = $kategori;
+    $kategoriPengeluaran[] = $kategori;
 }
 
 mysqli_stmt_close($kategoriStmt);
@@ -63,21 +63,21 @@ $defaultWalletId = $defaultWalletAktif ? (int) $defaultWalletAktif['id_wallet'] 
 $defaultWalletName = $defaultWalletAktif ? (string) $defaultWalletAktif['nama_wallet'] : 'Dompet Utama';
 
 $transaksiQuery = "SELECT
-                       pemasukan.*,
+                       pengeluaran.*,
                        kategori.nama_kategori,
                        wallet.nama_wallet,
                        wallet.tipe_wallet,
                        wallet.is_active AS wallet_is_active
-                   FROM pemasukan
+                   FROM pengeluaran
                    LEFT JOIN kategori
-                       ON pemasukan.id_kategori = kategori.id_kategori
-                      AND kategori.user_id = pemasukan.user
-                      AND kategori.tipe_kategori = 'pemasukan'
+                       ON pengeluaran.id_kategori = kategori.id_kategori
+                      AND kategori.user_id = pengeluaran.user
+                      AND kategori.tipe_kategori = 'pengeluaran'
                    LEFT JOIN wallet
-                       ON pemasukan.id_wallet = wallet.id_wallet
-                      AND wallet.user_id = pemasukan.user
-                   WHERE pemasukan.user = ?
-                   ORDER BY pemasukan.tanggal DESC, pemasukan.id_pemasukan DESC";
+                       ON pengeluaran.id_wallet = wallet.id_wallet
+                      AND wallet.user_id = pengeluaran.user
+                   WHERE pengeluaran.user = ?
+                   ORDER BY pengeluaran.tanggal DESC, pengeluaran.id_pengeluaran DESC";
 $transaksiStmt = mysqli_prepare($con, $transaksiQuery);
 mysqli_stmt_bind_param($transaksiStmt, "i", $userYangSedangLogin);
 mysqli_stmt_execute($transaksiStmt);
@@ -95,7 +95,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3">
-                        <h6 class="text-white text-capitalize ps-3">Pemasukan</h6>
+                        <h6 class="text-white text-capitalize ps-3">Pengeluaran</h6>
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
@@ -112,7 +112,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                     <th>Tanggal</th>
                                     <th>Catatan</th>
                                     <th>Kategori</th>
-                                    <th>Jumlah Pemasukan</th>
+                                    <th>Jumlah Pengeluaran</th>
                                     <th>Wallet</th>
                                     <th>Status</th>
                                     <th></th>
@@ -125,7 +125,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
                                     $targetStatusLabel = ucfirst($targetStatus);
                                     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
-                                    $walletDisplayType = $row['tipe_wallet'] ? pemasukan_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+                                    $walletDisplayType = $row['tipe_wallet'] ? pengeluaran_wallet_type_label($row['tipe_wallet']) : 'Fallback';
                                     $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
                                         ? (int) $row['id_wallet']
                                         : $defaultWalletId;
@@ -150,9 +150,9 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                             <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></p>
                                         </td>
                                         <td class="align-middle text-center text-sm">
-                                            <form action="aksi_pemasukan.php?act=l" method="post" class="d-inline">
+                                            <form action="actions/aksi_pengeluaran.php?act=l" method="post" class="d-inline">
                                                 <?= csrf_input() ?>
-                                                <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
+                                                <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
                                                 <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
                                                 <button type="submit"
                                                     data-confirm="true"
@@ -166,13 +166,13 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                             </form>
                                         </td>
                                         <td class="align-middle">
-                                            <form action="aksi_pemasukan.php?act=h" method="post" class="d-inline">
+                                            <form action="actions/aksi_pengeluaran.php?act=h" method="post" class="d-inline">
                                                 <?= csrf_input() ?>
-                                                <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
+                                                <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
                                                 <button type="submit"
                                                     data-confirm="true"
-                                                    data-confirm-title="Hapus pemasukan ini?"
-                                                    data-confirm-text="Data pemasukan yang dihapus tidak bisa dikembalikan."
+                                                    data-confirm-title="Hapus pengeluaran ini?"
+                                                    data-confirm-text="Data pengeluaran yang dihapus tidak bisa dikembalikan."
                                                     data-confirm-confirm-text="Ya, hapus"
                                                     data-confirm-cancel-text="Batal"
                                                     class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
@@ -181,14 +181,14 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                                             </form>
 
                                             <a type="submit"
-                                                data-id="<?= (int) $row['id_pemasukan'] ?>"
+                                                data-id="<?= (int) $row['id_pengeluaran'] ?>"
                                                 data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES) ?>"
                                                 data-status="<?= htmlspecialchars($row['status'], ENT_QUOTES) ?>"
                                                 data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES) ?>"
                                                 data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
                                                 data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
                                                 data-wallet="<?= htmlspecialchars((string) $editWalletId, ENT_QUOTES) ?>"
-                                                class="text-secondary text-warning font-weight-bold text-xs btneditpemasukan">
+                                                class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
                                                 <i class="fa fa-pencil" aria-hidden="true"></i>
                                             </a>
                                         </td>
@@ -209,12 +209,12 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_pemasukan.php?act=t" method="post">
+            <form action="actions/aksi_pengeluaran.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
                         class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
-                        <h6 class="modal-title text-white text-capitalize ps-3">Pemasukan</h6>
+                        <h6 class="modal-title text-white text-capitalize ps-3">Pengeluaran</h6>
                         <button type="button" class="btn-close me-2" data-bs-dismiss="modal"
                             aria-label="Close"></button>
                     </div>
@@ -225,7 +225,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                         <div class="input-group input-group-outline">
                             <input type="date" name="tanggal" id="tanggal" class="form-control" required>
                             <input type="hidden" value="<?= (int) $_SESSION['id_user'] ?>" name="user">
-                            <input type="hidden" name="id_pemasukan" id="id_pemasukan" class="form-control">
+                            <input type="hidden" name="id_pengeluaran" id="id_pengeluaran" class="form-control">
                         </div>
                     </div>
                     <div class="row my-3">
@@ -239,25 +239,25 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                         <div class="input-group input-group-outline">
                             <select class="form-control" name="id_kategori" id="id_kategori">
                                 <option value="">Belum dikategorikan</option>
-                                <?php foreach ($kategoriPemasukan as $kategori) { ?>
+                                <?php foreach ($kategoriPengeluaran as $kategori) { ?>
                                     <option value="<?= (int) $kategori['id_kategori'] ?>">
                                         <?= htmlspecialchars($kategori['nama_kategori']) ?>
                                     </option>
                                 <?php } ?>
                             </select>
                         </div>
-                        <?php if (empty($kategoriPemasukan)) { ?>
-                            <small class="text-secondary px-2 mt-1">Belum ada kategori pemasukan. Tambahkan lewat menu Kategori.</small>
+                        <?php if (empty($kategoriPengeluaran)) { ?>
+                            <small class="text-secondary px-2 mt-1">Belum ada kategori pengeluaran. Tambahkan lewat menu Kategori.</small>
                         <?php } ?>
                     </div>
                     <div class="row my-3">
-                        <label>Wallet Tujuan</label>
+                        <label>Wallet Sumber</label>
                         <div class="input-group input-group-outline">
                             <select class="form-control" name="id_wallet" id="id_wallet" required>
                                 <option value="">Pilih Wallet</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === (int) $defaultWalletId ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(pemasukan_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(pengeluaran_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -267,9 +267,9 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                         <?php } ?>
                     </div>
                     <div class="row my-3">
-                        <label>Jumlah Pemasukan</label>
+                        <label>Jumlah Pengeluaran</label>
                         <div class="input-group input-group-outline">
-                            <input type="text" name="jumlah" id="jumlah" required class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 1.000.000">
+                            <input type="text" name="jumlah" id="jumlah" required class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="Contoh: 250.000">
                         </div>
                     </div>
                     <div class="row my-3">
@@ -307,7 +307,7 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
             dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
         });
 
-        $(document).on("click", ".btneditpemasukan", function() {
+        $(document).on("click", ".btneditpengeluaran", function() {
             var walletId = $(this).attr("data-wallet") || defaultWalletId;
             $('#id_wallet').val(walletId);
         });

@@ -165,21 +165,22 @@ Aplikasi ini awalnya dibuat sebagai project pembelajaran, lalu dikembangkan menj
 
 ```text
 cashflow/
+├── actions/                # Handler aksi CRUD / proses data
 ├── assets/                 # CSS, JS, images, profile uploads, responsive fixes
 ├── bower_components/       # Frontend dependencies
 ├── css/                    # Stylesheet bawaan template
+├── database/               # SQL dump database
 ├── fonts/                  # Font assets
 ├── img/                    # Screenshot README dan image project
 ├── includes/               # Koneksi, navbar, sidebar, content routing, helpers
 ├── js/                     # JavaScript project/template
+├── lib/                    # Library/helper project
 ├── tcpdf/                  # Library TCPDF untuk export PDF
-├── db_transaksi.sql        # Struktur database utama
+├── views/                  # Halaman tampilan modul
 ├── index.php               # Entry point / landing
 ├── login.php               # Login handler/page
 ├── register.php            # Register user
 ├── main.php                # Layout utama setelah login
-├── view_*.php              # Halaman tampilan modul
-├── aksi_*.php              # Handler aksi CRUD / proses data
 └── README.md               # Dokumentasi project
 ```
 
@@ -237,10 +238,10 @@ CREATE DATABASE cashflow;
 Import file:
 
 ```text
-db_transaksi.sql
+database/db_cashflow(default).sql
 ```
 
-melalui menu **Import** di phpMyAdmin.
+melalui menu **Import** di phpMyAdmin setelah database `cashflow` dibuat.
 
 ### 6. Konfigurasi koneksi database
 

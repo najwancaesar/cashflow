@@ -1,6 +1,6 @@
 <?php
-include "includes/koneksi.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -173,7 +173,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                     </div>
 
                     <div class="d-flex flex-wrap justify-content-end gap-2 me-3 mt-3">
-                        <form action="aksi_recurring.php?act=g" method="post" class="d-inline">
+                        <form action="actions/aksi_recurring.php?act=g" method="post" class="d-inline">
                             <?= csrf_input() ?>
                             <button type="submit"
                                 class="btn btn-success"
@@ -290,7 +290,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                                         <i class="fa fa-pencil" aria-hidden="true"></i> Edit
                                                     </button>
 
-                                                    <form action="aksi_recurring.php?act=s" method="post" class="d-inline">
+                                                    <form action="actions/aksi_recurring.php?act=s" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_recurring" value="<?= (int) $row['id_recurring'] ?>">
                                                         <input type="hidden" name="is_active" value="<?= $toggleTargetValue ?>">
@@ -323,7 +323,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <form action="aksi_recurring.php?act=t" method="post">
+            <form action="actions/aksi_recurring.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">

@@ -42,6 +42,7 @@ if (!function_exists('cashflow_allowed_clean_modules')) {
             'laporan',
             'profile',
             'pengguna',
+            'audit_log',
         ];
     }
 }
@@ -110,10 +111,46 @@ if (!function_exists('normalize_cashflow_redirect_url')) {
     }
 }
 
+if (!function_exists('cashflow_redirect_prefix_for_current_script')) {
+    function cashflow_redirect_prefix_for_current_script()
+    {
+        $scriptDir = basename(dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '')));
+
+        return $scriptDir === 'actions' ? '../' : '';
+    }
+}
+
+if (!function_exists('cashflow_adjust_redirect_for_current_script')) {
+    function cashflow_adjust_redirect_for_current_script($redirect)
+    {
+        $redirect = trim((string) $redirect);
+        if ($redirect === '') {
+            return $redirect;
+        }
+
+        if (preg_match('/^[a-z][a-z0-9+\-.]*:/i', $redirect) || strpos($redirect, '//') === 0) {
+            return $redirect;
+        }
+
+        if (
+            strpos($redirect, '/') === 0 ||
+            strpos($redirect, './') === 0 ||
+            strpos($redirect, '../') === 0 ||
+            strpos($redirect, '#') === 0
+        ) {
+            return $redirect;
+        }
+
+        $prefix = cashflow_redirect_prefix_for_current_script();
+
+        return $prefix === '' ? $redirect : $prefix . $redirect;
+    }
+}
+
 if (!function_exists('redirect_with_sweetalert_flash')) {
     function redirect_with_sweetalert_flash($title, $text, $icon = 'info', $redirect = '')
     {
-        $redirect = normalize_cashflow_redirect_url($redirect);
+        $redirect = cashflow_adjust_redirect_for_current_script(normalize_cashflow_redirect_url($redirect));
 
         set_sweetalert_flash($title, $text, $icon);
 

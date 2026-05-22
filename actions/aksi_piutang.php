@@ -1,9 +1,9 @@
 <?php
 session_start();
-include "includes/koneksi.php";
-include "includes/sweetalert_helper.php";
-include "includes/nominal_helper.php";
-include "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include __DIR__ . "/../includes/sweetalert_helper.php";
+include __DIR__ . "/../includes/nominal_helper.php";
+include __DIR__ . "/../includes/csrf_helper.php";
 $act = $_GET['act'] ?? '';
 $user = (int) ($_SESSION['id_user'] ?? 0);
 

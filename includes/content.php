@@ -1,21 +1,21 @@
 <?php
 // Daftar modul yang diizinkan
 $allowedModules = [
-    'home' => "view_home.php",
-    'dashboard' => "view_home.php",
-    'wallet' => "view_wallet.php",
-    'transfer_wallet' => "view_transfer_wallet.php",
-    'saving_goal' => "view_saving_goal.php",
-    'recurring' => "view_recurring.php",
-    'kategori' => "view_kategori.php",
-    'pemasukan' => "view_pemasukan.php",
-    'pengeluaran' => "view_pengeluaran.php",
-    'hutang' => "view_hutang.php",
-    'piutang' => "view_piutang.php",
-    'laporan' => "view_laporan.php",
-    'pengguna' => "view_pengguna.php",
-    'audit_log' => "view_audit_log.php",
-    'profile' => "view_profile.php",
+    'home' => __DIR__ . "/../views/view_home.php",
+    'dashboard' => __DIR__ . "/../views/view_home.php",
+    'wallet' => __DIR__ . "/../views/view_wallet.php",
+    'transfer_wallet' => __DIR__ . "/../views/view_transfer_wallet.php",
+    'saving_goal' => __DIR__ . "/../views/view_saving_goal.php",
+    'recurring' => __DIR__ . "/../views/view_recurring.php",
+    'kategori' => __DIR__ . "/../views/view_kategori.php",
+    'pemasukan' => __DIR__ . "/../views/view_pemasukan.php",
+    'pengeluaran' => __DIR__ . "/../views/view_pengeluaran.php",
+    'hutang' => __DIR__ . "/../views/view_hutang.php",
+    'piutang' => __DIR__ . "/../views/view_piutang.php",
+    'laporan' => __DIR__ . "/../views/view_laporan.php",
+    'pengguna' => __DIR__ . "/../views/view_pengguna.php",
+    'audit_log' => __DIR__ . "/../views/view_audit_log.php",
+    'profile' => __DIR__ . "/../views/view_profile.php",
 ];
 
 $adminOnlyModules = ['pengguna', 'audit_log'];
@@ -68,6 +68,6 @@ if (in_array($module, $adminOnlyModules, true) && !$isAdmin) {
 } elseif (array_key_exists($module, $allowedModules)) {
     include $allowedModules[$module];
 } else {
-    include "view_home.php";
+    include __DIR__ . "/../views/view_home.php";
 }
 ?>

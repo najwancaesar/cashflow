@@ -38,7 +38,7 @@
                             </a>
                         </li>
                         <li class="d-flex justify-content-end">
-                            <a href="aksi_logout.php" class="w-100 btn btn-info"><i
+                            <a href="actions/aksi_logout.php" class="w-100 btn btn-info"><i
                                     class="fa fa-sign-out" aria-hidden="true"></i> Logout</a>
                         </li>
                     </ul>

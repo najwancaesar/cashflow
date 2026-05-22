@@ -7,7 +7,7 @@ if (basename((string) ($_SERVER['PHP_SELF'] ?? '')) === 'view_datauser.php') {
     exit;
 }
 
-include "includes/koneksi.php";
+include __DIR__ . "/../includes/koneksi.php";
 if(isset($_GET['act'])){
 	if($_GET['act'] == 't'){
         $carikode = mysqli_query($con, "SELECT id_user from user order by id_user Desc limit 1");
@@ -36,7 +36,7 @@ if(isset($_GET['act'])){
                             <div class="row">
                                 <div class="col-lg-12">
                                     <div class="all-form-element-inner">
-                                        <form method="POST" action="aksi_user.php?act=t">
+                                        <form method="POST" action="actions/aksi_user.php?act=t">
                                             <div class="form-group-inner">
                                                 <div class="row">
                                                     <div class="col-lg-3">
@@ -148,7 +148,7 @@ if(isset($_GET['act'])){
                             <div class="row">
                                 <div class="col-lg-12">
                                     <div class="all-form-element-inner">
-                                        <form method="POST" action="aksi_user.php?act=e">
+                                        <form method="POST" action="actions/aksi_user.php?act=e">
                                             <div class="form-group-inner">
                                                 <div class="row">
                                                     <div class="col-lg-3">
@@ -299,7 +299,7 @@ if(isset($_GET['act'])){
                                                 <i class="fa fa-edit"></i>
                                             </a>
 
-                                            <a href="aksi_user.php?&act=h&id=<?php echo $row['kode_user'] ?>"
+                                            <a href="actions/aksi_user.php?&act=h&id=<?php echo $row['kode_user'] ?>"
                                                 class="btn btn-danger btn-sm" title="Hapus" data-toggle="tooltip">
                                                 <i class="fa fa-trash"></i></a>
                                         </td>

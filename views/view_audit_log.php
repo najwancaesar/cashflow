@@ -1,5 +1,5 @@
 <?php
-include "includes/koneksi.php";
+include __DIR__ . "/../includes/koneksi.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";

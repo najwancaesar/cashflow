@@ -1,6 +1,6 @@
 <?php
-include "includes/koneksi.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -183,7 +183,7 @@ mysqli_stmt_close($transferStmt);
                                                 </a>
 
                                                 <?php if ($statusTransfer === 'selesai') { ?>
-                                                    <form action="aksi_transfer_wallet.php?act=h" method="post" class="d-inline">
+                                                    <form action="actions/aksi_transfer_wallet.php?act=h" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_transfer" value="<?= (int) $row['id_transfer'] ?>">
                                                         <button type="submit"
@@ -197,7 +197,7 @@ mysqli_stmt_close($transferStmt);
                                                         </button>
                                                     </form>
                                                 <?php } elseif (in_array($statusTransfer, ['pending', 'batal'], true)) { ?>
-                                                    <form action="aksi_transfer_wallet.php?act=hp" method="post" class="d-inline">
+                                                    <form action="actions/aksi_transfer_wallet.php?act=hp" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_transfer" value="<?= (int) $row['id_transfer'] ?>">
                                                         <button type="submit"
@@ -228,7 +228,7 @@ mysqli_stmt_close($transferStmt);
     aria-labelledby="modalTransferWalletLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_transfer_wallet.php?act=t" method="post">
+            <form action="actions/aksi_transfer_wallet.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div

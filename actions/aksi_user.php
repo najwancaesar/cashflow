@@ -1,11 +1,11 @@
 <?php
 session_start();
-include "includes/koneksi.php";
-include "includes/sweetalert_helper.php";
-include "includes/default_categories.php";
-include "includes/avatar_helper.php";
-include "includes/csrf_helper.php";
-include_once "includes/activity_log_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include __DIR__ . "/../includes/sweetalert_helper.php";
+include __DIR__ . "/../includes/default_categories.php";
+include __DIR__ . "/../includes/avatar_helper.php";
+include __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/activity_log_helper.php";
 
 $act = $_GET['act'] ?? '';
 $currentUserId = (int) ($_SESSION['id_user'] ?? 0);
@@ -327,7 +327,7 @@ if ($act === 'e') {
             show_sweetalert_and_redirect('File tidak valid', 'Isi file profil tidak sesuai dengan format gambar yang diizinkan.', 'warning', "main.php?module=profile&id=$id_user");
         }
 
-        $uploadDir = __DIR__ . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR . 'profil' . DIRECTORY_SEPARATOR;
+        $uploadDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR . 'profil' . DIRECTORY_SEPARATOR;
         if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
             show_sweetalert_and_redirect('Upload gagal', 'Folder upload profil tidak siap. Silakan hubungi admin.', 'warning', "main.php?module=profile&id=$id_user");
         }

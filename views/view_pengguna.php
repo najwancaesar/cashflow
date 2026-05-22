@@ -13,9 +13,9 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) !== 'admin') {
     exit;
 }
 
-include "includes/koneksi.php";
-include_once "includes/avatar_helper.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/avatar_helper.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 function format_user_datetime($value)
 {
@@ -241,7 +241,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                 <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2">
                                                     <i class="fa fa-eye" aria-hidden="true"></i>
                                                 </a>
-                                                <form action="aksi_backup.php" method="post" class="d-inline">
+                                                <form action="actions/aksi_backup.php" method="post" class="d-inline">
                                                     <?= csrf_input() ?>
                                                     <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
                                                     <button type="submit"
@@ -268,7 +268,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                         <i class="fa fa-pencil" aria-hidden="true"></i>
                                                     </a>
 
-                                                    <form action="aksi_user.php?act=s" method="post" class="d-inline">
+                                                    <form action="actions/aksi_user.php?act=s" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
                                                         <input type="hidden" name="value" value="<?= $isActive ? '0' : '1' ?>">
@@ -290,7 +290,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                         <i class="fa fa-key" aria-hidden="true"></i>
                                                     </a>
 
-                                                    <form action="aksi_user.php?act=h" method="post" class="d-inline">
+                                                    <form action="actions/aksi_user.php?act=h" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
                                                         <button type="submit"
@@ -324,7 +324,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
-            <form action="aksi_user.php?act=t" method="post">
+            <form action="actions/aksi_user.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
@@ -409,7 +409,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
-            <form action="aksi_user.php?act=u" method="post">
+            <form action="actions/aksi_user.php?act=u" method="post">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_user" id="edit_user_id">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
@@ -481,7 +481,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_user.php?act=r" method="post">
+            <form action="actions/aksi_user.php?act=r" method="post">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_user" id="reset_user_id">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">

@@ -1,6 +1,6 @@
 <?php
-include "includes/koneksi.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 function fetch_single_value($con, $sql, $types = '', $params = [])
 {
@@ -2445,7 +2445,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
 <div class="modal fade" id="modalQuickAddPemasukan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
-            <form action="aksi_pemasukan.php?act=t" method="post">
+            <form action="actions/aksi_pemasukan.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header">
                     <h6 class="modal-title">Quick Add Pemasukan</h6>
@@ -2517,7 +2517,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
 <div class="modal fade" id="modalQuickAddPengeluaran" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
-            <form action="aksi_pengeluaran.php?act=t" method="post">
+            <form action="actions/aksi_pengeluaran.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header">
                     <h6 class="modal-title">Quick Add Pengeluaran</h6>
@@ -2589,7 +2589,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
 <div class="modal fade" id="modalQuickAddTransfer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
-            <form action="aksi_transfer_wallet.php?act=t" method="post">
+            <form action="actions/aksi_transfer_wallet.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header">
                     <h6 class="modal-title">Quick Add Transfer Wallet</h6>
@@ -2660,7 +2660,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
 <div class="modal fade" id="modalQuickAddSetorCelengan" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
-            <form action="aksi_saving_goal.php?act=setor" method="post">
+            <form action="actions/aksi_saving_goal.php?act=setor" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header">
                     <h6 class="modal-title">Quick Add Setor Celengan</h6>

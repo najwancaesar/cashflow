@@ -90,7 +90,7 @@ if ($tgl_awal > $tgl_akhir) {
 }
 
 $tabel = $_POST['tabel'] ?? 'pemasukan';
-$allowed_tables = ['pemasukan', 'pengeluaran', 'hutang', 'piutang', 'transfer_wallet', 'saving_goal'];
+$allowed_tables = ['pemasukan', 'pengeluaran', 'hutang', 'piutang', 'transfer_wallet', 'saving_goal', 'gabungan'];
 $output = $_POST['output'] ?? 'print';
 $allowedOutputs = ['print', 'pdf', 'csv'];
 $reportLabels = [
@@ -100,6 +100,7 @@ $reportLabels = [
     'piutang' => 'Piutang',
     'transfer_wallet' => 'Transfer Wallet',
     'saving_goal' => 'Celengan Virtual',
+    'gabungan' => 'Gabungan',
 ];
 
 if (!in_array($tabel, $allowed_tables, true)) {
@@ -111,9 +112,10 @@ if (!in_array($output, $allowedOutputs, true)) {
 }
 
 $supportsKategori = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
-$supportsWallet = in_array($tabel, ['pemasukan', 'pengeluaran', 'transfer_wallet', 'saving_goal'], true);
+$supportsWallet = in_array($tabel, ['pemasukan', 'pengeluaran', 'transfer_wallet', 'saving_goal', 'gabungan'], true);
 $isTransferReport = $tabel === 'transfer_wallet';
 $isSavingGoalReport = $tabel === 'saving_goal';
+$isCombinedReport = $tabel === 'gabungan';
 $idKategori = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== '' ? (int) $_POST['id_kategori'] : null;
 $idWallet = isset($_POST['id_wallet']) && $_POST['id_wallet'] !== '' ? (int) $_POST['id_wallet'] : null;
 $selectedKategoriLabel = 'Semua kategori';
@@ -174,6 +176,13 @@ mysqli_stmt_close($stmtUser);
 
 $reportRows = [];
 $summaryRows = [];
+$combinedSummary = [
+    'pemasukan' => ['label' => 'Total Pemasukan', 'total' => 0, 'count' => 0],
+    'pengeluaran' => ['label' => 'Total Pengeluaran', 'total' => 0, 'count' => 0],
+    'transfer' => ['label' => 'Total Transfer Wallet', 'total' => 0, 'count' => 0],
+    'setor_celengan' => ['label' => 'Total Setor Celengan', 'total' => 0, 'count' => 0],
+    'tarik_celengan' => ['label' => 'Total Tarik Celengan', 'total' => 0, 'count' => 0],
+];
 $total = 0;
 
 if ($supportsKategori) {
@@ -413,6 +422,235 @@ if ($supportsKategori) {
     }
 
     mysqli_stmt_close($stmtSummary);
+} elseif ($isCombinedReport) {
+    $incomeQuery = "SELECT laporan.id_pemasukan AS id_ref,
+                    laporan.tanggal,
+                    laporan.jumlah,
+                    laporan.status,
+                    laporan.catatan,
+                    COALESCE(kategori.nama_kategori, 'Belum dikategorikan') AS nama_kategori,
+                    COALESCE(wallet.nama_wallet, 'Tanpa wallet') AS nama_wallet
+                  FROM pemasukan AS laporan
+                  LEFT JOIN kategori
+                    ON laporan.id_kategori = kategori.id_kategori
+                   AND kategori.user_id = laporan.user
+                   AND kategori.tipe_kategori = 'pemasukan'
+                  LEFT JOIN wallet
+                    ON laporan.id_wallet = wallet.id_wallet
+                   AND wallet.user_id = laporan.user
+                  WHERE laporan.user = ?
+                    AND laporan.tanggal BETWEEN ? AND ?";
+    $incomeTypes = "iss";
+    $incomeParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $incomeQuery .= " AND laporan.id_wallet = ?";
+        $incomeTypes .= "i";
+        $incomeParams[] = $idWallet;
+    }
+
+    $incomeStmt = mysqli_prepare($con, $incomeQuery);
+    mysqli_stmt_bind_param($incomeStmt, $incomeTypes, ...$incomeParams);
+    mysqli_stmt_execute($incomeStmt);
+    $incomeResult = mysqli_stmt_get_result($incomeStmt);
+
+    while ($row = mysqli_fetch_assoc($incomeResult)) {
+        $amount = (float) ($row['jumlah'] ?? 0);
+        $reportRows[] = [
+            'tanggal' => $row['tanggal'],
+            'jenis_aktivitas' => 'Pemasukan',
+            'wallet_sumber' => $row['nama_wallet'] ?? 'Tanpa wallet',
+            'detail' => $row['nama_kategori'] ?? 'Belum dikategorikan',
+            'nominal' => $amount,
+            'status' => $row['status'] ?? '-',
+            'catatan' => $row['catatan'] ?? '-',
+            'sort_order' => 1,
+            'id_ref' => (int) ($row['id_ref'] ?? 0),
+        ];
+        $combinedSummary['pemasukan']['total'] += $amount;
+        $combinedSummary['pemasukan']['count']++;
+        $total += $amount;
+    }
+
+    mysqli_stmt_close($incomeStmt);
+
+    $expenseQuery = "SELECT laporan.id_pengeluaran AS id_ref,
+                    laporan.tanggal,
+                    laporan.jumlah,
+                    laporan.status,
+                    laporan.catatan,
+                    COALESCE(kategori.nama_kategori, 'Belum dikategorikan') AS nama_kategori,
+                    COALESCE(wallet.nama_wallet, 'Tanpa wallet') AS nama_wallet
+                  FROM pengeluaran AS laporan
+                  LEFT JOIN kategori
+                    ON laporan.id_kategori = kategori.id_kategori
+                   AND kategori.user_id = laporan.user
+                   AND kategori.tipe_kategori = 'pengeluaran'
+                  LEFT JOIN wallet
+                    ON laporan.id_wallet = wallet.id_wallet
+                   AND wallet.user_id = laporan.user
+                  WHERE laporan.user = ?
+                    AND laporan.tanggal BETWEEN ? AND ?";
+    $expenseTypes = "iss";
+    $expenseParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $expenseQuery .= " AND laporan.id_wallet = ?";
+        $expenseTypes .= "i";
+        $expenseParams[] = $idWallet;
+    }
+
+    $expenseStmt = mysqli_prepare($con, $expenseQuery);
+    mysqli_stmt_bind_param($expenseStmt, $expenseTypes, ...$expenseParams);
+    mysqli_stmt_execute($expenseStmt);
+    $expenseResult = mysqli_stmt_get_result($expenseStmt);
+
+    while ($row = mysqli_fetch_assoc($expenseResult)) {
+        $amount = (float) ($row['jumlah'] ?? 0);
+        $reportRows[] = [
+            'tanggal' => $row['tanggal'],
+            'jenis_aktivitas' => 'Pengeluaran',
+            'wallet_sumber' => $row['nama_wallet'] ?? 'Tanpa wallet',
+            'detail' => $row['nama_kategori'] ?? 'Belum dikategorikan',
+            'nominal' => $amount,
+            'status' => $row['status'] ?? '-',
+            'catatan' => $row['catatan'] ?? '-',
+            'sort_order' => 2,
+            'id_ref' => (int) ($row['id_ref'] ?? 0),
+        ];
+        $combinedSummary['pengeluaran']['total'] += $amount;
+        $combinedSummary['pengeluaran']['count']++;
+        $total += $amount;
+    }
+
+    mysqli_stmt_close($expenseStmt);
+
+    $transferQuery = "SELECT laporan.id_transfer AS id_ref,
+                    laporan.tanggal,
+                    laporan.jumlah,
+                    laporan.status,
+                    laporan.catatan,
+                    COALESCE(wallet_asal.nama_wallet, 'Wallet tidak ditemukan') AS nama_wallet_asal,
+                    COALESCE(wallet_tujuan.nama_wallet, 'Wallet tidak ditemukan') AS nama_wallet_tujuan
+                  FROM transfer_wallet AS laporan
+                  LEFT JOIN wallet AS wallet_asal
+                    ON laporan.wallet_asal_id = wallet_asal.id_wallet
+                   AND wallet_asal.user_id = laporan.user_id
+                  LEFT JOIN wallet AS wallet_tujuan
+                    ON laporan.wallet_tujuan_id = wallet_tujuan.id_wallet
+                   AND wallet_tujuan.user_id = laporan.user_id
+                  WHERE laporan.user_id = ?
+                    AND laporan.tanggal BETWEEN ? AND ?";
+    $transferTypes = "iss";
+    $transferParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $transferQuery .= " AND (laporan.wallet_asal_id = ? OR laporan.wallet_tujuan_id = ?)";
+        $transferTypes .= "ii";
+        $transferParams[] = $idWallet;
+        $transferParams[] = $idWallet;
+    }
+
+    $transferStmt = mysqli_prepare($con, $transferQuery);
+    mysqli_stmt_bind_param($transferStmt, $transferTypes, ...$transferParams);
+    mysqli_stmt_execute($transferStmt);
+    $transferResult = mysqli_stmt_get_result($transferStmt);
+
+    while ($row = mysqli_fetch_assoc($transferResult)) {
+        $amount = (float) ($row['jumlah'] ?? 0);
+        $walletAsal = $row['nama_wallet_asal'] ?? 'Wallet tidak ditemukan';
+        $walletTujuan = $row['nama_wallet_tujuan'] ?? 'Wallet tidak ditemukan';
+        $reportRows[] = [
+            'tanggal' => $row['tanggal'],
+            'jenis_aktivitas' => 'Transfer Wallet',
+            'wallet_sumber' => $walletAsal,
+            'detail' => 'Dari ' . $walletAsal . ' ke ' . $walletTujuan,
+            'nominal' => $amount,
+            'status' => $row['status'] ?? '-',
+            'catatan' => $row['catatan'] ?? '-',
+            'sort_order' => 3,
+            'id_ref' => (int) ($row['id_ref'] ?? 0),
+        ];
+        $combinedSummary['transfer']['total'] += $amount;
+        $combinedSummary['transfer']['count']++;
+        $total += $amount;
+    }
+
+    mysqli_stmt_close($transferStmt);
+
+    $savingQuery = "SELECT laporan.id_mutasi AS id_ref,
+                    laporan.tanggal,
+                    laporan.tipe,
+                    laporan.jumlah,
+                    laporan.catatan,
+                    saving_goal.nama_goal,
+                    COALESCE(wallet.nama_wallet, '-') AS nama_wallet
+                  FROM saving_goal_mutasi AS laporan
+                  INNER JOIN saving_goal
+                    ON laporan.id_goal = saving_goal.id_goal
+                   AND saving_goal.user_id = laporan.user_id
+                  LEFT JOIN wallet
+                    ON laporan.id_wallet = wallet.id_wallet
+                   AND wallet.user_id = laporan.user_id
+                  WHERE laporan.user_id = ?
+                    AND laporan.tanggal BETWEEN ? AND ?";
+    $savingTypes = "iss";
+    $savingParams = [$id_user, $tgl_awal, $tgl_akhir];
+
+    if ($idWallet !== null) {
+        $savingQuery .= " AND laporan.id_wallet = ?";
+        $savingTypes .= "i";
+        $savingParams[] = $idWallet;
+    }
+
+    $savingStmt = mysqli_prepare($con, $savingQuery);
+    mysqli_stmt_bind_param($savingStmt, $savingTypes, ...$savingParams);
+    mysqli_stmt_execute($savingStmt);
+    $savingResult = mysqli_stmt_get_result($savingStmt);
+
+    while ($row = mysqli_fetch_assoc($savingResult)) {
+        $amount = (float) ($row['jumlah'] ?? 0);
+        $tipeMutasi = (string) ($row['tipe'] ?? '');
+        $summaryKey = $tipeMutasi === 'tarik' ? 'tarik_celengan' : 'setor_celengan';
+        $reportRows[] = [
+            'tanggal' => $row['tanggal'],
+            'jenis_aktivitas' => $tipeMutasi === 'tarik' ? 'Tarik Celengan' : 'Setor Celengan',
+            'wallet_sumber' => $row['nama_wallet'] ?? '-',
+            'detail' => $row['nama_goal'] ?? '-',
+            'nominal' => $amount,
+            'status' => '-',
+            'catatan' => $row['catatan'] ?? '-',
+            'sort_order' => $tipeMutasi === 'tarik' ? 5 : 4,
+            'id_ref' => (int) ($row['id_ref'] ?? 0),
+        ];
+        $combinedSummary[$summaryKey]['total'] += $amount;
+        $combinedSummary[$summaryKey]['count']++;
+        $total += $amount;
+    }
+
+    mysqli_stmt_close($savingStmt);
+
+    usort($reportRows, function ($left, $right) {
+        $dateCompare = strcmp((string) ($left['tanggal'] ?? ''), (string) ($right['tanggal'] ?? ''));
+        if ($dateCompare !== 0) {
+            return $dateCompare;
+        }
+
+        $orderCompare = ((int) ($left['sort_order'] ?? 0)) <=> ((int) ($right['sort_order'] ?? 0));
+        if ($orderCompare !== 0) {
+            return $orderCompare;
+        }
+
+        return ((int) ($left['id_ref'] ?? 0)) <=> ((int) ($right['id_ref'] ?? 0));
+    });
+
+    foreach ($combinedSummary as $summaryItem) {
+        $summaryRows[] = [
+            'nama_rekap' => $summaryItem['label'],
+            'total_transaksi' => $summaryItem['count'],
+            'total_jumlah' => $summaryItem['total'],
+        ];
+    }
 } else {
     $mainQuery = "SELECT laporan.*, user.username
                   FROM {$tabel} AS laporan
@@ -465,7 +703,21 @@ if ($output === 'csv') {
     fputcsv($csvOutput, ['Total Nominal', (string) $total], ';');
     fputcsv($csvOutput, [], ';');
 
-    if ($isTransferReport) {
+    if ($isCombinedReport) {
+        fputcsv($csvOutput, ['tanggal', 'jenis_aktivitas', 'wallet_sumber', 'detail', 'nominal', 'status', 'catatan'], ';');
+
+        foreach ($reportRows as $row) {
+            fputcsv($csvOutput, [
+                date('d M Y', strtotime($row['tanggal'])),
+                $row['jenis_aktivitas'] ?? '-',
+                $row['wallet_sumber'] ?? '-',
+                $row['detail'] ?? '-',
+                (string) ((float) ($row['nominal'] ?? 0)),
+                $row['status'] ?? '-',
+                trim((string) ($row['catatan'] ?? '-')),
+            ], ';');
+        }
+    } elseif ($isTransferReport) {
         fputcsv($csvOutput, ['Tanggal', 'Wallet Asal', 'Wallet Tujuan', 'Jumlah', 'Status', 'Catatan'], ';');
 
         foreach ($reportRows as $row) {
@@ -534,7 +786,18 @@ if ($output === 'csv') {
     if (!empty($summaryRows)) {
         fputcsv($csvOutput, [], ';');
 
-        if ($supportsKategori) {
+        if ($isCombinedReport) {
+            fputcsv($csvOutput, ['Ringkasan Laporan Gabungan'], ';');
+            fputcsv($csvOutput, ['Aktivitas', 'Jumlah Transaksi', 'Total'], ';');
+
+            foreach ($summaryRows as $row) {
+                fputcsv($csvOutput, [
+                    $row['nama_rekap'] ?? '-',
+                    (string) ((int) ($row['total_transaksi'] ?? 0)),
+                    (string) ((float) ($row['total_jumlah'] ?? 0)),
+                ], ';');
+            }
+        } elseif ($supportsKategori) {
             fputcsv($csvOutput, ['Rekap Total Per Kategori'], ';');
             fputcsv($csvOutput, ['Kategori', 'Jumlah Transaksi', 'Total'], ';');
 
@@ -640,8 +903,19 @@ if ($output === 'pdf') {
     </table>';
 
 
-    $pdfSummaryHtml = $supportsWallet
-        ? '<table class="summary-table">
+    if ($isCombinedReport) {
+        $pdfSummaryHtml = '<table class="summary-table">
+        <tr>
+            <td width="20%"><span class="summary-label">Total Pemasukan</span><br>Rp ' . number_format((float) $combinedSummary['pemasukan']['total'], 0, ',', '.') . '</td>
+            <td width="20%"><span class="summary-label">Total Pengeluaran</span><br>Rp ' . number_format((float) $combinedSummary['pengeluaran']['total'], 0, ',', '.') . '</td>
+            <td width="20%"><span class="summary-label">Total Transfer</span><br>Rp ' . number_format((float) $combinedSummary['transfer']['total'], 0, ',', '.') . '</td>
+            <td width="20%"><span class="summary-label">Setor Celengan</span><br>Rp ' . number_format((float) $combinedSummary['setor_celengan']['total'], 0, ',', '.') . '</td>
+            <td width="20%"><span class="summary-label">Tarik Celengan</span><br>Rp ' . number_format((float) $combinedSummary['tarik_celengan']['total'], 0, ',', '.') . '</td>
+        </tr>
+    </table>';
+    } else {
+        $pdfSummaryHtml = $supportsWallet
+            ? '<table class="summary-table">
         <tr>
             <td width="19%"><span class="summary-label">Periode Laporan</span><br>' . report_escape($periodeLabel) . '</td>
             <td width="14%"><span class="summary-label">Jenis Laporan</span><br>' . report_escape($jenisLaporan) . '</td>
@@ -660,6 +934,7 @@ if ($output === 'pdf') {
             <td width="23%"><span class="summary-label">Total Nominal</span><br>Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
         </tr>
     </table>';
+    }
 
     $pdfHtml = '
     <style>
@@ -709,7 +984,33 @@ if ($output === 'pdf') {
     if (empty($reportRows)) {
         $pdfHtml .= '<p>Tidak ada data laporan untuk filter yang dipilih.</p>';
     } else {
-        if ($isTransferReport) {
+        if ($isCombinedReport) {
+            $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+                <th width="5%" class="center">No</th>
+                <th width="11%">Tanggal</th>
+                <th width="14%">Jenis</th>
+                <th width="15%">Wallet/Sumber</th>
+                <th width="18%">Detail</th>
+                <th width="14%">Nominal</th>
+                <th width="9%">Status</th>
+                <th width="14%">Catatan</th>
+            </tr></thead><tbody>';
+
+            foreach ($reportRows as $index => $row) {
+                $pdfHtml .= '<tr>
+                    <td class="center">' . ($index + 1) . '</td>
+                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
+                    <td>' . report_escape($row['jenis_aktivitas'] ?? '-') . '</td>
+                    <td>' . report_escape($row['wallet_sumber'] ?? '-') . '</td>
+                    <td>' . report_escape($row['detail'] ?? '-') . '</td>
+                    <td class="right">Rp ' . number_format((float) ($row['nominal'] ?? 0), 0, ',', '.') . '</td>
+                    <td>' . report_escape($row['status'] ?? '-') . '</td>
+                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
+                </tr>';
+            }
+
+            $pdfHtml .= '</tbody></table>';
+        } elseif ($isTransferReport) {
             $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
                 <th width="5%" class="center">No</th>
                 <th width="12%">Tanggal</th>
@@ -830,7 +1131,24 @@ if ($output === 'pdf') {
         }
 
         if (!empty($summaryRows)) {
-            if ($supportsKategori) {
+            if ($isCombinedReport) {
+                $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Ringkasan Laporan Gabungan</h3><div class="spacer-sm"></div>';
+                $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
+                    <th width="50%">Aktivitas</th>
+                    <th width="20%">Jumlah Transaksi</th>
+                    <th width="30%">Total</th>
+                </tr></thead><tbody>';
+
+                foreach ($summaryRows as $row) {
+                    $pdfHtml .= '<tr>
+                        <td>' . report_escape($row['nama_rekap'] ?? '-') . '</td>
+                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                        <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    </tr>';
+                }
+
+                $pdfHtml .= '</tbody></table>';
+            } elseif ($supportsKategori) {
                 $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Total Per Kategori</h3><div class="spacer-sm"></div>';
                 $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
                     <th width="50%">Kategori</th>
@@ -1130,40 +1448,77 @@ if ($output === 'pdf') {
         </div>
     </div>
 
-    <table class="summary-grid">
-        <tr>
-            <td>
-                <div class="summary-box">
-                    <p class="summary-label">Periode Laporan</p>
-                    <p class="summary-value"><?= date('d M Y', strtotime($tgl_awal)) ?><br>s/d <?= date('d M Y', strtotime($tgl_akhir)) ?></p>
-                </div>
-            </td>
-            <td>
-                <div class="summary-box">
-                    <p class="summary-label">Jenis Laporan</p>
-                    <p class="summary-value"><?= htmlspecialchars($jenisLaporan) ?></p>
-                </div>
-            </td>
-            <td>
-                <div class="summary-box">
-                    <p class="summary-label"><?= $supportsKategori ? 'Kategori' : ($supportsWallet ? 'Wallet' : 'Kategori') ?></p>
-                    <p class="summary-value"><?= htmlspecialchars($supportsKategori ? $labelKategoriRingkas : ($supportsWallet ? $labelWalletRingkas : $labelKategoriRingkas)) ?></p>
-                </div>
-            </td>
-            <td>
-                <div class="summary-box">
-                    <p class="summary-label">Jumlah Transaksi</p>
-                    <p class="summary-value"><?= number_format((float) $jumlahTransaksi, 0, ',', '.') ?> transaksi</p>
-                </div>
-            </td>
-            <td>
-                <div class="summary-box">
-                    <p class="summary-label">Total Nominal</p>
-                    <p class="summary-value">Rp <?= number_format((float) $total, 0, ',', '.') ?></p>
-                </div>
-            </td>
-        </tr>
-    </table>
+    <?php if ($isCombinedReport) { ?>
+        <table class="summary-grid">
+            <tr>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Total Pemasukan</p>
+                        <p class="summary-value">Rp <?= number_format((float) $combinedSummary['pemasukan']['total'], 0, ',', '.') ?></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Total Pengeluaran</p>
+                        <p class="summary-value">Rp <?= number_format((float) $combinedSummary['pengeluaran']['total'], 0, ',', '.') ?></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Total Transfer</p>
+                        <p class="summary-value">Rp <?= number_format((float) $combinedSummary['transfer']['total'], 0, ',', '.') ?></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Setor Celengan</p>
+                        <p class="summary-value">Rp <?= number_format((float) $combinedSummary['setor_celengan']['total'], 0, ',', '.') ?></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Tarik Celengan</p>
+                        <p class="summary-value">Rp <?= number_format((float) $combinedSummary['tarik_celengan']['total'], 0, ',', '.') ?></p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    <?php } else { ?>
+        <table class="summary-grid">
+            <tr>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Periode Laporan</p>
+                        <p class="summary-value"><?= date('d M Y', strtotime($tgl_awal)) ?><br>s/d <?= date('d M Y', strtotime($tgl_akhir)) ?></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Jenis Laporan</p>
+                        <p class="summary-value"><?= htmlspecialchars($jenisLaporan) ?></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label"><?= $supportsKategori ? 'Kategori' : ($supportsWallet ? 'Wallet' : 'Kategori') ?></p>
+                        <p class="summary-value"><?= htmlspecialchars($supportsKategori ? $labelKategoriRingkas : ($supportsWallet ? $labelWalletRingkas : $labelKategoriRingkas)) ?></p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Jumlah Transaksi</p>
+                        <p class="summary-value"><?= number_format((float) $jumlahTransaksi, 0, ',', '.') ?> transaksi</p>
+                    </div>
+                </td>
+                <td>
+                    <div class="summary-box">
+                        <p class="summary-label">Total Nominal</p>
+                        <p class="summary-value">Rp <?= number_format((float) $total, 0, ',', '.') ?></p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    <?php } ?>
 
     <?php if (empty($reportRows)) { ?>
         <div class="empty-state">
@@ -1171,7 +1526,36 @@ if ($output === 'pdf') {
             <p>Tidak ada data <?= htmlspecialchars($jenisLaporan) ?> pada periode dan filter yang dipilih.</p>
         </div>
     <?php } else { ?>
-        <?php if ($isTransferReport) { ?>
+        <?php if ($isCombinedReport) { ?>
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Jenis Aktivitas</th>
+                        <th>Wallet/Sumber</th>
+                        <th>Detail</th>
+                        <th>Nominal</th>
+                        <th>Status</th>
+                        <th>Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($reportRows as $index => $row) { ?>
+                        <tr>
+                            <td><?= $index + 1 ?></td>
+                            <td><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
+                            <td><?= htmlspecialchars($row['jenis_aktivitas'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($row['wallet_sumber'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($row['detail'] ?? '-') ?></td>
+                            <td align="right">Rp <?= number_format((float) ($row['nominal'] ?? 0), 0, ',', '.') ?></td>
+                            <td><?= htmlspecialchars($row['status'] ?? '-') ?></td>
+                            <td><?= htmlspecialchars($row['catatan'] ?? '-') ?></td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
+        <?php } elseif ($isTransferReport) { ?>
             <table>
                 <thead>
                     <tr>
@@ -1282,7 +1666,27 @@ if ($output === 'pdf') {
         <?php } ?>
 
         <?php if (!empty($summaryRows)) { ?>
-            <?php if ($supportsKategori) { ?>
+            <?php if ($isCombinedReport) { ?>
+                <h4 class="summary-title">Ringkasan Laporan Gabungan</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aktivitas</th>
+                            <th>Jumlah Transaksi</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($summaryRows as $row) { ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['nama_rekap'] ?? '-') ?></td>
+                                <td><?= number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') ?></td>
+                                <td align="right">Rp <?= number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') ?></td>
+                            </tr>
+                        <?php } ?>
+                    </tbody>
+                </table>
+            <?php } elseif ($supportsKategori) { ?>
                 <h4 class="summary-title">Rekap Total Per Kategori</h4>
                 <table>
                     <thead>

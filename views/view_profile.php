@@ -10,9 +10,9 @@ if (!isset($_SESSION['id_user'])) {
 
 // Query untuk mengambil data user dengan id_user = 1
 
-include "includes/koneksi.php";
-include_once "includes/avatar_helper.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/avatar_helper.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 $idUser = $_SESSION['id_user'] ?? 0;
 $stmtUser = $con->prepare("SELECT * FROM user WHERE id_user = ?");
 $stmtUser->bind_param("i", $idUser);
@@ -111,7 +111,7 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
-            <form action="aksi_user.php?act=e" method="post" enctype="multipart/form-data">
+            <form action="actions/aksi_user.php?act=e" method="post" enctype="multipart/form-data">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_user" value="<?= (int) $user['id_user'] ?>">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
@@ -177,7 +177,7 @@ $accountLabel = (($user['role'] ?? '') === 'admin') ? 'Administrator' : 'Persona
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_user.php?act=p" method="post">
+            <form action="actions/aksi_user.php?act=p" method="post">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_user" value="<?= (int) $user['id_user'] ?>">
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">

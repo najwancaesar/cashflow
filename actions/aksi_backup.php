@@ -2,10 +2,10 @@
 ob_start();
 session_start();
 
-include "includes/koneksi.php";
-include "includes/sweetalert_helper.php";
-include_once "includes/csrf_helper.php";
-include_once "includes/activity_log_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include __DIR__ . "/../includes/sweetalert_helper.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/activity_log_helper.php";
 
 function backup_redirect()
 {

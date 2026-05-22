@@ -1,6 +1,6 @@
 <?php
-include "includes/koneksi.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -192,7 +192,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
 
                                 <?php if ($status === 'aktif') { ?>
                                     <li>
-                                        <form action="aksi_saving_goal.php?act=status" method="post" class="m-0">
+                                        <form action="actions/aksi_saving_goal.php?act=status" method="post" class="m-0">
                                             <?= csrf_input() ?>
                                             <input type="hidden" name="id_goal" value="<?= $goalId ?>">
                                             <input type="hidden" name="status" value="selesai">
@@ -211,7 +211,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
 
                                 <?php if (in_array($status, ['selesai', 'arsip'], true)) { ?>
                                     <li>
-                                        <form action="aksi_saving_goal.php?act=status" method="post" class="m-0">
+                                        <form action="actions/aksi_saving_goal.php?act=status" method="post" class="m-0">
                                             <?= csrf_input() ?>
                                             <input type="hidden" name="id_goal" value="<?= $goalId ?>">
                                             <input type="hidden" name="status" value="aktif">
@@ -230,7 +230,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
 
                                 <?php if ($status !== 'arsip') { ?>
                                     <li>
-                                        <form action="aksi_saving_goal.php?act=status" method="post" class="m-0">
+                                        <form action="actions/aksi_saving_goal.php?act=status" method="post" class="m-0">
                                             <?= csrf_input() ?>
                                             <input type="hidden" name="id_goal" value="<?= $goalId ?>">
                                             <input type="hidden" name="status" value="arsip">
@@ -544,7 +544,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_saving_goal.php?act=goal" method="post">
+            <form action="actions/aksi_saving_goal.php?act=goal" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
@@ -596,7 +596,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_saving_goal.php?act=setor" method="post">
+            <form action="actions/aksi_saving_goal.php?act=setor" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header">
                     <h6 class="modal-title">Setor Celengan</h6>
@@ -650,7 +650,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_saving_goal.php?act=tarik" method="post">
+            <form action="actions/aksi_saving_goal.php?act=tarik" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header">
                     <h6 class="modal-title">Tarik Celengan</h6>

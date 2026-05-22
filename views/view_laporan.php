@@ -1,5 +1,5 @@
 <?php
-include "includes/koneksi.php";
+include __DIR__ . "/../includes/koneksi.php";
 
 $userYangSedangLogin = (int) ($_SESSION['id_user'] ?? 0);
 
@@ -130,6 +130,13 @@ if ($userYangSedangLogin > 0) {
                                         id="saving_goal" value="saving_goal">
                                     <label class="form-check-label" for="saving_goal">
                                         Celengan Virtual
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="tabel"
+                                        id="gabungan" value="gabungan">
+                                    <label class="form-check-label" for="gabungan">
+                                        Gabungan
                                     </label>
                                 </div>
                             </div>
@@ -348,6 +355,8 @@ if ($userYangSedangLogin > 0) {
                 walletHelp.text('Pilih wallet tertentu untuk melihat transfer yang melibatkan wallet tersebut.');
             } else if (selectedTable === 'saving_goal') {
                 walletHelp.text('Pilih wallet tertentu untuk melihat mutasi celengan dari wallet tersebut.');
+            } else if (selectedTable === 'gabungan') {
+                walletHelp.text('Pilih wallet tertentu untuk melihat semua aktivitas finansial yang terkait wallet tersebut.');
             } else {
                 walletHelp.text('Pilih wallet tertentu atau biarkan "Semua Wallet" untuk melihat seluruh data.');
             }

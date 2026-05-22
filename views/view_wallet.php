@@ -1,6 +1,6 @@
 <?php
-include "includes/koneksi.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -153,7 +153,7 @@ mysqli_stmt_close($walletStmt);
                                                     <i class="fa fa-pencil" aria-hidden="true"></i>
                                                 </a>
 
-                                                <form action="aksi_wallet.php?act=s" method="post" class="d-inline">
+                                                <form action="actions/aksi_wallet.php?act=s" method="post" class="d-inline">
                                                     <?= csrf_input() ?>
                                                     <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
                                                     <input type="hidden" name="value" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
@@ -168,7 +168,7 @@ mysqli_stmt_close($walletStmt);
                                                     </button>
                                                 </form>
 
-                                                <form action="aksi_wallet.php?act=d" method="post" class="d-inline">
+                                                <form action="actions/aksi_wallet.php?act=d" method="post" class="d-inline">
                                                     <?= csrf_input() ?>
                                                     <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
                                                     <button type="submit"
@@ -198,7 +198,7 @@ mysqli_stmt_close($walletStmt);
     aria-labelledby="modalWalletLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_wallet.php?act=t" method="post">
+            <form action="actions/aksi_wallet.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div

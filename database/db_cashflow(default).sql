@@ -1290,22 +1290,6 @@ CREATE TABLE IF NOT EXISTS `recurring_generation_log` (
   KEY `idx_log_period` (`periode_bulan`, `periode_tahun`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `activity_log` (
-  `id_log` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) DEFAULT NULL,
-  `role` enum('admin','user') DEFAULT NULL,
-  `module` varchar(80) NOT NULL,
-  `aksi` varchar(120) NOT NULL,
-  `deskripsi` text DEFAULT NULL,
-  `ip_address` varchar(45) DEFAULT NULL,
-  `user_agent` text DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_log`),
-  KEY `idx_activity_user` (`user_id`),
-  KEY `idx_activity_module` (`module`),
-  KEY `idx_activity_created` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 --
 -- Dumping events for database 'cashflow'
 --

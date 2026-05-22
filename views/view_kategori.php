@@ -1,6 +1,6 @@
 <?php
-include "includes/koneksi.php";
-include_once "includes/csrf_helper.php";
+include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -189,7 +189,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                     aria-labelledby="<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>Label" aria-hidden="true">
                                                     <div class="modal-dialog modal-dialog-centered modal-sm">
                                                         <div class="modal-content">
-                                                            <form action="aksi_budget.php" method="post" class="budget-category-form category-budget-form">
+                                                            <form action="actions/aksi_budget.php" method="post" class="budget-category-form category-budget-form">
                                                                 <?= csrf_input() ?>
                                                                 <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
                                                                 <input type="hidden" name="bulan" value="<?= (int) $budgetBulan ?>">
@@ -256,7 +256,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                             </p>
                                         </td>
                                         <td class="align-middle">
-                                            <form action="aksi_kategori.php?act=h" method="post" class="d-inline">
+                                            <form action="actions/aksi_kategori.php?act=h" method="post" class="d-inline">
                                                 <?= csrf_input() ?>
                                                 <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
                                                 <button type="submit"
@@ -295,7 +295,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="aksi_kategori.php?act=t" method="post">
+            <form action="actions/aksi_kategori.php?act=t" method="post">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
