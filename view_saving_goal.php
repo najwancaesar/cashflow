@@ -79,7 +79,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
         <?php return;
     }
     ?>
-    <table class="table align-items-center mb-0" id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>">
+    <table class="table align-items-center mb-0 saving-goal-table" id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>">
         <thead>
             <tr>
                 <th>Celengan</th>
@@ -127,99 +127,126 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                             <?= htmlspecialchars($statusMeta['label'], ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </td>
-                    <td class="align-middle">
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <a type="button"
-                                class="text-secondary text-warning font-weight-bold text-xs btneditsavinggoal"
-                                data-id="<?= $goalId ?>"
-                                data-nama="<?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?>"
-                                data-target="<?= htmlspecialchars(number_format($targetNominal, 0, '', ''), ENT_QUOTES, 'UTF-8') ?>"
-                                data-target-tanggal="<?= htmlspecialchars($row['target_tanggal'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                data-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
-                                <i class="fa fa-pencil" aria-hidden="true"></i> Edit
-                            </a>
-
-                            <?php if ($status === 'aktif' && $hasWalletAktif) { ?>
-                                <a type="button"
-                                    class="text-secondary text-success font-weight-bold text-xs btnsetorsavinggoal"
-                                    data-id="<?= $goalId ?>"
-                                    data-nama="<?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?>">
-                                    <i class="fa fa-plus-circle" aria-hidden="true"></i> Setor
-                                </a>
-
-                                <a type="button"
-                                    class="text-secondary text-info font-weight-bold text-xs btntariksavinggoal"
-                                    data-id="<?= $goalId ?>"
-                                    data-nama="<?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?>"
-                                    data-saldo="<?= htmlspecialchars(number_format($saldoTerkumpul, 0, '', ''), ENT_QUOTES, 'UTF-8') ?>">
-                                    <i class="fa fa-minus-circle" aria-hidden="true"></i> Tarik
-                                </a>
-                            <?php } elseif ($status === 'aktif' && !$hasWalletAktif) { ?>
-                                <button type="button" class="text-secondary font-weight-bold text-xs border-0 bg-transparent p-0" disabled>
-                                    <i class="fa fa-plus-circle" aria-hidden="true"></i> Setor
-                                </button>
-                                <button type="button" class="text-secondary font-weight-bold text-xs border-0 bg-transparent p-0" disabled>
-                                    <i class="fa fa-minus-circle" aria-hidden="true"></i> Tarik
-                                </button>
-                            <?php } ?>
-
-                            <button type="button"
-                                class="text-secondary font-weight-bold text-xs border-0 bg-transparent p-0"
-                                data-bs-toggle="modal"
-                                data-bs-target="#modalRiwayatGoal<?= $goalId ?>">
-                                <i class="fa fa-history" aria-hidden="true"></i> Riwayat
+                    <td class="align-middle saving-goal-action-cell">
+                        <div class="dropdown saving-goal-action-dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle mb-0" type="button"
+                                id="savingGoalAction<?= $goalId ?>" data-bs-toggle="dropdown"
+                                data-bs-boundary="viewport" aria-expanded="false">
+                                Aksi
                             </button>
+                            <ul class="dropdown-menu dropdown-menu-end saving-goal-action-menu"
+                                aria-labelledby="savingGoalAction<?= $goalId ?>">
+                                <?php if ($status !== 'arsip') { ?>
+                                    <li>
+                                        <button type="button"
+                                            class="dropdown-item btneditsavinggoal"
+                                            data-id="<?= $goalId ?>"
+                                            data-nama="<?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?>"
+                                            data-target="<?= htmlspecialchars(number_format($targetNominal, 0, '', ''), ENT_QUOTES, 'UTF-8') ?>"
+                                            data-target-tanggal="<?= htmlspecialchars($row['target_tanggal'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                            data-status="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
+                                            <i class="fa fa-pencil text-warning" aria-hidden="true"></i> Edit
+                                        </button>
+                                    </li>
+                                <?php } ?>
 
-                            <?php if ($status === 'aktif') { ?>
-                                <form action="aksi_saving_goal.php?act=status" method="post" class="d-inline">
-                                    <?= csrf_input() ?>
-                                    <input type="hidden" name="id_goal" value="<?= $goalId ?>">
-                                    <input type="hidden" name="status" value="selesai">
-                                    <button type="submit"
-                                        data-confirm="true"
-                                        data-confirm-title="Tandai celengan selesai?"
-                                        data-confirm-text="Celengan selesai akan dikunci dari setor dan tarik sampai diaktifkan kembali."
-                                        data-confirm-confirm-text="Ya, tandai selesai"
-                                        data-confirm-cancel-text="Batal"
-                                        class="text-secondary text-success font-weight-bold text-xs border-0 bg-transparent p-0">
-                                        <i class="fa fa-check-circle" aria-hidden="true"></i> Tandai Selesai
-                                    </button>
-                                </form>
-                            <?php } ?>
+                                <?php if ($status === 'aktif' && $hasWalletAktif) { ?>
+                                    <li>
+                                        <button type="button"
+                                            class="dropdown-item btnsetorsavinggoal"
+                                            data-id="<?= $goalId ?>"
+                                            data-nama="<?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?>">
+                                            <i class="fa fa-plus-circle text-success" aria-hidden="true"></i> Setor
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button"
+                                            class="dropdown-item btntariksavinggoal"
+                                            data-id="<?= $goalId ?>"
+                                            data-nama="<?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?>"
+                                            data-saldo="<?= htmlspecialchars(number_format($saldoTerkumpul, 0, '', ''), ENT_QUOTES, 'UTF-8') ?>">
+                                            <i class="fa fa-minus-circle text-info" aria-hidden="true"></i> Tarik
+                                        </button>
+                                    </li>
+                                <?php } elseif ($status === 'aktif' && !$hasWalletAktif) { ?>
+                                    <li>
+                                        <button type="button" class="dropdown-item disabled" disabled>
+                                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Setor
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item disabled" disabled>
+                                            <i class="fa fa-minus-circle" aria-hidden="true"></i> Tarik
+                                        </button>
+                                    </li>
+                                <?php } ?>
 
-                            <?php if (in_array($status, ['selesai', 'arsip'], true)) { ?>
-                                <form action="aksi_saving_goal.php?act=status" method="post" class="d-inline">
-                                    <?= csrf_input() ?>
-                                    <input type="hidden" name="id_goal" value="<?= $goalId ?>">
-                                    <input type="hidden" name="status" value="aktif">
-                                    <button type="submit"
-                                        data-confirm="true"
-                                        data-confirm-title="Aktifkan kembali celengan ini?"
-                                        data-confirm-text="Celengan akan kembali aktif dan bisa menerima setor/tarik."
-                                        data-confirm-confirm-text="Ya, aktifkan"
-                                        data-confirm-cancel-text="Batal"
-                                        class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0">
-                                        <i class="fa fa-undo" aria-hidden="true"></i> Aktifkan
+                                <li>
+                                    <button type="button"
+                                        class="dropdown-item"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalRiwayatGoal<?= $goalId ?>">
+                                        <i class="fa fa-history text-secondary" aria-hidden="true"></i> Riwayat
                                     </button>
-                                </form>
-                            <?php } ?>
+                                </li>
 
-                            <?php if ($status !== 'arsip') { ?>
-                                <form action="aksi_saving_goal.php?act=status" method="post" class="d-inline">
-                                    <?= csrf_input() ?>
-                                    <input type="hidden" name="id_goal" value="<?= $goalId ?>">
-                                    <input type="hidden" name="status" value="arsip">
-                                    <button type="submit"
-                                        data-confirm="true"
-                                        data-confirm-title="Arsipkan celengan ini?"
-                                        data-confirm-text="Celengan akan dipindahkan ke status arsip tanpa menghapus riwayat mutasi."
-                                        data-confirm-confirm-text="Ya, arsipkan"
-                                        data-confirm-cancel-text="Batal"
-                                        class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
-                                        <i class="fa fa-archive" aria-hidden="true"></i> Arsipkan
-                                    </button>
-                                </form>
-                            <?php } ?>
+                                <?php if ($status === 'aktif') { ?>
+                                    <li>
+                                        <form action="aksi_saving_goal.php?act=status" method="post" class="m-0">
+                                            <?= csrf_input() ?>
+                                            <input type="hidden" name="id_goal" value="<?= $goalId ?>">
+                                            <input type="hidden" name="status" value="selesai">
+                                            <button type="submit"
+                                                data-confirm="true"
+                                                data-confirm-title="Tandai celengan selesai?"
+                                                data-confirm-text="Celengan selesai akan dikunci dari setor dan tarik sampai diaktifkan kembali."
+                                                data-confirm-confirm-text="Ya, tandai selesai"
+                                                data-confirm-cancel-text="Batal"
+                                                class="dropdown-item">
+                                                <i class="fa fa-check-circle text-success" aria-hidden="true"></i> Tandai Selesai
+                                            </button>
+                                        </form>
+                                    </li>
+                                <?php } ?>
+
+                                <?php if (in_array($status, ['selesai', 'arsip'], true)) { ?>
+                                    <li>
+                                        <form action="aksi_saving_goal.php?act=status" method="post" class="m-0">
+                                            <?= csrf_input() ?>
+                                            <input type="hidden" name="id_goal" value="<?= $goalId ?>">
+                                            <input type="hidden" name="status" value="aktif">
+                                            <button type="submit"
+                                                data-confirm="true"
+                                                data-confirm-title="Aktifkan kembali celengan ini?"
+                                                data-confirm-text="Celengan akan kembali aktif dan bisa menerima setor/tarik."
+                                                data-confirm-confirm-text="Ya, aktifkan"
+                                                data-confirm-cancel-text="Batal"
+                                                class="dropdown-item">
+                                                <i class="fa fa-undo text-info" aria-hidden="true"></i> Aktifkan
+                                            </button>
+                                        </form>
+                                    </li>
+                                <?php } ?>
+
+                                <?php if ($status !== 'arsip') { ?>
+                                    <li>
+                                        <form action="aksi_saving_goal.php?act=status" method="post" class="m-0">
+                                            <?= csrf_input() ?>
+                                            <input type="hidden" name="id_goal" value="<?= $goalId ?>">
+                                            <input type="hidden" name="status" value="arsip">
+                                            <button type="submit"
+                                                data-confirm="true"
+                                                data-confirm-title="Arsipkan celengan ini?"
+                                                data-confirm-text="Celengan akan dipindahkan ke status arsip tanpa menghapus riwayat mutasi."
+                                                data-confirm-confirm-text="Ya, arsipkan"
+                                                data-confirm-cancel-text="Batal"
+                                                class="dropdown-item text-danger">
+                                                <i class="fa fa-archive" aria-hidden="true"></i> Arsipkan
+                                            </button>
+                                        </form>
+                                    </li>
+                                <?php } ?>
+                            </ul>
                         </div>
                     </td>
                 </tr>
@@ -485,7 +512,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Celengan
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive p-4 mx-2 saving-goal-table-responsive">
                         <?php render_saving_goal_table('datatableSavingGoal', $goalAktif, $mutasiByGoal, 'Belum ada celengan virtual. Mulai buat celengan pertamamu, misalnya Dana Darurat atau Beli Laptop.', $hasWalletAktif); ?>
                     </div>
                 </div>
@@ -503,7 +530,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                         </div>
                     </div>
                     <div class="card-body px-0 pb-2">
-                        <div class="table-responsive p-4 mx-2">
+                        <div class="table-responsive p-4 mx-2 saving-goal-table-responsive">
                             <?php render_saving_goal_table('datatableSavingGoalArchive', $goalArsip, $mutasiByGoal, 'Belum ada celengan virtual yang diarsipkan.', $hasWalletAktif); ?>
                         </div>
                     </div>

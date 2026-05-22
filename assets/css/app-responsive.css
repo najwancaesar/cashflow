@@ -280,6 +280,66 @@ body.g-sidenav-show {
     vertical-align: middle;
 }
 
+.saving-goal-table-responsive {
+    overflow-y: visible;
+}
+
+.saving-goal-table .saving-goal-action-cell {
+    width: 1%;
+    min-width: 96px;
+    overflow: visible;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.saving-goal-action-dropdown {
+    position: static;
+    display: inline-block;
+}
+
+.saving-goal-action-dropdown .dropdown-toggle {
+    min-width: 78px;
+    white-space: nowrap;
+}
+
+.saving-goal-action-menu {
+    min-width: 190px;
+    padding: 0.4rem;
+    border-radius: 0.65rem;
+    z-index: 1080;
+}
+
+.saving-goal-action-menu .dropdown-item {
+    display: flex;
+    min-height: 38px;
+    align-items: center;
+    gap: 0.55rem;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    line-height: 1.35;
+}
+
+.saving-goal-action-menu .dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .saving-goal-table .saving-goal-action-cell {
+        min-width: 108px;
+    }
+
+    .saving-goal-action-dropdown,
+    .saving-goal-action-dropdown .dropdown-toggle {
+        width: 100%;
+    }
+
+    .saving-goal-action-menu .dropdown-item {
+        min-height: 44px;
+        font-size: 0.82rem;
+    }
+}
+
 .app-main-content .cashflow-user-actions > a,
 .app-main-content .cashflow-user-actions > form > button {
     display: inline-flex;
