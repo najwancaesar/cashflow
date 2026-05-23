@@ -201,7 +201,6 @@ cashflow/
 ├── register.php            # Register user
 ├── main.php                # Layout utama setelah login
 ├── .htaccess               # Routing/clean URL jika digunakan
-├── .gitignore              # File/folder yang tidak ikut Git
 └── README.md               # Dokumentasi project
 ```
 
