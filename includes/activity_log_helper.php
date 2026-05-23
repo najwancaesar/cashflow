@@ -34,6 +34,8 @@ if (!function_exists('activity_log_table_exists')) {
 }
 
 if (!function_exists('record_activity')) {
+    // Audit log intentionally grows over time. Retention/cleanup is handled by
+    // admin action so normal business actions are never interrupted by logging.
     function record_activity($con, $module, $aksi, $deskripsi = null, $userId = null, $role = null)
     {
         try {

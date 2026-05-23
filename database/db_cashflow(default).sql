@@ -1115,7 +1115,9 @@ CREATE TABLE
     PRIMARY KEY (`id_log`),
     KEY `idx_activity_user` (`user_id`),
     KEY `idx_activity_module` (`module`),
-    KEY `idx_activity_created` (`created_at`)
+    KEY `idx_activity_created` (`created_at`),
+    KEY `idx_activity_aksi` (`aksi`),
+    KEY `idx_activity_user_created` (`user_id`, `created_at`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 --

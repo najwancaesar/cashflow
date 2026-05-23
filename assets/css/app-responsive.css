@@ -1950,3 +1950,122 @@ table.dataTable thead th.bulk-select-col {
         padding: 14px;
     }
 }
+
+.audit-log-filter-panel {
+    margin-bottom: 18px;
+}
+
+.audit-log-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(160px, 1fr)) auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.audit-log-filter-field label {
+    display: block;
+    margin-bottom: 8px;
+    color: #5b6388;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.audit-log-control-wrap {
+    position: relative;
+}
+
+.audit-log-filter-control,
+.audit-log-select,
+.audit-log-date {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 42px 10px 14px;
+    border: 1px solid #d7dce8;
+    border-radius: 10px;
+    background-color: #fff;
+    color: #1f2937;
+    font-size: 15px;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.audit-log-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+}
+
+.audit-log-date {
+    cursor: pointer;
+}
+
+.audit-log-control-wrap::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #64748b;
+    border-bottom: 2px solid #64748b;
+    transform: translateY(-65%) rotate(45deg);
+    pointer-events: none;
+}
+
+.audit-log-control-wrap.date-wrap::after {
+    content: "\f073";
+    width: auto;
+    height: auto;
+    border: 0;
+    color: #64748b;
+    font-family: FontAwesome;
+    font-size: 15px;
+    transform: translateY(-50%);
+}
+
+.audit-log-filter-control:focus,
+.audit-log-select:focus,
+.audit-log-date:focus {
+    outline: none;
+    border-color: #2688eb;
+    box-shadow: 0 0 0 3px rgba(38, 136, 235, 0.15);
+}
+
+.audit-log-filter-actions {
+    display: flex;
+    min-width: 150px;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.audit-log-filter-actions .btn {
+    min-height: 48px;
+}
+
+@media (max-width: 1199px) {
+    .audit-log-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .audit-log-filter-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .audit-log-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .audit-log-filter-actions {
+        flex-direction: column;
+    }
+
+    .audit-log-filter-actions .btn,
+    .audit-log-filter-actions a {
+        width: 100%;
+    }
+}
