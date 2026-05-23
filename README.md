@@ -155,7 +155,7 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
   </tr>
   <tr>
     <td align="center" colspan="2">
-      <img src="img/Mobile.png" alt="Dashboard mobile preview" width="70%%">
+      <img src="img/Mobile.png" alt="Dashboard mobile preview" width="50%">
       <br>
       <b>📱 Dashboard Mobile</b>
       <br>
