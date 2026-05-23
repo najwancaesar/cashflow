@@ -134,7 +134,7 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
       <br>
       <b>📄 Laporan PDF</b>
       <br>
-      <sub>Preview laporan, custom date range, filter data, export PDF, dan export CSV.</sub>
+      <sub>Preview laporan, custom date range, filter data, export PDF & CSV.</sub>
     </td>
   </tr>
   <tr>
@@ -155,7 +155,7 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
   </tr>
   <tr>
     <td align="center" colspan="2">
-      <img src="img/Mobile.png" alt="Dashboard mobile preview" width="50%">
+      <img src="img/Mobile.png" alt="Dashboard mobile preview" width="25%">
       <br>
       <b>📱 Dashboard Mobile</b>
       <br>
