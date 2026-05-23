@@ -1760,3 +1760,193 @@ body.g-sidenav-show {
         margin: 0 !important;
     }
 }
+
+/* Desktop-only bulk delete controls for transaction tables */
+.transaction-table-toolbar {
+    display: flex;
+    width: auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin: 0 1rem 16px;
+}
+
+.transaction-toolbar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.transaction-toolbar-actions .btn,
+.bulk-delete-btn,
+.add-transaction-btn {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.transaction-table th.bulk-select-col,
+.transaction-table td.bulk-select-col,
+table.dataTable th.bulk-select-col,
+table.dataTable td.bulk-select-col {
+    width: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+.bulk-select-col input[type="checkbox"],
+.bulk-select-all,
+.bulk-select-row {
+    display: inline-block !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    margin: 0 auto !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: static !important;
+    cursor: pointer;
+    accent-color: #4f46e5;
+}
+
+table.dataTable thead th.bulk-select-col::before,
+table.dataTable thead th.bulk-select-col::after {
+    display: none !important;
+    content: none !important;
+}
+
+table.dataTable thead th.bulk-select-col {
+    background-image: none !important;
+    cursor: default;
+}
+
+@media (max-width: 768px) {
+    .desktop-transaction-section {
+        display: none !important;
+    }
+
+    .mobile-transaction-section {
+        display: block !important;
+    }
+
+    .desktop-bulk-only,
+    .desktop-bulk-toolbar .bulk-delete-btn,
+    .bulk-select-col,
+    th.bulk-select-col,
+    td.bulk-select-col {
+        display: none !important;
+    }
+
+    .transaction-table-toolbar {
+        justify-content: stretch;
+    }
+
+    .transaction-toolbar-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .transaction-toolbar-actions .add-transaction-btn {
+        width: 100%;
+    }
+}
+
+.mobile-transaction-section {
+    width: 100%;
+}
+
+.mobile-transaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.mobile-transaction-card {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+}
+
+.mobile-transaction-row {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.mobile-transaction-row:last-child {
+    border-bottom: 0;
+}
+
+.mobile-transaction-label {
+    color: #344767;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.mobile-transaction-value {
+    min-width: 0;
+    color: #344767;
+    font-size: 13px;
+    line-height: 1.45;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.mobile-transaction-value .badge,
+.mobile-transaction-card .badge {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+}
+
+.mobile-transaction-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.mobile-transaction-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.mobile-transaction-actions button,
+.mobile-transaction-actions a {
+    position: static !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+@media (max-width: 380px) {
+    .mobile-transaction-row {
+        grid-template-columns: 96px minmax(0, 1fr);
+        gap: 10px;
+    }
+
+    .mobile-transaction-card {
+        padding: 14px;
+    }
+}

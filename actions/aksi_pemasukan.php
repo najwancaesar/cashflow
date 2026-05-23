@@ -110,6 +110,19 @@ function pemasukan_dimiliki_user($idPemasukan, $userId) {
     return $transaksi !== false;
 }
 
+function normalize_pemasukan_ids($input) {
+    if (!is_array($input)) {
+        return [];
+    }
+
+    $ids = array_map('intval', $input);
+    $ids = array_filter($ids, static function ($id) {
+        return $id > 0;
+    });
+
+    return array_values(array_unique($ids));
+}
+
 if (!isset($_SESSION['id_user'])) {
     show_sweetalert_and_redirect('Login diperlukan', 'Silakan login terlebih dahulu.', 'warning', 'login.php');
 }
@@ -264,6 +277,58 @@ if ($act == 'h') {
     } else {
         show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
     }
+}
+
+if ($act == 'bulk_delete') {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        show_sweetalert_and_redirect('Akses ditolak', 'Hapus pemasukan terpilih wajib melalui form yang valid.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    if (!verify_csrf_token()) {
+        show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    $ids = normalize_pemasukan_ids($_POST['id_pemasukan'] ?? []);
+
+    if (empty($ids)) {
+        show_sweetalert_and_redirect('Tidak ada data dipilih', 'Pilih minimal satu pemasukan untuk dihapus.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $countQuery = "SELECT COUNT(*) AS total
+                   FROM pemasukan
+                   WHERE user = ? AND id_pemasukan IN ({$placeholders})";
+    $countStmt = mysqli_prepare($con, $countQuery);
+    $countTypes = 'i' . str_repeat('i', count($ids));
+    $countParams = array_merge([$user], $ids);
+    mysqli_stmt_bind_param($countStmt, $countTypes, ...$countParams);
+    mysqli_stmt_execute($countStmt);
+    $countResult = mysqli_stmt_get_result($countStmt);
+    $countRow = mysqli_fetch_assoc($countResult);
+    mysqli_stmt_close($countStmt);
+
+    if ((int) ($countRow['total'] ?? 0) !== count($ids)) {
+        show_sweetalert_and_redirect('Akses ditolak', 'Sebagian data tidak valid atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
+    }
+
+    $deleteQuery = "DELETE FROM pemasukan
+                    WHERE user = ? AND id_pemasukan IN ({$placeholders})";
+    $deleteStmt = mysqli_prepare($con, $deleteQuery);
+    $deleteTypes = 'i' . str_repeat('i', count($ids));
+    $deleteParams = array_merge([$user], $ids);
+    mysqli_stmt_bind_param($deleteStmt, $deleteTypes, ...$deleteParams);
+    $hasil = mysqli_stmt_execute($deleteStmt);
+    $affectedRows = mysqli_stmt_affected_rows($deleteStmt);
+    mysqli_stmt_close($deleteStmt);
+
+    if ($hasil && $affectedRows > 0) {
+        if (function_exists('record_activity')) {
+            record_activity($con, 'pemasukan', 'hapus_massal', "Menghapus massal pemasukan sebanyak {$affectedRows} data.");
+        }
+        show_sweetalert_and_redirect('Berhasil!', "Berhasil menghapus {$affectedRows} data pemasukan.", 'success', 'main.php?module=pemasukan');
+    }
+
+    show_sweetalert_and_redirect('Gagal!', 'Data pemasukan terpilih gagal dihapus.', 'error', 'main.php?module=pemasukan');
 }
 
 show_sweetalert_and_redirect('Gagal!', 'Aksi pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');

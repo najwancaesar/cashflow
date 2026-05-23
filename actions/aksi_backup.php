@@ -129,29 +129,184 @@ function rows_for_user_backup($con, $table, $columns, $filterColumn, $userId)
     return $rows;
 }
 
-function render_table_backup_sql($con, $table, $filterCandidates, $userId)
+function primary_key_column_backup($table)
+{
+    $primaryKeys = [
+        'user' => 'id_user',
+        'kategori' => 'id_kategori',
+        'budget_kategori' => 'id_budget',
+        'wallet' => 'id_wallet',
+        'pemasukan' => 'id_pemasukan',
+        'pengeluaran' => 'id_pengeluaran',
+        'hutang' => 'id_hutang',
+        'piutang' => 'id_piutang',
+        'transfer_wallet' => 'id_transfer',
+        'saving_goal' => 'id_goal',
+        'saving_goal_mutasi' => 'id_mutasi',
+        'recurring_transaction' => 'id_recurring',
+        'recurring_generation_log' => 'id_log',
+    ];
+
+    return $primaryKeys[$table] ?? null;
+}
+
+function column_exists_backup($columns, $columnName)
+{
+    foreach ($columns as $column) {
+        if ($column['name'] === $columnName) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function collect_table_backup_data($con, $table, $filterCandidates, $userId)
 {
     if (!table_exists_backup($con, $table)) {
-        return "-- Table {$table} not found, skipped.\n\n";
+        return [
+            'table' => $table,
+            'exists' => false,
+            'columns' => [],
+            'filter_column' => null,
+            'primary_column' => primary_key_column_backup($table),
+            'rows' => [],
+            'message' => "-- Table {$table} not found, skipped.",
+        ];
     }
 
     $columns = table_columns_backup($con, $table);
     if (empty($columns)) {
-        return "-- Table {$table} has no readable columns, skipped.\n\n";
+        return [
+            'table' => $table,
+            'exists' => true,
+            'columns' => [],
+            'filter_column' => null,
+            'primary_column' => primary_key_column_backup($table),
+            'rows' => [],
+            'message' => "-- Table {$table} has no readable columns, skipped.",
+        ];
     }
 
     $filterColumn = resolve_filter_column_backup($columns, $filterCandidates);
     if ($filterColumn === null) {
-        return "-- Table {$table} has no supported user filter column, skipped.\n\n";
+        return [
+            'table' => $table,
+            'exists' => true,
+            'columns' => $columns,
+            'filter_column' => null,
+            'primary_column' => primary_key_column_backup($table),
+            'rows' => [],
+            'message' => "-- Table {$table} has no supported user filter column, skipped.",
+        ];
     }
 
     $rows = rows_for_user_backup($con, $table, $columns, $filterColumn, $userId);
+
+    return [
+        'table' => $table,
+        'exists' => true,
+        'columns' => $columns,
+        'filter_column' => $filterColumn,
+        'primary_column' => primary_key_column_backup($table),
+        'rows' => $rows,
+        'message' => null,
+    ];
+}
+
+function ids_from_backup_rows($rows, $primaryColumn)
+{
+    if ($primaryColumn === null) {
+        return [];
+    }
+
+    $ids = [];
+    foreach ($rows as $row) {
+        if (isset($row[$primaryColumn]) && is_numeric((string) $row[$primaryColumn])) {
+            $id = (int) $row[$primaryColumn];
+            if ($id > 0) {
+                $ids[] = $id;
+            }
+        }
+    }
+
+    return array_values(array_unique($ids));
+}
+
+function render_cleanup_backup_sql($backupData)
+{
+    $sql = "-- Cleanup existing data for replace restore\n";
+    $cleanupOrder = [
+        'recurring_generation_log',
+        'recurring_transaction',
+        'saving_goal_mutasi',
+        'saving_goal',
+        'transfer_wallet',
+        'piutang',
+        'hutang',
+        'pengeluaran',
+        'pemasukan',
+        'budget_kategori',
+        'wallet',
+        'kategori',
+        'user',
+    ];
+
+    foreach ($cleanupOrder as $tableName) {
+        if (!isset($backupData[$tableName])) {
+            continue;
+        }
+
+        $data = $backupData[$tableName];
+        $table = $data['table'];
+
+        if (!$data['exists']) {
+            $sql .= ($data['message'] ?? "-- Table {$table} skipped.") . "\n";
+            continue;
+        }
+
+        if ($data['filter_column'] === null) {
+            $sql .= ($data['message'] ?? "-- Table {$table} skipped for cleanup.") . "\n";
+            continue;
+        }
+
+        $primaryColumn = $data['primary_column'];
+        $ids = ids_from_backup_rows($data['rows'], $primaryColumn);
+
+        if ($table === 'user') {
+            $sql .= "DELETE FROM `user` WHERE `id_user` = @restore_user_id;\n";
+            continue;
+        }
+
+        $delete = "DELETE FROM " . quote_identifier_backup($table) .
+            " WHERE " . quote_identifier_backup($data['filter_column']) . " = @restore_user_id";
+
+        if ($primaryColumn !== null && column_exists_backup($data['columns'], $primaryColumn) && !empty($ids)) {
+            $delete .= " OR " . quote_identifier_backup($primaryColumn) . " IN (" . implode(', ', $ids) . ")";
+        }
+
+        $sql .= $delete . ";\n";
+    }
+
+    return $sql . "\n";
+}
+
+function render_table_backup_sql_from_data($con, $data)
+{
+    $table = $data['table'];
+
+    if (!$data['exists'] || $data['filter_column'] === null || empty($data['columns'])) {
+        return ($data['message'] ?? "-- Table {$table} skipped.") . "\n\n";
+    }
+
+    $rows = $data['rows'];
     $sql = "-- Data for table {$table}\n";
 
     if (empty($rows)) {
         return $sql . "-- No rows for selected user.\n\n";
     }
 
+    $columns = $data['columns'];
     $columnNames = array_column($columns, 'name');
     $columnTypes = [];
     foreach ($columns as $column) {
@@ -229,23 +384,35 @@ $filenameTimestamp = date('Ymd_His');
 $filename = "cashflow_backup_user_{$targetUserId}_{$filenameTimestamp}.sql";
 $safeUserName = (string) ($targetUser['username'] ?? $targetUser['nama'] ?? '-');
 
+$backupData = [];
+foreach ($backupTables as $table => $filterCandidates) {
+    $backupData[$table] = collect_table_backup_data($con, $table, $filterCandidates, $targetUserId);
+}
+
 $sql = "-- CashFlow Control\n";
 $sql .= "-- Jenis backup: Backup data per user\n";
+$sql .= "-- Mode restore: Replace data user\n";
 $sql .= "-- ID user: {$targetUserId}\n";
 $sql .= "-- Nama user: " . str_replace(["\r", "\n"], ' ', $safeUserName) . "\n";
 $sql .= "-- Tanggal backup: {$backupAt}\n";
-$sql .= "-- Catatan: Restore dilakukan manual melalui phpMyAdmin/MySQL.\n";
+$sql .= "-- Catatan: Import ke database yang strukturnya sudah tersedia.\n";
 $sql .= "-- Password pada tabel user adalah hash, bukan plaintext.\n";
-$sql .= "-- File gambar fisik tidak termasuk dalam backup ini.\n\n";
+$sql .= "-- File gambar fisik tidak termasuk dan perlu dicopy manual bila diperlukan.\n\n";
 $sql .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";\n";
-$sql .= "START TRANSACTION;\n";
+$sql .= "SET NAMES utf8mb4;\n";
 $sql .= "SET time_zone = \"+00:00\";\n\n";
+$sql .= "SET FOREIGN_KEY_CHECKS = 0;\n";
+$sql .= "START TRANSACTION;\n";
+$sql .= "SET @restore_user_id := {$targetUserId};\n\n";
 
-foreach ($backupTables as $table => $filterCandidates) {
-    $sql .= render_table_backup_sql($con, $table, $filterCandidates, $targetUserId);
+$sql .= render_cleanup_backup_sql($backupData);
+
+foreach ($backupData as $data) {
+    $sql .= render_table_backup_sql_from_data($con, $data);
 }
 
 $sql .= "COMMIT;\n";
+$sql .= "SET FOREIGN_KEY_CHECKS = 1;\n";
 
 if (ob_get_length()) {
     ob_end_clean();

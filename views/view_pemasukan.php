@@ -82,6 +82,195 @@ $transaksiStmt = mysqli_prepare($con, $transaksiQuery);
 mysqli_stmt_bind_param($transaksiStmt, "i", $userYangSedangLogin);
 mysqli_stmt_execute($transaksiStmt);
 $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
+
+$transaksiRows = [];
+while ($row = mysqli_fetch_assoc($transaksiResult)) {
+    $transaksiRows[] = $row;
+}
+mysqli_stmt_close($transaksiStmt);
+
+$renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId) {
+    $statusTransaksi = (string) ($row['status'] ?? 'pending');
+    $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
+    $targetStatusLabel = ucfirst($targetStatus);
+    $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
+    $walletDisplayType = $row['tipe_wallet'] ? pemasukan_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+    $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
+        ? (int) $row['id_wallet']
+        : $defaultWalletId;
+?>
+    <tr>
+        <?php if ($includeBulkColumn) { ?>
+            <td class="bulk-select-col text-center">
+                <input
+                    type="checkbox"
+                    class="bulk-select-row bulk-pemasukan-checkbox"
+                    name="id_pemasukan[]"
+                    value="<?= (int) $row['id_pemasukan'] ?>"
+                    form="bulkDeletePemasukanForm"
+                    aria-label="Pilih transaksi pemasukan ini">
+            </td>
+        <?php } ?>
+        <td class="align-middle text-center">
+            <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
+        </td>
+        <td>
+            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
+        </td>
+        <td>
+            <p class="text-xs text-secondary mb-0">
+                <?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?>
+            </p>
+        </td>
+        <td>
+            <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></p>
+        </td>
+        <td>
+            <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></p>
+        </td>
+        <td class="align-middle text-center text-sm">
+            <form action="actions/aksi_pemasukan.php?act=l" method="post" class="d-inline">
+                <?= csrf_input() ?>
+                <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
+                <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
+                <button type="submit"
+                    data-confirm="true"
+                    data-confirm-title="Ubah status transaksi?"
+                    data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
+                    data-confirm-confirm-text="Ya, ubah"
+                    data-confirm-cancel-text="Batal"
+                    class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
+                    <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
+                </button>
+            </form>
+        </td>
+        <td class="align-middle">
+            <form action="actions/aksi_pemasukan.php?act=h" method="post" class="d-inline">
+                <?= csrf_input() ?>
+                <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
+                <button type="submit"
+                    data-confirm="true"
+                    data-confirm-title="Hapus pemasukan ini?"
+                    data-confirm-text="Data pemasukan yang dihapus tidak bisa dikembalikan."
+                    data-confirm-confirm-text="Ya, hapus"
+                    data-confirm-cancel-text="Batal"
+                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                </button>
+            </form>
+
+            <a type="submit"
+                data-id="<?= (int) $row['id_pemasukan'] ?>"
+                data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES) ?>"
+                data-status="<?= htmlspecialchars($row['status'], ENT_QUOTES) ?>"
+                data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES) ?>"
+                data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
+                data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
+                data-wallet="<?= htmlspecialchars((string) $editWalletId, ENT_QUOTES) ?>"
+                class="text-secondary text-warning font-weight-bold text-xs btneditpemasukan">
+                <i class="fa fa-pencil" aria-hidden="true"></i>
+            </a>
+        </td>
+    </tr>
+<?php
+};
+
+$renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $defaultWalletId) {
+    $statusTransaksi = (string) ($row['status'] ?? 'pending');
+    $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
+    $targetStatusLabel = ucfirst($targetStatus);
+    $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
+    $walletDisplayType = $row['tipe_wallet'] ? pemasukan_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+    $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
+        ? (int) $row['id_wallet']
+        : $defaultWalletId;
+    $searchText = strtolower(trim(implode(' ', [
+        (string) ($row['tanggal'] ?? ''),
+        (string) ($row['catatan'] ?? ''),
+        (string) ($row['nama_kategori'] ?? ''),
+        (string) ($row['nama_wallet'] ?? ''),
+        (string) ($row['tipe_wallet'] ?? ''),
+        (string) ($row['status'] ?? ''),
+        (string) ($row['jumlah'] ?? ''),
+    ])));
+?>
+    <article class="mobile-transaction-card" data-search="<?= htmlspecialchars($searchText, ENT_QUOTES, 'UTF-8') ?>">
+        <div class="mobile-transaction-row">
+            <span class="mobile-transaction-label">Tanggal</span>
+            <span class="mobile-transaction-value"><?= htmlspecialchars($row['tanggal']) ?></span>
+        </div>
+        <div class="mobile-transaction-row">
+            <span class="mobile-transaction-label">Catatan</span>
+            <span class="mobile-transaction-value"><?= htmlspecialchars($row['catatan']) ?></span>
+        </div>
+        <div class="mobile-transaction-row">
+            <span class="mobile-transaction-label">Kategori</span>
+            <span class="mobile-transaction-value"><?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?></span>
+        </div>
+        <div class="mobile-transaction-row">
+            <span class="mobile-transaction-label">Jumlah Pemasukan</span>
+            <span class="mobile-transaction-value fw-bold">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></span>
+        </div>
+        <div class="mobile-transaction-row">
+            <span class="mobile-transaction-label">Wallet</span>
+            <span class="mobile-transaction-value">
+                <strong><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></strong><br>
+                <small><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></small>
+            </span>
+        </div>
+        <div class="mobile-transaction-row">
+            <span class="mobile-transaction-label">Status</span>
+            <span class="mobile-transaction-value">
+                <form action="actions/aksi_pemasukan.php?act=l" method="post" class="d-inline">
+                    <?= csrf_input() ?>
+                    <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
+                    <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
+                    <button type="submit"
+                        data-confirm="true"
+                        data-confirm-title="Ubah status transaksi?"
+                        data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
+                        data-confirm-confirm-text="Ya, ubah"
+                        data-confirm-cancel-text="Batal"
+                        class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
+                        <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
+                    </button>
+                </form>
+            </span>
+        </div>
+        <div class="mobile-transaction-row mobile-transaction-actions-row">
+            <span class="mobile-transaction-label">Aksi</span>
+            <span class="mobile-transaction-value mobile-transaction-actions">
+                <form action="actions/aksi_pemasukan.php?act=h" method="post" class="d-inline">
+                    <?= csrf_input() ?>
+                    <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
+                    <button type="submit"
+                        data-confirm="true"
+                        data-confirm-title="Hapus pemasukan ini?"
+                        data-confirm-text="Data pemasukan yang dihapus tidak bisa dikembalikan."
+                        data-confirm-confirm-text="Ya, hapus"
+                        data-confirm-cancel-text="Batal"
+                        class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                        <i class="fa fa-trash" aria-hidden="true"></i>
+                    </button>
+                </form>
+
+                <a type="submit"
+                    data-id="<?= (int) $row['id_pemasukan'] ?>"
+                    data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES) ?>"
+                    data-status="<?= htmlspecialchars($row['status'], ENT_QUOTES) ?>"
+                    data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES) ?>"
+                    data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
+                    data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
+                    data-wallet="<?= htmlspecialchars((string) $editWalletId, ENT_QUOTES) ?>"
+                    class="text-secondary text-warning font-weight-bold text-xs btneditpemasukan">
+                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+            </span>
+        </div>
+    </article>
+<?php
+};
 ?>
 
 <div class="container-fluid py-4">
@@ -99,111 +288,80 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
-                    <div class="text-end me-3">
-                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
-                            data-bs-target="#modalTambah">
-                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
-                        </button>
-                    </div>
-                    <div class="table-responsive p-4 mx-2">
-                        <table class="table align-items-center mb-0" id="datatable">
-                            <thead>
-                                <tr>
-                                    <th>Tanggal</th>
-                                    <th>Catatan</th>
-                                    <th>Kategori</th>
-                                    <th>Jumlah Pemasukan</th>
-                                    <th>Wallet</th>
-                                    <th>Status</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php while ($row = mysqli_fetch_assoc($transaksiResult)) { ?>
-                                    <?php
-                                    $statusTransaksi = (string) ($row['status'] ?? 'pending');
-                                    $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
-                                    $targetStatusLabel = ucfirst($targetStatus);
-                                    $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
-                                    $walletDisplayType = $row['tipe_wallet'] ? pemasukan_wallet_type_label($row['tipe_wallet']) : 'Fallback';
-                                    $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
-                                        ? (int) $row['id_wallet']
-                                        : $defaultWalletId;
-                                    ?>
+                    <form id="bulkDeletePemasukanForm" action="actions/aksi_pemasukan.php?act=bulk_delete" method="post" class="d-none">
+                        <?= csrf_input() ?>
+                    </form>
+                    <div class="desktop-transaction-section d-none d-md-block">
+                        <div class="transaction-table-toolbar desktop-bulk-toolbar">
+                            <div class="transaction-toolbar-actions">
+                                <button
+                                    type="submit"
+                                    form="bulkDeletePemasukanForm"
+                                    id="bulkDeletePemasukanBtn"
+                                    class="btn btn-outline-danger mb-0 bulk-delete-btn"
+                                    disabled
+                                    data-confirm="true"
+                                    data-confirm-title="Hapus transaksi terpilih?"
+                                    data-confirm-text="Data pemasukan yang dipilih akan dihapus dan tidak bisa dikembalikan."
+                                    data-confirm-confirm-text="Ya, hapus"
+                                    data-confirm-cancel-text="Batal"
+                                    data-confirm-form="#bulkDeletePemasukanForm">
+                                    <i class="fa fa-trash" aria-hidden="true"></i>
+                                    <span class="bulk-delete-label">Hapus Terpilih</span>
+                                </button>
+                                <button type="button" class="btn btn-secondary mb-0 add-transaction-btn" data-bs-toggle="modal"
+                                    data-bs-target="#modalTambah">
+                                    <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-responsive p-4 mx-2">
+                            <table class="table align-items-center mb-0 transaction-table" id="datatablePemasukanDesktop" data-skip-responsive="true">
+                                <thead>
                                     <tr>
-                                        <td class="align-middle text-center">
-                                            <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
-                                        </td>
-                                        <td>
-                                            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
-                                        </td>
-                                        <td>
-                                            <p class="text-xs text-secondary mb-0">
-                                                <?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?>
-                                            </p>
-                                        </td>
-                                        <td>
-                                            <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></p>
-                                        </td>
-                                        <td>
-                                            <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></p>
-                                            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></p>
-                                        </td>
-                                        <td class="align-middle text-center text-sm">
-                                            <form action="actions/aksi_pemasukan.php?act=l" method="post" class="d-inline">
-                                                <?= csrf_input() ?>
-                                                <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
-                                                <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
-                                                <button type="submit"
-                                                    data-confirm="true"
-                                                    data-confirm-title="Ubah status transaksi?"
-                                                    data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
-                                                    data-confirm-confirm-text="Ya, ubah"
-                                                    data-confirm-cancel-text="Batal"
-                                                    class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
-                                                    <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
-                                                </button>
-                                            </form>
-                                        </td>
-                                        <td class="align-middle">
-                                            <form action="actions/aksi_pemasukan.php?act=h" method="post" class="d-inline">
-                                                <?= csrf_input() ?>
-                                                <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
-                                                <button type="submit"
-                                                    data-confirm="true"
-                                                    data-confirm-title="Hapus pemasukan ini?"
-                                                    data-confirm-text="Data pemasukan yang dihapus tidak bisa dikembalikan."
-                                                    data-confirm-confirm-text="Ya, hapus"
-                                                    data-confirm-cancel-text="Batal"
-                                                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
-                                                    <i class="fa fa-trash" aria-hidden="true"></i>
-                                                </button>
-                                            </form>
-
-                                            <a type="submit"
-                                                data-id="<?= (int) $row['id_pemasukan'] ?>"
-                                                data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES) ?>"
-                                                data-status="<?= htmlspecialchars($row['status'], ENT_QUOTES) ?>"
-                                                data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES) ?>"
-                                                data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
-                                                data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
-                                                data-wallet="<?= htmlspecialchars((string) $editWalletId, ENT_QUOTES) ?>"
-                                                class="text-secondary text-warning font-weight-bold text-xs btneditpemasukan">
-                                                <i class="fa fa-pencil" aria-hidden="true"></i>
-                                            </a>
-                                        </td>
+                                        <th class="bulk-select-col text-center">
+                                            <input type="checkbox" id="selectAllPemasukan" class="bulk-select-all" aria-label="Pilih semua pemasukan">
+                                        </th>
+                                        <th>Tanggal</th>
+                                        <th>Catatan</th>
+                                        <th>Kategori</th>
+                                        <th>Jumlah Pemasukan</th>
+                                        <th>Wallet</th>
+                                        <th>Status</th>
+                                        <th></th>
                                     </tr>
-                                <?php } ?>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($transaksiRows as $row) {
+                                        $renderPemasukanRow($row, true);
+                                    } ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mobile-transaction-section d-block d-md-none">
+                        <div class="px-4 mx-2 mb-3">
+                            <button type="button" class="btn btn-secondary w-100 mb-0 add-transaction-btn" data-bs-toggle="modal"
+                                data-bs-target="#modalTambah">
+                                <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
+                            </button>
+                        </div>
+                        <div class="px-4 mx-2 mb-3">
+                            <label class="form-label fw-bold text-sm mb-2" for="mobilePemasukanSearch">Search:</label>
+                            <input type="search" class="form-control mobile-transaction-search" id="mobilePemasukanSearch" data-target="#mobilePemasukanList" placeholder="Ketik untuk mencari data...">
+                        </div>
+                        <div class="mobile-transaction-list px-4 mx-2" id="mobilePemasukanList">
+                            <?php foreach ($transaksiRows as $row) {
+                                $renderMobilePemasukanCard($row);
+                            } ?>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<?php mysqli_stmt_close($transaksiStmt); ?>
 
 <div class="modal fade" id="modalTambah" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -294,18 +452,120 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
 <script>
     $(document).ready(function() {
         var defaultWalletId = "<?= htmlspecialchars((string) $defaultWalletId, ENT_QUOTES, 'UTF-8') ?>";
-
-        $('#datatable').DataTable({
-            language: {
-                "paginate": {
-                    "first": "&laquo",
-                    "last": "&raquo",
-                    "next": "&gt",
-                    "previous": "&lt"
-                },
+        var datatableLanguage = {
+            "paginate": {
+                "first": "&laquo",
+                "last": "&raquo",
+                "next": "&gt",
+                "previous": "&lt"
             },
-            dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+        };
+        var datatableDom = ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">';
+
+        var pemasukanDesktopTable = $('#datatablePemasukanDesktop').DataTable({
+            language: datatableLanguage,
+            columnDefs: [
+                { targets: 0, orderable: false, searchable: false },
+                { targets: -1, orderable: false, searchable: false }
+            ],
+            dom: datatableDom
         });
+
+        var selectedPemasukanIds = {};
+        var bulkPemasukanResizeTimer = null;
+
+        function syncBulkPemasukanFormInputs() {
+            var $form = $('#bulkDeletePemasukanForm');
+            $form.find('.js-bulk-generated-input').remove();
+
+            Object.keys(selectedPemasukanIds).forEach(function(id) {
+                $('<input>', {
+                    type: 'hidden',
+                    name: 'id_pemasukan[]',
+                    value: id,
+                    class: 'js-bulk-generated-input'
+                }).appendTo($form);
+            });
+        }
+
+        function syncPemasukanCheckboxNodes(nodes) {
+            $(nodes).find('.bulk-pemasukan-checkbox').each(function() {
+                this.checked = selectedPemasukanIds[this.value] === true;
+            });
+        }
+
+        function updateBulkPemasukanState() {
+            var selectedCount = Object.keys(selectedPemasukanIds).length;
+            var $button = $('#bulkDeletePemasukanBtn');
+            var $label = $button.find('.bulk-delete-label');
+            var filteredNodes = pemasukanDesktopTable.rows({ search: 'applied' }).nodes();
+            var $filteredCheckboxes = $(filteredNodes).find('.bulk-pemasukan-checkbox');
+            var filteredCount = $filteredCheckboxes.length;
+            var filteredCheckedCount = 0;
+            var selectAll = $('#selectAllPemasukan').get(0);
+
+            $filteredCheckboxes.each(function() {
+                if (selectedPemasukanIds[this.value] === true) {
+                    filteredCheckedCount++;
+                }
+            });
+
+            syncBulkPemasukanFormInputs();
+            $button.prop('disabled', selectedCount === 0);
+            $label.text(selectedCount > 0 ? 'Hapus Terpilih (' + selectedCount + ')' : 'Hapus Terpilih');
+
+            if (selectAll) {
+                selectAll.checked = filteredCount > 0 && filteredCheckedCount === filteredCount;
+                selectAll.indeterminate = filteredCheckedCount > 0 && filteredCheckedCount < filteredCount;
+            }
+        }
+
+        $('#selectAllPemasukan').on('change', function() {
+            var checked = this.checked;
+            var filteredNodes = pemasukanDesktopTable.rows({ search: 'applied' }).nodes();
+
+            $(filteredNodes).find('.bulk-pemasukan-checkbox').each(function() {
+                this.checked = checked;
+                if (checked) {
+                    selectedPemasukanIds[this.value] = true;
+                } else {
+                    delete selectedPemasukanIds[this.value];
+                }
+            });
+
+            updateBulkPemasukanState();
+        });
+
+        $(document).on('change', '.bulk-pemasukan-checkbox', function() {
+            if (this.checked) {
+                selectedPemasukanIds[this.value] = true;
+            } else {
+                delete selectedPemasukanIds[this.value];
+            }
+
+            updateBulkPemasukanState();
+        });
+
+        pemasukanDesktopTable.on('draw', function() {
+            syncPemasukanCheckboxNodes(pemasukanDesktopTable.rows({ page: 'current' }).nodes());
+            updateBulkPemasukanState();
+        });
+
+        $('#bulkDeletePemasukanForm').on('submit', function() {
+            syncBulkPemasukanFormInputs();
+        });
+
+        $(window).on('resize orientationchange', function() {
+            clearTimeout(bulkPemasukanResizeTimer);
+            bulkPemasukanResizeTimer = setTimeout(function() {
+                pemasukanDesktopTable.columns.adjust();
+                syncPemasukanCheckboxNodes(pemasukanDesktopTable.rows({ page: 'current' }).nodes());
+                updateBulkPemasukanState();
+            }, 180);
+        });
+
+        syncPemasukanCheckboxNodes(pemasukanDesktopTable.rows({ page: 'current' }).nodes());
+        updateBulkPemasukanState();
 
         $(document).on("click", ".btneditpemasukan", function() {
             var walletId = $(this).attr("data-wallet") || defaultWalletId;
@@ -314,6 +574,21 @@ $transaksiResult = mysqli_stmt_get_result($transaksiStmt);
 
         $('#modalTambah').on('hidden.bs.modal', function() {
             $('#id_wallet').val(defaultWalletId);
+        });
+
+        $(document).on('input', '.mobile-transaction-search', function() {
+            var targetSelector = $(this).attr('data-target');
+            var $list = $(targetSelector);
+            var query = ($(this).val() || '').toLowerCase().trim();
+
+            if (!$list.length) {
+                return;
+            }
+
+            $list.find('.mobile-transaction-card').each(function() {
+                var haystack = $(this).attr('data-search') || $(this).text().toLowerCase();
+                $(this).toggle(!query || haystack.indexOf(query) !== -1);
+            });
         });
     });
 </script>

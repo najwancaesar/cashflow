@@ -149,7 +149,7 @@ mysqli_stmt_close($walletStmt);
                                                     data-id="<?= (int) $row['id_wallet'] ?>"
                                                     data-nama="<?= htmlspecialchars($row['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>"
                                                     data-tipe="<?= htmlspecialchars($row['tipe_wallet'], ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-saldo="<?= htmlspecialchars((string) $row['saldo_awal'], ENT_QUOTES, 'UTF-8') ?>">
+                                                    data-saldo="<?= htmlspecialchars(number_format((float) $row['saldo_awal'], 0, '', ''), ENT_QUOTES, 'UTF-8') ?>">
                                                     <i class="fa fa-pencil" aria-hidden="true"></i>
                                                 </a>
 
