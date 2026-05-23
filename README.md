@@ -130,7 +130,7 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
       <sub>Ringkasan wallet, budget, insight, quick add, dan transaksi terbaru.</sub>
     </td>
     <td align="center" width="50%">
-      <img src="img/Cetak_Laporan.png" alt="Report preview" width="80%">
+      <img src="img/Cetak_Laporan.png" alt="Report preview" width="100%">
       <br>
       <b>📄 Laporan PDF</b>
       <br>
