@@ -130,11 +130,11 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
       <sub>Ringkasan wallet, budget, insight, quick add, dan transaksi terbaru.</sub>
     </td>
     <td align="center" width="50%">
-      <img src="img/Mobile.png" alt="Dashboard mobile preview" width="70%%">
+      <img src="img/Cetak_Laporan.png" alt="Report preview" width="80%">
       <br>
-      <b>📱 Dashboard Mobile</b>
+      <b>📄 Laporan PDF</b>
       <br>
-      <sub>Tampilan mobile tetap ringan, bersih, dan fokus pada akses cepat.</sub>
+      <sub>Preview laporan, custom date range, filter data, export PDF, dan export CSV.</sub>
     </td>
   </tr>
   <tr>
@@ -155,11 +155,11 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
   </tr>
   <tr>
     <td align="center" colspan="2">
-      <img src="img/Cetak_Laporan.png" alt="Report preview" width="80%">
+      <img src="img/Mobile.png" alt="Dashboard mobile preview" width="70%%">
       <br>
-      <b>📄 Laporan PDF</b>
+      <b>📱 Dashboard Mobile</b>
       <br>
-      <sub>Preview laporan, custom date range, filter data, export PDF, dan export CSV.</sub>
+      <sub>Tampilan mobile tetap ringan, bersih, dan fokus pada akses cepat.</sub>
     </td>
   </tr>
 </table>
