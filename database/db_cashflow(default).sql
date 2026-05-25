@@ -37,12 +37,18 @@ CREATE TABLE
     `id_hutang` int (11) NOT NULL AUTO_INCREMENT,
     `tanggal` date NOT NULL,
     `tanggal_jatuh_tempo` date DEFAULT NULL COMMENT 'Tanggal jatuh tempo hutang',
+    `tanggal_lunas` date DEFAULT NULL,
     `kreditur` varchar(100) NOT NULL,
     `catatan` text NOT NULL,
     `jumlah` int (11) NOT NULL,
     `user` int (11) NOT NULL,
+    `id_wallet_pembayaran` int (11) DEFAULT NULL,
+    `id_pengeluaran` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
-    PRIMARY KEY (`id_hutang`)
+    PRIMARY KEY (`id_hutang`),
+    KEY `idx_hutang_wallet_pembayaran` (`id_wallet_pembayaran`),
+    UNIQUE KEY `uniq_hutang_pengeluaran` (`id_pengeluaran`),
+    KEY `idx_hutang_user_status` (`user`, `status`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 16 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -58,65 +64,93 @@ INSERT INTO
   `hutang` (
     `id_hutang`,
     `tanggal`,
+    `tanggal_jatuh_tempo`,
+    `tanggal_lunas`,
     `kreditur`,
     `catatan`,
     `jumlah`,
     `user`,
+    `id_wallet_pembayaran`,
+    `id_pengeluaran`,
     `status`
   )
 VALUES
   (
     8,
     '2025-01-11',
+    NULL,
+    NULL,
     'fadlan',
     'ok',
     90000,
     32,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     9,
     '2025-01-13',
+    NULL,
+    NULL,
     'Bank Ganesha',
     'Peminjaman untuk dana darurat\r\n',
     10000,
     2,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     10,
     '2025-01-13',
+    NULL,
+    NULL,
     'ferdi',
     'mixue',
     10000,
     39,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     13,
     '2025-01-15',
+    NULL,
+    NULL,
     'myself',
     'oke',
     15000,
     40,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     14,
     '2025-01-16',
+    NULL,
+    NULL,
     'ok',
     'tst',
     6555500,
     41,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     15,
     '2025-02-27',
+    NULL,
+    NULL,
     'Sakila',
     'peminjaman untuk beli kebutuhan di indomaret\r\n',
     50000,
     52,
+    NULL,
+    NULL,
     'pending'
   );
 
@@ -879,12 +913,18 @@ CREATE TABLE
     `id_piutang` int (11) NOT NULL AUTO_INCREMENT,
     `tanggal` date NOT NULL,
     `tanggal_jatuh_tempo` date DEFAULT NULL COMMENT 'Tanggal jatuh tempo piutang',
+    `tanggal_lunas` date DEFAULT NULL,
     `debitur` varchar(100) NOT NULL,
     `catatan` text NOT NULL,
     `jumlah` int (11) NOT NULL,
     `user` int (11) NOT NULL,
+    `id_wallet_penerimaan` int (11) DEFAULT NULL,
+    `id_pemasukan` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
-    PRIMARY KEY (`id_piutang`)
+    PRIMARY KEY (`id_piutang`),
+    KEY `idx_piutang_wallet_penerimaan` (`id_wallet_penerimaan`),
+    UNIQUE KEY `uniq_piutang_pemasukan` (`id_pemasukan`),
+    KEY `idx_piutang_user_status` (`user`, `status`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 19 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -900,83 +940,119 @@ INSERT INTO
   `piutang` (
     `id_piutang`,
     `tanggal`,
+    `tanggal_jatuh_tempo`,
+    `tanggal_lunas`,
     `debitur`,
     `catatan`,
     `jumlah`,
     `user`,
+    `id_wallet_penerimaan`,
+    `id_pemasukan`,
     `status`
   )
 VALUES
   (
     10,
     '2025-01-11',
+    NULL,
+    NULL,
     'adad',
     'ok',
     90000,
     32,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     11,
     '2025-01-13',
+    NULL,
+    NULL,
     'bank bca',
     'award winner',
     100000,
     2,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     12,
     '2025-01-13',
+    NULL,
+    NULL,
     'tangguh',
     'nasi bungkus',
     10000,
     39,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     14,
     '2025-01-15',
+    NULL,
+    NULL,
     'tama',
     'oke saja',
     100000,
     40,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     15,
     '2025-01-15',
+    NULL,
+    NULL,
     'oooo',
     'okkkkkkkkkkkkkk',
     800000,
     40,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     16,
     '2025-01-16',
+    NULL,
+    NULL,
     'okk',
     'okgtgyu',
     800000,
     41,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     17,
     '2025-01-31',
+    NULL,
+    NULL,
     'select',
     'omset',
     500000,
     50,
+    NULL,
+    NULL,
     'pending'
   ),
   (
     18,
     '2025-02-27',
+    NULL,
+    NULL,
     'Sakila',
     'biaya operasional rumah sakit',
     100000,
     52,
+    NULL,
+    NULL,
     'pending'
   );
 

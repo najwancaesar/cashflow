@@ -45,9 +45,28 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     exit;
 }
 
-$stmtHutang = $con->prepare("SELECT hutang.*, user.nama
+$activeWallets = [];
+$stmtWallet = $con->prepare("SELECT id_wallet, nama_wallet, tipe_wallet, is_default
+    FROM wallet
+    WHERE user_id = ? AND is_active = 1
+    ORDER BY is_default DESC, nama_wallet ASC");
+$stmtWallet->bind_param("i", $userYangSedangLogin);
+$stmtWallet->execute();
+$walletResult = $stmtWallet->get_result();
+while ($walletRow = $walletResult ? $walletResult->fetch_assoc() : null) {
+    $activeWallets[] = $walletRow;
+}
+$stmtWallet->close();
+$hasActiveWallet = !empty($activeWallets);
+
+$stmtHutang = $con->prepare("SELECT hutang.*, user.nama,
+        wallet.nama_wallet AS wallet_pembayaran_nama,
+        wallet.tipe_wallet AS wallet_pembayaran_tipe,
+        pengeluaran.id_pengeluaran AS linked_pengeluaran_id
     FROM hutang
     INNER JOIN user ON hutang.user = user.id_user
+    LEFT JOIN wallet ON hutang.id_wallet_pembayaran = wallet.id_wallet AND wallet.user_id = hutang.user
+    LEFT JOIN pengeluaran ON hutang.id_pengeluaran = pengeluaran.id_pengeluaran AND pengeluaran.user = hutang.user
     WHERE user.id_user = ?
     ORDER BY hutang.tanggal DESC, hutang.id_hutang DESC");
 $stmtHutang->bind_param("i", $userYangSedangLogin);
@@ -132,20 +151,32 @@ $sql = $stmtHutang->get_result();
                                 <td class="align-middle text-center text-sm">
                                     <?php if (($row['status'] ?? '') === 'selesai') { ?>
                                         <span class="badge badge-sm bg-gradient-success">Selesai</span>
+                                        <?php if (!empty($row['tanggal_lunas']) || !empty($row['wallet_pembayaran_nama'])) { ?>
+                                            <small class="d-block text-xs text-secondary mt-1">
+                                                Dibayar dari
+                                                <strong><?= htmlspecialchars($row['wallet_pembayaran_nama'] ?? 'Wallet: -', ENT_QUOTES, 'UTF-8') ?></strong>
+                                                <?php if (!empty($row['wallet_pembayaran_tipe'])) { ?>
+                                                    (<?= htmlspecialchars($row['wallet_pembayaran_tipe'], ENT_QUOTES, 'UTF-8') ?>)
+                                                <?php } ?>
+                                                <?php if (!empty($row['tanggal_lunas'])) { ?>
+                                                    pada <?= htmlspecialchars(format_hutang_due_date($row['tanggal_lunas']), ENT_QUOTES, 'UTF-8') ?>
+                                                <?php } ?>
+                                            </small>
+                                        <?php } ?>
                                     <?php } else { ?>
-                                        <form action="actions/aksi_hutang.php?act=l" method="post" class="d-inline">
-                                            <?= csrf_input() ?>
-                                            <input type="hidden" name="id_hutang" value="<?= (int) $row['id_hutang'] ?>">
-                                            <button type="submit"
-                                                data-confirm="true"
-                                                data-confirm-title="Tandai utang selesai?"
-                                                data-confirm-text="Status utang akan diubah menjadi selesai."
-                                                data-confirm-confirm-text="Ya, selesaikan"
-                                                data-confirm-cancel-text="Batal"
-                                                class="badge badge-sm bg-gradient-warning border-0 text-white">
-                                                Pending
-                                            </button>
-                                        </form>
+                                        <button type="button"
+                                            class="badge badge-sm bg-gradient-warning border-0 text-white btnlunashutang"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalLunasHutang"
+                                            data-id="<?= (int) $row['id_hutang'] ?>"
+                                            data-kreditur="<?= htmlspecialchars($row['kreditur'], ENT_QUOTES, 'UTF-8') ?>"
+                                            data-jumlah="Rp. <?= htmlspecialchars(number_format((float) ($row['jumlah'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"
+                                            <?= !$hasActiveWallet ? 'disabled' : '' ?>>
+                                            Pending
+                                        </button>
+                                        <?php if (!$hasActiveWallet) { ?>
+                                            <small class="d-block text-xs text-danger mt-1">Buat/aktifkan wallet terlebih dahulu.</small>
+                                        <?php } ?>
                                     <?php } ?>
                                 </td>
                                 <td class="align-middle">
@@ -247,6 +278,60 @@ $sql = $stmtHutang->get_result();
     </div>
 </div>
 
+<!-- Modal Pelunasan Utang -->
+<div class="modal fade" id="modalLunasHutang" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+    aria-labelledby="modalLunasHutangLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <form action="actions/aksi_hutang.php?act=l" method="post">
+                <?= csrf_input() ?>
+                <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
+                    <div class="w-100 bg-gradient-info shadow-info border-radius-lg pt-4 pb-3 d-flex justify-content-between">
+                        <h6 class="modal-title text-white text-capitalize ps-3" id="modalLunasHutangLabel">Lunasi Utang</h6>
+                        <button type="button" class="btn-close me-2" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id_hutang" id="lunas_id_hutang">
+                    <p class="text-sm text-secondary mb-3" id="lunas_hutang_info">Pilih wallet pembayaran untuk melunasi utang.</p>
+                    <div class="row my-3">
+                        <label>Wallet Pembayaran</label>
+                        <div class="input-group input-group-outline">
+                            <select name="id_wallet_pembayaran" id="id_wallet_pembayaran" class="form-control" required>
+                                <option value="">Pilih wallet</option>
+                                <?php foreach ($activeWallets as $wallet) { ?>
+                                    <option value="<?= (int) $wallet['id_wallet'] ?>">
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>
+                                        (<?= htmlspecialchars($wallet['tipe_wallet'], ENT_QUOTES, 'UTF-8') ?>)
+                                        <?= (int) ($wallet['is_default'] ?? 0) === 1 ? ' - Default' : '' ?>
+                                    </option>
+                                <?php } ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row my-3">
+                        <label>Tanggal Lunas</label>
+                        <div class="input-group input-group-outline">
+                            <input type="date" name="tanggal_lunas" id="tanggal_lunas_hutang" value="<?= htmlspecialchars($today, ENT_QUOTES, 'UTF-8') ?>" class="form-control" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit"
+                        class="btn btn-info"
+                        data-confirm="true"
+                        data-confirm-title="Lunasi utang?"
+                        data-confirm-text="Sistem akan membuat pengeluaran otomatis dari wallet yang dipilih."
+                        data-confirm-confirm-text="Ya, lunasi"
+                        data-confirm-cancel-text="Batal">Lunasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 $(document).ready(function() {
     $('#datatable').DataTable({
@@ -267,6 +352,12 @@ $(document).ready(function() {
 
     $(document).on("click", 'button[data-bs-target="#modalTambah"]', function() {
         $('#tanggal_jatuh_tempo').val('');
+    });
+
+    $(document).on("click", ".btnlunashutang", function() {
+        $('#lunas_id_hutang').val($(this).attr("data-id"));
+        $('#tanggal_lunas_hutang').val('<?= htmlspecialchars($today, ENT_QUOTES, 'UTF-8') ?>');
+        $('#lunas_hutang_info').text('Lunasi utang ke ' + ($(this).attr("data-kreditur") || '-') + ' sebesar ' + ($(this).attr("data-jumlah") || 'Rp. 0') + '.');
     });
 });
 </script>
