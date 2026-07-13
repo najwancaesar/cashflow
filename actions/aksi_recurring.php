@@ -5,6 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
+include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 function recurring_redirect()
 {
@@ -88,12 +89,13 @@ function fetch_category_for_recurring($con, $kategoriId, $userId, $tipeTransaksi
     return $kategori ?: null;
 }
 
-function fetch_recurring_for_user($con, $recurringId, $userId)
+function fetch_recurring_for_user($con, $recurringId, $userId, $forUpdate = false)
 {
+    $lockClause = $forUpdate ? ' FOR UPDATE' : '';
     $stmt = $con->prepare("SELECT *
                            FROM recurring_transaction
                            WHERE id_recurring = ? AND user_id = ?
-                           LIMIT 1");
+                           LIMIT 1{$lockClause}");
     $stmt->bind_param("ii", $recurringId, $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -118,33 +120,126 @@ function recurring_period_already_generated($con, $recurringId, $userId, $bulan,
     return $log !== null;
 }
 
-function insert_recurring_generated_transaction($con, $row, $userId, $tanggalTransaksi, $bulan, $tahun)
+function recurring_template_has_history($con, $recurringId, $userId)
 {
-    $recurringId = (int) $row['id_recurring'];
-    $tipeTransaksi = (string) $row['tipe_transaksi'];
-    $catatan = clean_recurring_text($row['catatan'] ?? '');
-    $jumlah = (float) $row['jumlah'];
-    $status = (string) $row['status_transaksi_default'];
-    $kategoriId = (int) $row['id_kategori'];
-    $walletId = (int) $row['id_wallet'];
+    $stmt = $con->prepare("SELECT id_log
+                           FROM recurring_generation_log
+                           WHERE id_recurring = ? AND user_id = ?
+                           LIMIT 1");
+    if (!$stmt) {
+        throw new RuntimeException('Gagal memeriksa riwayat recurring.');
+    }
 
-    mysqli_begin_transaction($con);
+    $stmt->bind_param('ii', $recurringId, $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $hasHistory = $result && $result->fetch_assoc();
+    $stmt->close();
+
+    return (bool) $hasHistory;
+}
+
+function recurring_rollback($con)
+{
+    try {
+        $con->rollback();
+    } catch (Throwable $rollbackError) {
+        error_log('Rollback recurring gagal: ' . $rollbackError->getMessage());
+    }
+}
+
+function recurring_generation_result($status, $reason = '')
+{
+    return ['status' => $status, 'reason' => $reason];
+}
+
+function generate_recurring_occurrence($con, $recurringId, $userId, DateTimeImmutable $period)
+{
+    $periodeBulan = (int) $period->format('n');
+    $periodeTahun = (int) $period->format('Y');
+    $startMonth = $period->modify('first day of this month')->format('Y-m-d');
+    $endMonth = $period->modify('last day of this month')->format('Y-m-d');
+    $lastDayOfMonth = (int) $period->format('t');
+
+    $con->begin_transaction();
 
     try {
+        $row = fetch_recurring_for_user($con, $recurringId, $userId, true);
+        if (!$row) {
+            throw new DomainException('Template recurring tidak ditemukan atau bukan milik Anda.');
+        }
+
+        if ((int) ($row['is_active'] ?? 0) !== 1) {
+            $con->commit();
+            return recurring_generation_result('skipped', 'inactive');
+        }
+
+        $mulaiDari = (string) ($row['mulai_dari'] ?? '');
+        $berakhirPada = $row['berakhir_pada'] ?? null;
+        if ($mulaiDari === '' || $mulaiDari > $endMonth || ($berakhirPada !== null && $berakhirPada !== '' && $berakhirPada < $startMonth)) {
+            $con->commit();
+            return recurring_generation_result('skipped', 'outside_period');
+        }
+
+        if (recurring_period_already_generated($con, $recurringId, $userId, $periodeBulan, $periodeTahun)) {
+            $con->commit();
+            return recurring_generation_result('duplicate');
+        }
+
+        $tipeTransaksi = (string) ($row['tipe_transaksi'] ?? '');
+        $status = (string) ($row['status_transaksi_default'] ?? '');
+        $catatan = clean_recurring_text($row['catatan'] ?? '');
+        $jumlah = (float) ($row['jumlah'] ?? 0);
+        $kategoriId = (int) ($row['id_kategori'] ?? 0);
+        $walletId = (int) ($row['id_wallet'] ?? 0);
+
+        if (!is_valid_recurring_type($tipeTransaksi) || !is_valid_recurring_default_status($status) || $jumlah <= 0) {
+            throw new DomainException('Konfigurasi template recurring tidak valid.');
+        }
+
+        if ($kategoriId <= 0 || !fetch_category_for_recurring($con, $kategoriId, $userId, $tipeTransaksi)) {
+            throw new DomainException('Kategori recurring tidak valid atau bukan milik Anda.');
+        }
+
+        try {
+            cashflow_lock_owned_wallets($con, $userId, [$walletId], [$walletId]);
+        } catch (DomainException $walletError) {
+            throw new DomainException('Wallet recurring tidak aktif atau bukan milik Anda.');
+        }
+
+        $day = min(max(1, (int) ($row['tanggal_generate'] ?? 0)), $lastDayOfMonth);
+        $tanggalTransaksi = sprintf('%04d-%02d-%02d', $periodeTahun, $periodeBulan, $day);
+        if ($tanggalTransaksi < $mulaiDari || ($berakhirPada !== null && $berakhirPada !== '' && $tanggalTransaksi > $berakhirPada)) {
+            $con->commit();
+            return recurring_generation_result('skipped', 'occurrence_outside_schedule');
+        }
+
+        if ($tipeTransaksi === 'pengeluaran' && $status === 'selesai') {
+            $saldoTersedia = cashflow_calculate_wallet_balance($con, $userId, $walletId);
+            if ($jumlah > $saldoTersedia + 0.00001) {
+                throw new DomainException('Saldo wallet tidak mencukupi untuk recurring pengeluaran ini.');
+            }
+        }
+
         if ($tipeTransaksi === 'pemasukan') {
             $stmt = $con->prepare("INSERT INTO pemasukan (tanggal, catatan, status, jumlah, user, id_kategori, id_wallet)
                                    VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                throw new RuntimeException('Prepare pemasukan recurring gagal.');
+            }
             $stmt->bind_param("sssdiii", $tanggalTransaksi, $catatan, $status, $jumlah, $userId, $kategoriId, $walletId);
         } else {
             $stmt = $con->prepare("INSERT INTO pengeluaran (tanggal, catatan, jumlah, user, status, id_kategori, id_wallet)
                                    VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                throw new RuntimeException('Prepare pengeluaran recurring gagal.');
+            }
             $stmt->bind_param("ssdisii", $tanggalTransaksi, $catatan, $jumlah, $userId, $status, $kategoriId, $walletId);
         }
 
         if (!$stmt->execute()) {
             $stmt->close();
-            mysqli_rollback($con);
-            return false;
+            throw new RuntimeException('Transaksi recurring gagal dibuat.');
         }
 
         $transaksiId = (int) $con->insert_id;
@@ -153,20 +248,33 @@ function insert_recurring_generated_transaction($con, $row, $userId, $tanggalTra
         $logStmt = $con->prepare("INSERT INTO recurring_generation_log
                                   (id_recurring, user_id, periode_bulan, periode_tahun, tipe_transaksi, id_transaksi, created_at)
                                   VALUES (?, ?, ?, ?, ?, ?, NOW())");
-        $logStmt->bind_param("iiiisi", $recurringId, $userId, $bulan, $tahun, $tipeTransaksi, $transaksiId);
+        if (!$logStmt) {
+            throw new RuntimeException('Prepare riwayat recurring gagal.');
+        }
+        $logStmt->bind_param("iiiisi", $recurringId, $userId, $periodeBulan, $periodeTahun, $tipeTransaksi, $transaksiId);
 
         if (!$logStmt->execute()) {
             $logStmt->close();
-            mysqli_rollback($con);
-            return false;
+            throw new RuntimeException('Riwayat recurring gagal dibuat.');
         }
 
         $logStmt->close();
-        mysqli_commit($con);
-        return true;
+        $con->commit();
+        return recurring_generation_result('generated');
+    } catch (mysqli_sql_exception $exception) {
+        recurring_rollback($con);
+        if ((int) $exception->getCode() === 1062) {
+            return recurring_generation_result('duplicate');
+        }
+        error_log('Generate recurring gagal: ' . $exception->getMessage());
+        return recurring_generation_result('failed', 'database_error');
+    } catch (DomainException $exception) {
+        recurring_rollback($con);
+        return recurring_generation_result('failed', $exception->getMessage());
     } catch (Throwable $exception) {
-        mysqli_rollback($con);
-        return false;
+        recurring_rollback($con);
+        error_log('Generate recurring gagal: ' . $exception->getMessage());
+        return recurring_generation_result('failed', 'processing_error');
     }
 }
 
@@ -279,40 +387,62 @@ if ($act === 't') {
         show_sweetalert_and_redirect('Gagal', 'Template transaksi berulang gagal ditambahkan.', 'error', recurring_redirect());
     }
 
-    if ($recurringId <= 0 || !fetch_recurring_for_user($con, $recurringId, $userId)) {
+    if ($recurringId <= 0) {
         show_sweetalert_and_redirect('Akses ditolak', 'Template transaksi berulang tidak ditemukan.', 'warning', recurring_redirect());
     }
 
-    $stmt = $con->prepare("UPDATE recurring_transaction
-                           SET tipe_transaksi = ?, id_kategori = ?, id_wallet = ?, nama_recurring = ?, catatan = ?, jumlah = ?, frekuensi = ?, tanggal_generate = ?, status_transaksi_default = ?, mulai_dari = ?, berakhir_pada = ?, is_active = ?, updated_at = NOW()
-                           WHERE id_recurring = ? AND user_id = ?");
-    $stmt->bind_param(
-        "siissdsisssiii",
-        $tipeTransaksi,
-        $kategoriId,
-        $walletId,
-        $namaRecurring,
-        $catatan,
-        $jumlah,
-        $frekuensi,
-        $tanggalGenerate,
-        $statusDefault,
-        $mulaiDari,
-        $berakhirPada,
-        $isActive,
-        $recurringId,
-        $userId
-    );
-    $result = $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
+    try {
+        $con->begin_transaction();
+        $existingRecurring = fetch_recurring_for_user($con, $recurringId, $userId, true);
+        if (!$existingRecurring) {
+            throw new DomainException('Template transaksi berulang tidak ditemukan atau bukan milik Anda.');
+        }
 
-    if ($result && $affectedRows >= 0) {
-        record_activity($con, 'recurring', 'edit', "Mengubah template recurring ID {$recurringId}.");
-        show_sweetalert_and_redirect('Berhasil', 'Template transaksi berulang berhasil diperbarui.', 'success', recurring_redirect());
+        if ((string) $existingRecurring['tipe_transaksi'] !== $tipeTransaksi
+            && recurring_template_has_history($con, $recurringId, $userId)) {
+            throw new DomainException('Tipe template yang sudah memiliki riwayat generate tidak dapat diubah. Buat template baru untuk tipe transaksi berbeda.');
+        }
+
+        $stmt = $con->prepare("UPDATE recurring_transaction
+                               SET tipe_transaksi = ?, id_kategori = ?, id_wallet = ?, nama_recurring = ?, catatan = ?, jumlah = ?, frekuensi = ?, tanggal_generate = ?, status_transaksi_default = ?, mulai_dari = ?, berakhir_pada = ?, is_active = ?, updated_at = NOW()
+                               WHERE id_recurring = ? AND user_id = ?");
+        if (!$stmt) {
+            throw new RuntimeException('Prepare edit recurring gagal.');
+        }
+        $stmt->bind_param(
+            "siissdsisssiii",
+            $tipeTransaksi,
+            $kategoriId,
+            $walletId,
+            $namaRecurring,
+            $catatan,
+            $jumlah,
+            $frekuensi,
+            $tanggalGenerate,
+            $statusDefault,
+            $mulaiDari,
+            $berakhirPada,
+            $isActive,
+            $recurringId,
+            $userId
+        );
+        if (!$stmt->execute()) {
+            $stmt->close();
+            throw new RuntimeException('Edit recurring gagal.');
+        }
+        $stmt->close();
+        $con->commit();
+    } catch (DomainException $exception) {
+        recurring_rollback($con);
+        show_sweetalert_and_redirect('Tidak dapat mengubah template', $exception->getMessage(), 'warning', recurring_redirect());
+    } catch (Throwable $exception) {
+        recurring_rollback($con);
+        error_log('Edit recurring gagal: ' . $exception->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Template transaksi berulang gagal diperbarui.', 'error', recurring_redirect());
     }
 
-    show_sweetalert_and_redirect('Gagal', 'Template transaksi berulang gagal diperbarui.', 'error', recurring_redirect());
+    record_activity($con, 'recurring', 'edit', "Mengubah template recurring ID {$recurringId}.");
+    show_sweetalert_and_redirect('Berhasil', 'Template transaksi berulang berhasil diperbarui.', 'success', recurring_redirect());
 }
 
 if ($act === 's') {
@@ -349,6 +479,49 @@ if ($act === 's') {
     show_sweetalert_and_redirect('Gagal', 'Status template transaksi berulang gagal diperbarui.', 'error', recurring_redirect());
 }
 
+if ($act === 'h') {
+    require_recurring_post_csrf();
+
+    $recurringId = (int) ($_POST['id_recurring'] ?? 0);
+    if ($recurringId <= 0) {
+        show_sweetalert_and_redirect('Data tidak valid', 'ID template recurring tidak valid.', 'error', recurring_redirect());
+    }
+
+    try {
+        $con->begin_transaction();
+        $template = fetch_recurring_for_user($con, $recurringId, $userId, true);
+        if (!$template) {
+            throw new DomainException('Template recurring tidak ditemukan atau bukan milik Anda.');
+        }
+
+        if (recurring_template_has_history($con, $recurringId, $userId)) {
+            throw new DomainException('Template yang sudah memiliki riwayat generate tidak dapat dihapus. Nonaktifkan template agar riwayat transaksi tetap utuh.');
+        }
+
+        $stmt = $con->prepare('DELETE FROM recurring_transaction WHERE id_recurring = ? AND user_id = ?');
+        if (!$stmt) {
+            throw new RuntimeException('Prepare hapus recurring gagal.');
+        }
+        $stmt->bind_param('ii', $recurringId, $userId);
+        if (!$stmt->execute() || $stmt->affected_rows !== 1) {
+            $stmt->close();
+            throw new RuntimeException('Hapus recurring gagal.');
+        }
+        $stmt->close();
+        $con->commit();
+    } catch (DomainException $exception) {
+        recurring_rollback($con);
+        show_sweetalert_and_redirect('Tidak dapat menghapus template', $exception->getMessage(), 'warning', recurring_redirect());
+    } catch (Throwable $exception) {
+        recurring_rollback($con);
+        error_log('Hapus recurring gagal: ' . $exception->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Template recurring gagal dihapus.', 'error', recurring_redirect());
+    }
+
+    record_activity($con, 'recurring', 'hapus', "Menghapus template recurring ID {$recurringId} yang belum memiliki riwayat generate.");
+    show_sweetalert_and_redirect('Berhasil', 'Template recurring berhasil dihapus.', 'success', recurring_redirect());
+}
+
 if ($act === 'g') {
     require_recurring_post_csrf();
 
@@ -357,24 +530,14 @@ if ($act === 'g') {
     $periodeTahun = (int) $today->format('Y');
     $startMonth = $today->modify('first day of this month')->format('Y-m-d');
     $endMonth = $today->modify('last day of this month')->format('Y-m-d');
-    $lastDayOfMonth = (int) $today->format('t');
 
-    $query = "SELECT
-                recurring_transaction.*
+    $query = "SELECT id_recurring
               FROM recurring_transaction
-              INNER JOIN wallet
-                ON wallet.id_wallet = recurring_transaction.id_wallet
-               AND wallet.user_id = recurring_transaction.user_id
-               AND wallet.is_active = 1
-              INNER JOIN kategori
-                ON kategori.id_kategori = recurring_transaction.id_kategori
-               AND kategori.user_id = recurring_transaction.user_id
-               AND kategori.tipe_kategori = recurring_transaction.tipe_transaksi
-              WHERE recurring_transaction.user_id = ?
-                AND recurring_transaction.is_active = 1
-                AND recurring_transaction.mulai_dari <= ?
-                AND (recurring_transaction.berakhir_pada IS NULL OR recurring_transaction.berakhir_pada >= ?)
-              ORDER BY recurring_transaction.id_recurring ASC";
+              WHERE user_id = ?
+                AND is_active = 1
+                AND mulai_dari <= ?
+                AND (berakhir_pada IS NULL OR berakhir_pada >= ?)
+              ORDER BY id_recurring ASC";
     $stmt = $con->prepare($query);
     $stmt->bind_param("iss", $userId, $endMonth, $startMonth);
     $stmt->execute();
@@ -382,23 +545,25 @@ if ($act === 'g') {
 
     $generated = 0;
     $skippedDuplicate = 0;
+    $skippedSchedule = 0;
     $failed = 0;
+    $insufficientBalance = 0;
 
     while ($row = $result->fetch_assoc()) {
         $recurringId = (int) $row['id_recurring'];
+        $generationResult = generate_recurring_occurrence($con, $recurringId, $userId, $today);
 
-        if (recurring_period_already_generated($con, $recurringId, $userId, $periodeBulan, $periodeTahun)) {
-            $skippedDuplicate++;
-            continue;
-        }
-
-        $day = min(max(1, (int) $row['tanggal_generate']), $lastDayOfMonth);
-        $tanggalTransaksi = sprintf('%04d-%02d-%02d', $periodeTahun, $periodeBulan, $day);
-
-        if (insert_recurring_generated_transaction($con, $row, $userId, $tanggalTransaksi, $periodeBulan, $periodeTahun)) {
+        if ($generationResult['status'] === 'generated') {
             $generated++;
+        } elseif ($generationResult['status'] === 'duplicate') {
+            $skippedDuplicate++;
+        } elseif ($generationResult['status'] === 'skipped') {
+            $skippedSchedule++;
         } else {
             $failed++;
+            if ($generationResult['reason'] === 'Saldo wallet tidak mencukupi untuk recurring pengeluaran ini.') {
+                $insufficientBalance++;
+            }
         }
     }
 
@@ -423,7 +588,12 @@ if ($act === 'g') {
     }
 
     if ($failed > 0) {
-        show_sweetalert_and_redirect('Generate gagal', "{$failed} template gagal diproses. Silakan cek kembali kategori, wallet, dan periode template.", 'error', recurring_redirect());
+        $message = "{$failed} template gagal diproses.";
+        if ($insufficientBalance > 0) {
+            $message .= " {$insufficientBalance} recurring pengeluaran gagal karena saldo wallet tidak mencukupi.";
+        }
+        $message .= ' Silakan cek kembali kategori, wallet, saldo, dan konfigurasi template.';
+        show_sweetalert_and_redirect('Generate gagal', $message, 'error', recurring_redirect());
     }
 
     show_sweetalert_and_redirect('Tidak ada transaksi dibuat', 'Belum ada template aktif yang memenuhi periode bulan ini.', 'info', recurring_redirect());

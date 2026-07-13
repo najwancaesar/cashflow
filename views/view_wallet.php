@@ -1,6 +1,7 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -45,21 +46,7 @@ function wallet_type_badge_class($type)
     return $classes[$type] ?? 'bg-gradient-secondary';
 }
 
-$walletQuery = "SELECT id_wallet, nama_wallet, tipe_wallet, saldo_awal, is_default, is_active, created_at, updated_at
-                FROM wallet
-                WHERE user_id = ?
-                ORDER BY is_default DESC, is_active DESC, nama_wallet ASC";
-$walletStmt = mysqli_prepare($con, $walletQuery);
-mysqli_stmt_bind_param($walletStmt, "i", $userYangSedangLogin);
-mysqli_stmt_execute($walletStmt);
-$walletResult = mysqli_stmt_get_result($walletStmt);
-$walletRows = [];
-
-while ($row = mysqli_fetch_assoc($walletResult)) {
-    $walletRows[] = $row;
-}
-
-mysqli_stmt_close($walletStmt);
+$walletRows = cashflow_get_user_wallet_balances($con, $userYangSedangLogin);
 ?>
 
 <div class="container-fluid py-4">
@@ -74,10 +61,7 @@ mysqli_stmt_close($walletStmt);
                 <div class="card-body px-0 pb-2">
                     <div class="px-4 pt-2">
                         <p class="text-sm text-secondary mb-0">
-                            Kelola wallet pribadi untuk persiapan pencatatan transaksi multi-dompet.
-                        </p>
-                        <p class="text-sm text-secondary mb-0">
-                            Phase 1 hanya mengelola data wallet, belum terhubung ke pemasukan dan pengeluaran.
+                            Saldo wallet dihitung dari saldo awal dan aktivitas keuangan selesai pada setiap wallet.
                         </p>
                     </div>
                     <div class="text-end me-3 mt-3">
@@ -99,7 +83,7 @@ mysqli_stmt_close($walletStmt);
                                     <tr>
                                         <th>Nama Wallet</th>
                                         <th>Tipe</th>
-                                        <th>Saldo Awal</th>
+                                        <th>Saldo Saat Ini</th>
                                         <th>Default</th>
                                         <th>Status</th>
                                         <th>Diperbarui</th>
@@ -126,7 +110,7 @@ mysqli_stmt_close($walletStmt);
                                                 </span>
                                             </td>
                                             <td>
-                                                <p class="text-xs font-weight-bold mb-0"><?= format_wallet_rupiah($row['saldo_awal']) ?></p>
+                                                <p class="text-xs font-weight-bold mb-0"><?= format_wallet_rupiah($row['saldo_terkini']) ?></p>
                                             </td>
                                             <td>
                                                 <span class="badge badge-sm <?= $isDefault ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">

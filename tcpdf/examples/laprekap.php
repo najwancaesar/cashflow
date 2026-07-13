@@ -1,13 +1,35 @@
 <?php
+ob_start();
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 session_start();
-include "../../includes/koneksi.php";
+include __DIR__ . "/../../includes/koneksi.php";
+include_once __DIR__ . "/../../includes/csrf_helper.php";
+
+function report_abort($statusCode, $message)
+{
+    http_response_code($statusCode);
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo $message;
+    exit;
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    header('Allow: POST');
+    report_abort(405, 'Method request tidak diizinkan.');
+}
 
 if (!isset($_SESSION['id_user'])) {
-    die("Silakan login terlebih dahulu");
+    report_abort(401, 'Silakan login terlebih dahulu.');
 }
 
 if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
-    die("Admin tidak dapat mencetak laporan transaksi user.");
+    report_abort(403, 'Admin tidak dapat mencetak laporan transaksi user.');
+}
+
+if (!verify_csrf_token($_POST['csrf_token'] ?? null)) {
+    report_abort(403, 'Token keamanan tidak valid atau sudah kedaluwarsa.');
 }
 
 function normalize_report_date($value)
@@ -80,13 +102,13 @@ $dateRange = parse_report_date_range(
 );
 
 if ($dateRange === null) {
-    die("Format tanggal tidak valid");
+    report_abort(422, 'Format tanggal tidak valid.');
 }
 
 [$tgl_awal, $tgl_akhir] = $dateRange;
 
 if ($tgl_awal > $tgl_akhir) {
-    die("Tanggal awal tidak boleh lebih besar dari tanggal akhir");
+    report_abort(422, 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.');
 }
 
 $tabel = $_POST['tabel'] ?? 'pemasukan';
@@ -104,11 +126,11 @@ $reportLabels = [
 ];
 
 if (!in_array($tabel, $allowed_tables, true)) {
-    die("Tabel tidak valid");
+    report_abort(422, 'Jenis laporan tidak valid.');
 }
 
 if (!in_array($output, $allowedOutputs, true)) {
-    $output = 'print';
+    report_abort(422, 'Format output tidak valid.');
 }
 
 $supportsKategori = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
@@ -142,7 +164,7 @@ if ($supportsKategori && $idKategori !== null) {
     mysqli_stmt_close($kategoriStmt);
 
     if (!$kategoriRow) {
-        die("Kategori tidak valid");
+        report_abort(403, 'Kategori tidak valid atau bukan milik Anda.');
     }
 
     $selectedKategoriLabel = $kategoriRow['nama_kategori'];
@@ -161,7 +183,7 @@ if ($supportsWallet && $idWallet !== null) {
     mysqli_stmt_close($walletStmt);
 
     if (!$walletRow) {
-        die("Wallet tidak valid");
+        report_abort(403, 'Wallet tidak valid atau bukan milik Anda.');
     }
 
     $selectedWalletLabel = $walletRow['nama_wallet'];
@@ -203,7 +225,7 @@ if ($supportsKategori) {
     $mainTypes = "siss";
     $mainParams = [$tabel, $id_user, $tgl_awal, $tgl_akhir];
 
-    if ($tabel === 'pemasukan') {
+    if (in_array($tabel, ['pemasukan', 'pengeluaran'], true)) {
         $mainQuery .= " AND laporan.status = 'selesai'";
     }
 
@@ -246,7 +268,7 @@ if ($supportsKategori) {
                     WHERE laporan.user = ?
                       AND laporan.tanggal BETWEEN ? AND ?";
 
-    if ($tabel === 'pemasukan') {
+    if (in_array($tabel, ['pemasukan', 'pengeluaran'], true)) {
         $summaryQuery .= " AND laporan.status = 'selesai'";
     }
 
@@ -467,9 +489,11 @@ if ($supportsKategori) {
             'sort_order' => 1,
             'id_ref' => (int) ($row['id_ref'] ?? 0),
         ];
-        $combinedSummary['pemasukan']['total'] += $amount;
-        $combinedSummary['pemasukan']['count']++;
-        $total += $amount;
+        if (strtolower((string) ($row['status'] ?? '')) === 'selesai') {
+            $combinedSummary['pemasukan']['total'] += $amount;
+            $combinedSummary['pemasukan']['count']++;
+            $total += $amount;
+        }
     }
 
     mysqli_stmt_close($incomeStmt);
@@ -518,9 +542,11 @@ if ($supportsKategori) {
             'sort_order' => 2,
             'id_ref' => (int) ($row['id_ref'] ?? 0),
         ];
-        $combinedSummary['pengeluaran']['total'] += $amount;
-        $combinedSummary['pengeluaran']['count']++;
-        $total += $amount;
+        if (strtolower((string) ($row['status'] ?? '')) === 'selesai') {
+            $combinedSummary['pengeluaran']['total'] += $amount;
+            $combinedSummary['pengeluaran']['count']++;
+            $total += $amount;
+        }
     }
 
     mysqli_stmt_close($expenseStmt);
@@ -571,9 +597,11 @@ if ($supportsKategori) {
             'sort_order' => 3,
             'id_ref' => (int) ($row['id_ref'] ?? 0),
         ];
-        $combinedSummary['transfer']['total'] += $amount;
-        $combinedSummary['transfer']['count']++;
-        $total += $amount;
+        if (strtolower((string) ($row['status'] ?? '')) === 'selesai') {
+            $combinedSummary['transfer']['total'] += $amount;
+            $combinedSummary['transfer']['count']++;
+            $total += $amount;
+        }
     }
 
     mysqli_stmt_close($transferStmt);
@@ -686,6 +714,10 @@ $reportLogoWebPath = '../../assets/img/logocv.jpg';
 if ($output === 'csv') {
     $filename = build_report_filename($tabel, $tgl_awal, $tgl_akhir, 'csv');
 
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
     header('Pragma: no-cache');
@@ -753,7 +785,7 @@ if ($output === 'csv') {
         }
         $headers[] = 'Jumlah';
         $headers[] = 'Catatan';
-        if ($tabel === 'pemasukan') {
+        if (in_array($tabel, ['pemasukan', 'pengeluaran'], true)) {
             $headers[] = 'Status';
         }
 
@@ -775,7 +807,7 @@ if ($output === 'csv') {
             $line[] = (string) ((float) ($row['jumlah'] ?? 0));
             $line[] = trim((string) ($row['catatan'] ?? '-'));
 
-            if ($tabel === 'pemasukan') {
+            if (in_array($tabel, ['pemasukan', 'pengeluaran'], true)) {
                 $line[] = $row['status'] ?? '-';
             }
 
@@ -840,6 +872,8 @@ if ($output === 'csv') {
 }
 
 if ($output === 'pdf') {
+    // TCPDF 6.2.26 emits PHP 8.3 deprecation notices while loading legacy signatures.
+    error_reporting(error_reporting() & ~E_DEPRECATED & ~E_USER_DEPRECATED);
     require_once(__DIR__ . '/tcpdf_include.php');
 
     if (!class_exists('CashFlowReportPdf')) {
@@ -862,7 +896,243 @@ if ($output === 'pdf') {
         }
     }
 
-    $pdf = new CashFlowReportPdf('P', PDF_UNIT, 'A4', true, 'UTF-8', false);
+    if (!function_exists('render_combined_report_table')) {
+        function render_combined_report_table($pdf, array $rows)
+        {
+            $margins = $pdf->getMargins();
+            $left = (float) $margins['left'];
+            $usableWidth = $pdf->getPageWidth() - $left - (float) $margins['right'];
+            $columns = [
+                ['key' => 'no', 'label' => 'No', 'width' => $usableWidth * 0.04, 'align' => 'C'],
+                ['key' => 'tanggal', 'label' => 'Tanggal', 'width' => $usableWidth * 0.10, 'align' => 'C'],
+                ['key' => 'jenis', 'label' => 'Jenis', 'width' => $usableWidth * 0.12, 'align' => 'L'],
+                ['key' => 'wallet', 'label' => 'Wallet/Sumber', 'width' => $usableWidth * 0.14, 'align' => 'L'],
+                ['key' => 'detail', 'label' => 'Detail', 'width' => $usableWidth * 0.18, 'align' => 'L'],
+                ['key' => 'nominal', 'label' => 'Nominal', 'width' => $usableWidth * 0.12, 'align' => 'R'],
+                ['key' => 'status', 'label' => 'Status', 'width' => $usableWidth * 0.08, 'align' => 'C'],
+                ['key' => 'catatan', 'label' => 'Catatan', 'width' => $usableWidth * 0.22, 'align' => 'L'],
+            ];
+            $headerHeight = 8.0;
+            $minimumRowHeight = 7.2;
+            $pageLimit = $pdf->getPageHeight() - $pdf->getBreakMargin();
+
+            $renderHeader = function () use ($pdf, $columns, $left, $headerHeight) {
+                $y = $pdf->GetY();
+                $x = $left;
+                $pdf->SetFont('helvetica', 'B', 7.5);
+                $pdf->SetTextColor(15, 23, 42);
+                $pdf->SetDrawColor(209, 213, 219);
+                $pdf->SetFillColor(238, 242, 247);
+                $pdf->setCellPaddings(1.2, 1.0, 1.2, 1.0);
+
+                foreach ($columns as $column) {
+                    $pdf->MultiCell(
+                        $column['width'],
+                        $headerHeight,
+                        $column['label'],
+                        1,
+                        $column['align'],
+                        true,
+                        0,
+                        $x,
+                        $y,
+                        true,
+                        0,
+                        false,
+                        true,
+                        $headerHeight,
+                        'M'
+                    );
+                    $x += $column['width'];
+                }
+
+                $pdf->SetXY($left, $y + $headerHeight);
+            };
+
+            if ($pdf->GetY() + $headerHeight + $minimumRowHeight > $pageLimit) {
+                $pdf->AddPage();
+            }
+            $renderHeader();
+
+            foreach ($rows as $index => $row) {
+                $values = [
+                    'no' => (string) ($index + 1),
+                    'tanggal' => date('d M Y', strtotime((string) ($row['tanggal'] ?? ''))),
+                    'jenis' => (string) ($row['jenis_aktivitas'] ?? '-'),
+                    'wallet' => (string) ($row['wallet_sumber'] ?? '-'),
+                    'detail' => (string) ($row['detail'] ?? '-'),
+                    'nominal' => 'Rp ' . number_format((float) ($row['nominal'] ?? 0), 0, ',', '.'),
+                    'status' => (string) ($row['status'] ?? '-'),
+                    'catatan' => html_entity_decode(
+                        (string) ($row['catatan'] ?? '-'),
+                        ENT_QUOTES | ENT_HTML5,
+                        'UTF-8'
+                    ),
+                ];
+
+                $pdf->SetFont('helvetica', '', 7.5);
+                $pdf->SetTextColor(15, 23, 42);
+                $pdf->SetDrawColor(209, 213, 219);
+                $pdf->setCellPaddings(1.2, 1.0, 1.2, 1.0);
+                $rowHeight = $minimumRowHeight;
+
+                foreach ($columns as $column) {
+                    $cellHeight = $pdf->getStringHeight(
+                        $column['width'],
+                        $values[$column['key']],
+                        false,
+                        true,
+                        '',
+                        1
+                    );
+                    $rowHeight = max($rowHeight, $cellHeight);
+                }
+
+                if ($pdf->GetY() + $rowHeight > $pageLimit) {
+                    $pdf->AddPage();
+                    $renderHeader();
+                }
+
+                $y = $pdf->GetY();
+                $x = $left;
+                foreach ($columns as $column) {
+                    $pdf->MultiCell(
+                        $column['width'],
+                        $rowHeight,
+                        $values[$column['key']],
+                        1,
+                        $column['align'],
+                        false,
+                        0,
+                        $x,
+                        $y,
+                        true,
+                        0,
+                        false,
+                        true,
+                        $rowHeight,
+                        'T'
+                    );
+                    $x += $column['width'];
+                }
+
+                $pdf->SetXY($left, $y + $rowHeight);
+            }
+
+            $pdf->SetTextColor(15, 23, 42);
+            $pdf->SetDrawColor(209, 213, 219);
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->setCellPaddings(1, 1, 1, 1);
+        }
+
+        function render_combined_report_summary($pdf, array $rows)
+        {
+            $margins = $pdf->getMargins();
+            $left = (float) $margins['left'];
+            $usableWidth = $pdf->getPageWidth() - $left - (float) $margins['right'];
+            $columns = [
+                ['key' => 'label', 'label' => 'Aktivitas', 'width' => $usableWidth * 0.50, 'align' => 'L'],
+                ['key' => 'count', 'label' => 'Jumlah Transaksi', 'width' => $usableWidth * 0.20, 'align' => 'C'],
+                ['key' => 'total', 'label' => 'Total', 'width' => $usableWidth * 0.30, 'align' => 'R'],
+            ];
+            $headerHeight = 8.0;
+            $rowHeight = 7.2;
+            $titleHeight = 7.0;
+            $pageLimit = $pdf->getPageHeight() - $pdf->getBreakMargin();
+            $requiredHeight = $titleHeight + $headerHeight + ($rowHeight * count($rows)) + 3;
+
+            if ($pdf->GetY() + $requiredHeight > $pageLimit) {
+                $pdf->AddPage();
+            } else {
+                $pdf->SetY($pdf->GetY() + 3);
+            }
+
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->SetTextColor(15, 23, 42);
+            $pdf->Cell(0, $titleHeight, 'Ringkasan Laporan Gabungan', 0, 1, 'L');
+
+            $renderHeader = function () use ($pdf, $columns, $left, $headerHeight) {
+                $y = $pdf->GetY();
+                $x = $left;
+                $pdf->SetFont('helvetica', 'B', 7.5);
+                $pdf->SetDrawColor(209, 213, 219);
+                $pdf->SetFillColor(238, 242, 247);
+                $pdf->setCellPaddings(1.2, 1.0, 1.2, 1.0);
+
+                foreach ($columns as $column) {
+                    $pdf->MultiCell(
+                        $column['width'],
+                        $headerHeight,
+                        $column['label'],
+                        1,
+                        $column['align'],
+                        true,
+                        0,
+                        $x,
+                        $y,
+                        true,
+                        0,
+                        false,
+                        true,
+                        $headerHeight,
+                        'M'
+                    );
+                    $x += $column['width'];
+                }
+
+                $pdf->SetXY($left, $y + $headerHeight);
+            };
+
+            $renderHeader();
+            foreach ($rows as $row) {
+                if ($pdf->GetY() + $rowHeight > $pageLimit) {
+                    $pdf->AddPage();
+                    $renderHeader();
+                }
+
+                $values = [
+                    'label' => (string) ($row['nama_rekap'] ?? '-'),
+                    'count' => number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.'),
+                    'total' => 'Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.'),
+                ];
+                $y = $pdf->GetY();
+                $x = $left;
+                $pdf->SetFont('helvetica', '', 7.5);
+                $pdf->SetDrawColor(209, 213, 219);
+                $pdf->setCellPaddings(1.2, 1.0, 1.2, 1.0);
+
+                foreach ($columns as $column) {
+                    $pdf->MultiCell(
+                        $column['width'],
+                        $rowHeight,
+                        $values[$column['key']],
+                        1,
+                        $column['align'],
+                        false,
+                        0,
+                        $x,
+                        $y,
+                        true,
+                        0,
+                        false,
+                        true,
+                        $rowHeight,
+                        'T'
+                    );
+                    $x += $column['width'];
+                }
+
+                $pdf->SetXY($left, $y + $rowHeight);
+            }
+
+            $pdf->SetFont('helvetica', '', 8);
+            $pdf->setCellPaddings(1, 1, 1, 1);
+        }
+    }
+
+    $pdfIsDetailedTransaction = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
+    $pdfOrientation = ($pdfIsDetailedTransaction || $isCombinedReport) ? 'L' : 'P';
+    $pdf = new CashFlowReportPdf($pdfOrientation, PDF_UNIT, 'A4', true, 'UTF-8', false);
     $pdf->SetCreator('CashFlow Control');
     $pdf->SetAuthor('CashFlow Control');
     $pdf->SetTitle('Laporan ' . $jenisLaporan);
@@ -954,6 +1224,7 @@ if ($output === 'pdf') {
         .summary-table td { border: 0.45px solid #dbeafe; background-color: #f8fbff; padding: 5px 5px; font-size: 7.8px; line-height: 1.25; }
         .summary-label { color: #64748b; font-weight: bold; }
         .report-table th, .report-table td { font-size: 7.1px; padding: 2.5px 3px; line-height: 1.22; }
+        .transaction-detail-table th, .transaction-detail-table td { font-size: 8pt; padding: 3px; line-height: 1.25; vertical-align: top; }
         .muted { color: #64748b; font-size: 8px; }
         .right { text-align: right; }
         .center { text-align: center; }
@@ -985,31 +1256,7 @@ if ($output === 'pdf') {
         $pdfHtml .= '<p>Tidak ada data laporan untuk filter yang dipilih.</p>';
     } else {
         if ($isCombinedReport) {
-            $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
-                <th width="5%" class="center">No</th>
-                <th width="11%">Tanggal</th>
-                <th width="14%">Jenis</th>
-                <th width="15%">Wallet/Sumber</th>
-                <th width="18%">Detail</th>
-                <th width="14%">Nominal</th>
-                <th width="9%">Status</th>
-                <th width="14%">Catatan</th>
-            </tr></thead><tbody>';
-
-            foreach ($reportRows as $index => $row) {
-                $pdfHtml .= '<tr>
-                    <td class="center">' . ($index + 1) . '</td>
-                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
-                    <td>' . report_escape($row['jenis_aktivitas'] ?? '-') . '</td>
-                    <td>' . report_escape($row['wallet_sumber'] ?? '-') . '</td>
-                    <td>' . report_escape($row['detail'] ?? '-') . '</td>
-                    <td class="right">Rp ' . number_format((float) ($row['nominal'] ?? 0), 0, ',', '.') . '</td>
-                    <td>' . report_escape($row['status'] ?? '-') . '</td>
-                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
-                </tr>';
-            }
-
-            $pdfHtml .= '</tbody></table>';
+            // Rendered with MultiCell below so every row is measured before a page break.
         } elseif ($isTransferReport) {
             $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
                 <th width="5%" class="center">No</th>
@@ -1022,21 +1269,25 @@ if ($output === 'pdf') {
             </tr></thead><tbody>';
 
             foreach ($reportRows as $index => $row) {
-                $pdfHtml .= '<tr>
-                    <td class="center">' . ($index + 1) . '</td>
-                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
-                    <td>' . report_escape($row['nama_wallet_asal'] ?? 'Wallet tidak ditemukan') . '</td>
-                    <td>' . report_escape($row['nama_wallet_tujuan'] ?? 'Wallet tidak ditemukan') . '</td>
-                    <td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
-                    <td>' . report_escape($row['status'] ?? '-') . '</td>
-                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
+                $pdfHtml .= '<tr nobr="true">
+                    <td width="5%" style="text-align:center; vertical-align:top;">' . ($index + 1) . '</td>
+                    <td width="12%" style="text-align:center; vertical-align:top;">' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
+                    <td width="17%" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_wallet_asal'] ?? 'Wallet tidak ditemukan') . '</td>
+                    <td width="17%" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_wallet_tujuan'] ?? 'Wallet tidak ditemukan') . '</td>
+                    <td width="15%" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    <td width="10%" style="text-align:center; vertical-align:top;">' . report_escape($row['status'] ?? '-') . '</td>
+                    <td width="24%" style="text-align:left; vertical-align:top;">' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
                 </tr>';
             }
 
-            $pdfHtml .= '<tr class="total-row">
-                <td colspan="4">Total</td>
-                <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
-                <td colspan="2"></td>
+            $pdfHtml .= '<tr class="total-row" nobr="true">
+                <td width="5%"></td>
+                <td width="12%"></td>
+                <td width="17%"></td>
+                <td width="17%" style="text-align:right;">Total</td>
+                <td width="15%" style="text-align:right;">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+                <td width="10%"></td>
+                <td width="24%"></td>
             </tr></tbody></table>';
         } elseif ($isSavingGoalReport) {
             $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
@@ -1050,117 +1301,135 @@ if ($output === 'pdf') {
             </tr></thead><tbody>';
 
             foreach ($reportRows as $index => $row) {
-                $pdfHtml .= '<tr>
-                    <td class="center">' . ($index + 1) . '</td>
-                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
-                    <td>' . report_escape($row['nama_goal'] ?? '-') . '</td>
-                    <td>' . report_escape($row['tipe'] ?? '-') . '</td>
-                    <td>' . report_escape($row['nama_wallet'] ?? '-') . '</td>
-                    <td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
-                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
+                $pdfHtml .= '<tr nobr="true">
+                    <td width="5%" style="text-align:center; vertical-align:top;">' . ($index + 1) . '</td>
+                    <td width="12%" style="text-align:center; vertical-align:top;">' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>
+                    <td width="20%" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_goal'] ?? '-') . '</td>
+                    <td width="10%" style="text-align:center; vertical-align:top;">' . report_escape($row['tipe'] ?? '-') . '</td>
+                    <td width="16%" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_wallet'] ?? '-') . '</td>
+                    <td width="15%" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    <td width="22%" style="text-align:left; vertical-align:top;">' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>
                 </tr>';
             }
 
-            $pdfHtml .= '<tr class="total-row">
-                <td colspan="5">Total</td>
-                <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
-                <td></td>
+            $pdfHtml .= '<tr class="total-row" nobr="true">
+                <td width="5%"></td>
+                <td width="12%"></td>
+                <td width="20%"></td>
+                <td width="10%"></td>
+                <td width="16%" style="text-align:right;">Total</td>
+                <td width="15%" style="text-align:right;">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+                <td width="22%"></td>
             </tr></tbody></table>';
         } else {
-            $pdfShowStatus = in_array($tabel, ['pemasukan', 'pengeluaran'], true);
+            $pdfShowStatus = $pdfIsDetailedTransaction;
 
             if ($supportsWallet && $supportsKategori) {
-                $pdfWidths = ['no' => '5%', 'tanggal' => '12%', 'kategori' => '15%', 'wallet' => '15%', 'jumlah' => '16%', 'catatan' => '27%', 'status' => '10%'];
+                $pdfWidths = ['no' => '5%', 'tanggal' => '12%', 'kategori' => '18%', 'wallet' => '15%', 'jumlah' => '13%', 'catatan' => '29%', 'status' => '8%'];
             } elseif ($supportsKategori) {
                 $pdfWidths = ['no' => '5%', 'tanggal' => '13%', 'kategori' => '18%', 'wallet' => '0%', 'jumlah' => '17%', 'catatan' => '35%', 'status' => '12%'];
             } else {
                 $pdfWidths = ['no' => '5%', 'tanggal' => '15%', 'kategori' => '0%', 'wallet' => '0%', 'jumlah' => '20%', 'catatan' => '60%', 'status' => '0%'];
             }
 
-            $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
-                <th width="' . $pdfWidths['no'] . '" class="center">No</th>
-                <th width="' . $pdfWidths['tanggal'] . '">Tanggal</th>';
+            $pdfTableClass = $pdfIsDetailedTransaction
+                ? 'report-table transaction-detail-table'
+                : 'report-table';
+            $pdfHtml .= '<table class="' . $pdfTableClass . '" cellpadding="3"><thead><tr>
+                <th width="' . $pdfWidths['no'] . '" style="text-align:center;">No</th>
+                <th width="' . $pdfWidths['tanggal'] . '" style="text-align:center;">Tanggal</th>';
 
             if ($supportsKategori) {
-                $pdfHtml .= '<th width="' . $pdfWidths['kategori'] . '">Kategori</th>';
+                $pdfHtml .= '<th width="' . $pdfWidths['kategori'] . '" style="text-align:left;">Kategori</th>';
             }
 
             if ($supportsWallet) {
-                $pdfHtml .= '<th width="' . $pdfWidths['wallet'] . '">Wallet</th>';
+                $pdfHtml .= '<th width="' . $pdfWidths['wallet'] . '" style="text-align:left;">Wallet</th>';
             }
 
-            $pdfHtml .= '<th width="' . $pdfWidths['jumlah'] . '">Jumlah</th>
-                <th width="' . $pdfWidths['catatan'] . '">Catatan</th>';
+            $pdfHtml .= '<th width="' . $pdfWidths['jumlah'] . '" style="text-align:right;">Jumlah</th>
+                <th width="' . $pdfWidths['catatan'] . '" style="text-align:left;">Catatan</th>';
 
             if ($pdfShowStatus) {
-                $pdfHtml .= '<th width="' . $pdfWidths['status'] . '">Status</th>';
+                $pdfHtml .= '<th width="' . $pdfWidths['status'] . '" style="text-align:center;">Status</th>';
             }
 
             $pdfHtml .= '</tr></thead><tbody>';
 
             foreach ($reportRows as $index => $row) {
-                $pdfHtml .= '<tr>
-                    <td class="center">' . ($index + 1) . '</td>
-                    <td>' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>';
+                $pdfHtml .= '<tr nobr="true">
+                    <td width="' . $pdfWidths['no'] . '" style="text-align:center; vertical-align:top;">' . ($index + 1) . '</td>
+                    <td width="' . $pdfWidths['tanggal'] . '" style="text-align:center; vertical-align:top;">' . report_escape(date('d M Y', strtotime($row['tanggal']))) . '</td>';
 
                 if ($supportsKategori) {
-                    $pdfHtml .= '<td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>';
+                    $pdfHtml .= '<td width="' . $pdfWidths['kategori'] . '" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>';
                 }
 
                 if ($supportsWallet) {
-                    $pdfHtml .= '<td>' . report_escape($row['nama_wallet'] ?? 'Tanpa wallet') . '</td>';
+                    $pdfHtml .= '<td width="' . $pdfWidths['wallet'] . '" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_wallet'] ?? 'Tanpa wallet') . '</td>';
                 }
 
-                $pdfHtml .= '<td class="right">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
-                    <td>' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>';
+                $pdfHtml .= '<td width="' . $pdfWidths['jumlah'] . '" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    <td width="' . $pdfWidths['catatan'] . '" style="text-align:left; vertical-align:top;">' . nl2br(report_escape($row['catatan'] ?? '-')) . '</td>';
 
                 if ($pdfShowStatus) {
-                    $pdfHtml .= '<td>' . report_escape($row['status'] ?? '-') . '</td>';
+                    $pdfHtml .= '<td width="' . $pdfWidths['status'] . '" style="text-align:center; vertical-align:top;">' . report_escape($row['status'] ?? '-') . '</td>';
                 }
 
                 $pdfHtml .= '</tr>';
             }
 
-            $totalLabelColspan = 2 + ($supportsKategori ? 1 : 0) + ($supportsWallet ? 1 : 0);
-            $pdfHtml .= '<tr class="total-row">
-                <td colspan="' . $totalLabelColspan . '">Total</td>
-                <td class="right">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
-                <td colspan="' . (1 + ($pdfShowStatus ? 1 : 0)) . '"></td>
-            </tr>';
+            if ($pdfIsDetailedTransaction) {
+                $pdfHtml .= '<tr class="total-row" nobr="true">
+                    <td width="' . $pdfWidths['no'] . '"></td>
+                    <td width="' . $pdfWidths['tanggal'] . '"></td>
+                    <td width="' . $pdfWidths['kategori'] . '"></td>
+                    <td width="' . $pdfWidths['wallet'] . '" style="text-align:right;">Total</td>
+                    <td width="' . $pdfWidths['jumlah'] . '" style="text-align:right;">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+                    <td width="' . $pdfWidths['catatan'] . '"></td>
+                    <td width="' . $pdfWidths['status'] . '"></td>
+                </tr>';
+            } else {
+                $pdfHtml .= '<tr class="total-row" nobr="true">
+                    <td width="' . $pdfWidths['no'] . '"></td>
+                    <td width="' . $pdfWidths['tanggal'] . '" style="text-align:right;">Total</td>';
+
+                if ($supportsKategori) {
+                    $pdfHtml .= '<td width="' . $pdfWidths['kategori'] . '"></td>';
+                }
+
+                if ($supportsWallet) {
+                    $pdfHtml .= '<td width="' . $pdfWidths['wallet'] . '"></td>';
+                }
+
+                $pdfHtml .= '<td width="' . $pdfWidths['jumlah'] . '" style="text-align:right;">Rp ' . number_format((float) $total, 0, ',', '.') . '</td>
+                    <td width="' . $pdfWidths['catatan'] . '"></td>';
+
+                if ($pdfShowStatus) {
+                    $pdfHtml .= '<td width="' . $pdfWidths['status'] . '"></td>';
+                }
+
+                $pdfHtml .= '</tr>';
+            }
             $pdfHtml .= '</tbody></table>';
         }
 
         if (!empty($summaryRows)) {
             if ($isCombinedReport) {
-                $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Ringkasan Laporan Gabungan</h3><div class="spacer-sm"></div>';
-                $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
-                    <th width="50%">Aktivitas</th>
-                    <th width="20%">Jumlah Transaksi</th>
-                    <th width="30%">Total</th>
-                </tr></thead><tbody>';
-
-                foreach ($summaryRows as $row) {
-                    $pdfHtml .= '<tr>
-                        <td>' . report_escape($row['nama_rekap'] ?? '-') . '</td>
-                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
-                        <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
-                    </tr>';
-                }
-
-                $pdfHtml .= '</tbody></table>';
+                // Rendered with MultiCell after the combined activity table.
             } elseif ($supportsKategori) {
                 $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Total Per Kategori</h3><div class="spacer-sm"></div>';
                 $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
-                    <th width="50%">Kategori</th>
-                    <th width="20%">Jumlah Transaksi</th>
-                    <th width="30%">Total</th>
+                    <th width="50%" style="text-align:left;">Kategori</th>
+                    <th width="20%" style="text-align:center;">Jumlah Transaksi</th>
+                    <th width="30%" style="text-align:right;">Total</th>
                 </tr></thead><tbody>';
 
                 foreach ($summaryRows as $row) {
-                    $pdfHtml .= '<tr>
-                        <td>' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>
-                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
-                        <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    $pdfHtml .= '<tr nobr="true">
+                        <td width="50%" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_kategori'] ?? 'Belum dikategorikan') . '</td>
+                        <td width="20%" style="text-align:center; vertical-align:top;">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                        <td width="30%" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
                     </tr>';
                 }
 
@@ -1168,16 +1437,16 @@ if ($output === 'pdf') {
             } elseif ($isTransferReport) {
                 $pdfHtml .= '<div class="spacer"></div><h3 style="font-size:10px;">Rekap Transfer Per Status</h3><div class="spacer-sm"></div>';
                 $pdfHtml .= '<table class="report-table" cellpadding="3"><thead><tr>
-                    <th width="50%">Status</th>
-                    <th width="20%">Jumlah Transaksi</th>
-                    <th width="30%">Total</th>
+                    <th width="50%" style="text-align:left;">Status</th>
+                    <th width="20%" style="text-align:center;">Jumlah Transaksi</th>
+                    <th width="30%" style="text-align:right;">Total</th>
                 </tr></thead><tbody>';
 
                 foreach ($summaryRows as $row) {
-                    $pdfHtml .= '<tr>
-                        <td>' . report_escape($row['nama_rekap'] ?? '-') . '</td>
-                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
-                        <td class="right">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
+                    $pdfHtml .= '<tr nobr="true">
+                        <td width="50%" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_rekap'] ?? '-') . '</td>
+                        <td width="20%" style="text-align:center; vertical-align:top;">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                        <td width="30%" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['total_jumlah'] ?? 0), 0, ',', '.') . '</td>
                     </tr>';
                 }
 
@@ -1193,12 +1462,12 @@ if ($output === 'pdf') {
                 </tr></thead><tbody>';
 
                 foreach ($summaryRows as $row) {
-                    $pdfHtml .= '<tr>
-                        <td>' . report_escape($row['nama_rekap'] ?? '-') . '</td>
-                        <td class="center">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
-                        <td class="right">Rp ' . number_format((float) ($row['total_setor'] ?? 0), 0, ',', '.') . '</td>
-                        <td class="right">Rp ' . number_format((float) ($row['total_tarik'] ?? 0), 0, ',', '.') . '</td>
-                        <td class="right">Rp ' . number_format((float) ($row['saldo_bersih'] ?? 0), 0, ',', '.') . '</td>
+                    $pdfHtml .= '<tr nobr="true">
+                        <td width="28%" style="text-align:left; vertical-align:top;">' . report_escape($row['nama_rekap'] ?? '-') . '</td>
+                        <td width="14%" style="text-align:center; vertical-align:top;">' . number_format((float) ($row['total_transaksi'] ?? 0), 0, ',', '.') . '</td>
+                        <td width="19%" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['total_setor'] ?? 0), 0, ',', '.') . '</td>
+                        <td width="19%" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['total_tarik'] ?? 0), 0, ',', '.') . '</td>
+                        <td width="20%" style="text-align:right; vertical-align:top;">Rp ' . number_format((float) ($row['saldo_bersih'] ?? 0), 0, ',', '.') . '</td>
                     </tr>';
                 }
 
@@ -1208,6 +1477,15 @@ if ($output === 'pdf') {
     }
 
     $pdf->writeHTML($pdfHtml, true, false, true, false, '');
+    if ($isCombinedReport && !empty($reportRows)) {
+        render_combined_report_table($pdf, $reportRows);
+        if (!empty($summaryRows)) {
+            render_combined_report_summary($pdf, $summaryRows);
+        }
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     $pdf->Output(build_report_filename($tabel, $tgl_awal, $tgl_akhir, 'pdf'), 'D');
     exit;
 }

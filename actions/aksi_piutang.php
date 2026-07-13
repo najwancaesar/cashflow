@@ -5,6 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
+include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 $act = $_GET['act'] ?? '';
 $user = (int) ($_SESSION['id_user'] ?? 0);
 
@@ -57,31 +58,13 @@ function normalize_required_date_piutang($value, $fieldName)
 	return $value;
 }
 
-function validate_active_wallet_for_user_piutang($con, $walletId, $userId)
+function fetch_piutang_for_user($con, $piutangId, $userId, $forUpdate = false)
 {
-	$stmt = $con->prepare("SELECT id_wallet, nama_wallet, tipe_wallet
-		FROM wallet
-		WHERE id_wallet = ? AND user_id = ? AND is_active = 1
-		LIMIT 1");
-	if (!$stmt) {
-		return false;
-	}
-
-	$stmt->bind_param("ii", $walletId, $userId);
-	$stmt->execute();
-	$result = $stmt->get_result();
-	$wallet = $result ? $result->fetch_assoc() : null;
-	$stmt->close();
-
-	return $wallet ?: false;
-}
-
-function fetch_piutang_for_user($con, $piutangId, $userId)
-{
+	$lockClause = $forUpdate ? ' FOR UPDATE' : '';
 	$stmt = $con->prepare("SELECT *
 		FROM piutang
 		WHERE id_piutang = ? AND user = ?
-		LIMIT 1");
+		LIMIT 1{$lockClause}");
 	if (!$stmt) {
 		return null;
 	}
@@ -95,54 +78,117 @@ function fetch_piutang_for_user($con, $piutangId, $userId)
 	return $row ?: null;
 }
 
+function rollback_piutang_transaction($con)
+{
+	try {
+		$con->rollback();
+	} catch (Throwable $rollbackError) {
+		error_log('Rollback piutang gagal: ' . $rollbackError->getMessage());
+	}
+}
+
+function handle_piutang_transaction_failure($con, Throwable $error, $fallbackMessage)
+{
+	rollback_piutang_transaction($con);
+
+	if ($error instanceof DomainException) {
+		show_sweetalert_and_redirect('Gagal', $error->getMessage(), 'error', 'main.php?module=piutang');
+	}
+
+	error_log('Proses piutang gagal: ' . $error->getMessage());
+	show_sweetalert_and_redirect('Gagal', $fallbackMessage, 'error', 'main.php?module=piutang');
+}
+
 if($act == 't'){
 	require_post_csrf_piutang();
 	$id = (int) ($_POST['id_piutang'] ?? 0);
-	$tanggal = $_POST['tanggal'] ?? '';
+	$tanggal = normalize_required_date_piutang($_POST['tanggal'] ?? '', 'Tanggal transaksi');
 	$tanggalJatuhTempo = normalize_optional_due_date_piutang($_POST['tanggal_jatuh_tempo'] ?? '');
-	$catatan = $_POST['catatan'] ?? '';
-	$debitur = $_POST['debitur'] ?? '';
-	$jumlah = nominal_input_to_number($_POST['jumlah'] ?? '');
+	$catatan = trim((string) ($_POST['catatan'] ?? ''));
+	$debitur = trim((string) ($_POST['debitur'] ?? ''));
+	$jumlahRaw = (string) ($_POST['jumlah'] ?? '');
+	$jumlah = nominal_input_to_number($jumlahRaw);
 	$status = 'pending';
 
-	if ($tanggal === '' || $jumlah <= 0) {
-		show_sweetalert_and_redirect('Gagal', 'Tanggal dan jumlah piutang wajib diisi.', 'error', 'main.php?module=piutang');
+	if ($debitur === '') {
+		show_sweetalert_and_redirect('Gagal', 'Debitur wajib diisi.', 'error', 'main.php?module=piutang');
 	}
 
-	if($id <= 0){
-		$stmt = $con->prepare("INSERT INTO piutang(tanggal, tanggal_jatuh_tempo, catatan, debitur, jumlah, user, status) VALUES(?, ?, ?, ?, ?, ?, ?)");
-		$stmt->bind_param("ssssdis", $tanggal, $tanggalJatuhTempo, $catatan, $debitur, $jumlah, $user, $status);
-		$stmt->execute();
-		$stmt->close();
-
-		if (function_exists('record_activity')) {
-			record_activity($con, 'piutang', 'tambah', 'Menambahkan data piutang.');
-		}
-
-		show_sweetalert_and_redirect('Berhasil', 'Data piutang berhasil ditambahkan.', 'success', 'main.php?module=piutang');
-	}else{
-		$existingPiutang = fetch_piutang_for_user($con, $id, $user);
-		if (!$existingPiutang) {
-			show_sweetalert_and_redirect('Gagal', 'Data piutang tidak ditemukan atau bukan milik Anda.', 'warning', 'main.php?module=piutang');
-		}
-
-		if (($existingPiutang['status'] ?? '') === 'selesai'
-			&& (int) ($existingPiutang['id_pemasukan'] ?? 0) > 0
-			&& (float) ($existingPiutang['jumlah'] ?? 0) !== (float) $jumlah) {
-			show_sweetalert_and_redirect('Tidak dapat mengubah jumlah', 'Piutang yang sudah lunas sudah tercatat sebagai pemasukan wallet. Jumlah tidak diubah agar saldo tetap konsisten.', 'warning', 'main.php?module=piutang');
-		}
-
-		$stmt = $con->prepare("UPDATE piutang SET tanggal = ?, tanggal_jatuh_tempo = ?, debitur = ?, catatan = ?, jumlah = ? WHERE id_piutang = ? AND user = ?");
-		$stmt->bind_param("ssssdii", $tanggal, $tanggalJatuhTempo, $debitur, $catatan, $jumlah, $id, $user);
-		$stmt->execute();
-		$stmt->close();
-
-		if (function_exists('record_activity')) {
-			record_activity($con, 'piutang', 'edit', "Mengubah data piutang ID {$id}.");
-		}
-
-		show_sweetalert_and_redirect('Berhasil', 'Data piutang berhasil diubah.', 'success', 'main.php?module=piutang');
+	if (mb_strlen($debitur, 'UTF-8') > 100) {
+		show_sweetalert_and_redirect('Gagal', 'Debitur maksimal 100 karakter.', 'error', 'main.php?module=piutang');
 	}
+
+	if (mb_strlen($catatan, 'UTF-8') > 1000) {
+		show_sweetalert_and_redirect('Gagal', 'Catatan maksimal 1000 karakter.', 'error', 'main.php?module=piutang');
+	}
+
+	if ($jumlah <= 0 || strpos($jumlahRaw, '-') !== false || !preg_match('/^[\d\s.,]+$/', $jumlahRaw)) {
+		show_sweetalert_and_redirect('Gagal', 'Nominal piutang wajib lebih besar dari nol.', 'error', 'main.php?module=piutang');
+	}
+
+	if ($tanggalJatuhTempo !== null && $tanggalJatuhTempo < $tanggal) {
+		show_sweetalert_and_redirect('Gagal', 'Tanggal jatuh tempo tidak boleh lebih awal dari tanggal transaksi.', 'error', 'main.php?module=piutang');
+	}
+
+	try {
+		$con->begin_transaction();
+
+		if ($id <= 0) {
+			$stmt = $con->prepare("INSERT INTO piutang(tanggal, tanggal_jatuh_tempo, catatan, debitur, jumlah, user, status) VALUES(?, ?, ?, ?, ?, ?, ?)");
+			if (!$stmt) {
+				throw new RuntimeException('Prepare tambah piutang gagal.');
+			}
+			$stmt->bind_param("ssssdis", $tanggal, $tanggalJatuhTempo, $catatan, $debitur, $jumlah, $user, $status);
+			if (!$stmt->execute()) {
+				$stmt->close();
+				throw new RuntimeException('Tambah piutang gagal.');
+			}
+			$id = (int) $stmt->insert_id;
+			$stmt->close();
+			$activityAction = 'tambah';
+			$activityDescription = "Menambahkan data piutang ID {$id}.";
+			$successMessage = 'Data piutang berhasil ditambahkan.';
+		} else {
+			$existingPiutang = fetch_piutang_for_user($con, $id, $user, true);
+			if (!$existingPiutang) {
+				throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
+			}
+
+			if (($existingPiutang['status'] ?? '') === 'selesai' && (int) ($existingPiutang['id_pemasukan'] ?? 0) > 0) {
+				$linkedFieldsChanged = (float) ($existingPiutang['jumlah'] ?? 0) !== (float) $jumlah
+					|| trim((string) ($existingPiutang['debitur'] ?? '')) !== $debitur
+					|| trim((string) ($existingPiutang['catatan'] ?? '')) !== $catatan;
+
+				if ($linkedFieldsChanged) {
+					throw new DomainException('Nominal, debitur, dan catatan piutang lunas tidak dapat diubah karena sudah tercatat sebagai pemasukan wallet.');
+				}
+			}
+
+			$stmt = $con->prepare("UPDATE piutang SET tanggal = ?, tanggal_jatuh_tempo = ?, debitur = ?, catatan = ?, jumlah = ? WHERE id_piutang = ? AND user = ?");
+			if (!$stmt) {
+				throw new RuntimeException('Prepare edit piutang gagal.');
+			}
+			$stmt->bind_param("ssssdii", $tanggal, $tanggalJatuhTempo, $debitur, $catatan, $jumlah, $id, $user);
+			if (!$stmt->execute()) {
+				$stmt->close();
+				throw new RuntimeException('Edit piutang gagal.');
+			}
+			$stmt->close();
+			$activityAction = 'edit';
+			$activityDescription = "Mengubah data piutang ID {$id}.";
+			$successMessage = 'Data piutang berhasil diubah.';
+		}
+
+		$con->commit();
+	} catch (Throwable $error) {
+		handle_piutang_transaction_failure($con, $error, 'Data piutang gagal disimpan.');
+	}
+
+	if (function_exists('record_activity')) {
+		record_activity($con, 'piutang', $activityAction, $activityDescription);
+	}
+
+	show_sweetalert_and_redirect('Berhasil', $successMessage, 'success', 'main.php?module=piutang');
 }
 
 if($act == 'l'){
@@ -155,33 +201,33 @@ if($act == 'l'){
 		show_sweetalert_and_redirect('Gagal', 'Data pelunasan piutang tidak lengkap.', 'error', 'main.php?module=piutang');
 	}
 
-	$wallet = validate_active_wallet_for_user_piutang($con, $walletId, $user);
-	if (!$wallet) {
-		show_sweetalert_and_redirect('Wallet tidak valid', 'Wallet penerimaan tidak aktif atau bukan milik Anda.', 'error', 'main.php?module=piutang');
-	}
-
-	$piutang = fetch_piutang_for_user($con, $id_piutang, $user);
-	if (!$piutang) {
-		show_sweetalert_and_redirect('Gagal', 'Data piutang tidak ditemukan atau bukan milik Anda.', 'warning', 'main.php?module=piutang');
-	}
-
-	if (($piutang['status'] ?? '') === 'selesai') {
-		if ((int) ($piutang['id_pemasukan'] ?? 0) > 0) {
-			show_sweetalert_and_redirect('Sudah lunas', 'Piutang ini sudah lunas dan sudah tercatat ke wallet.', 'info', 'main.php?module=piutang');
+	try {
+		$con->begin_transaction();
+		try {
+			cashflow_lock_owned_wallets($con, $user, [$walletId], [$walletId]);
+		} catch (DomainException $walletError) {
+			throw new DomainException('Wallet penerimaan tidak aktif atau bukan milik Anda.');
 		}
 
-		show_sweetalert_and_redirect('Sudah selesai', 'Piutang ini sudah berstatus selesai. Pelunasan ulang tidak dibuat.', 'warning', 'main.php?module=piutang');
-	}
+		$piutang = fetch_piutang_for_user($con, $id_piutang, $user, true);
+		if (!$piutang) {
+			throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
+		}
 
-	$transactionStarted = false;
-	try {
-		mysqli_begin_transaction($con);
-		$transactionStarted = true;
+		if (($piutang['status'] ?? '') === 'selesai' || (int) ($piutang['id_pemasukan'] ?? 0) > 0) {
+			$con->commit();
+			show_sweetalert_and_redirect('Sudah lunas', 'Piutang ini sudah lunas dan sudah tercatat ke wallet.', 'info', 'main.php?module=piutang');
+		}
 
 		$catatanPiutang = trim((string) ($piutang['catatan'] ?? ''));
 		$debitur = trim((string) ($piutang['debitur'] ?? '-'));
 		$catatanPemasukan = 'Pelunasan piutang dari ' . $debitur . ': ' . $catatanPiutang;
 		$jumlah = (float) ($piutang['jumlah'] ?? 0);
+		if ($jumlah <= 0) {
+			throw new DomainException('Nominal piutang tidak valid dan tidak dapat dilunasi.');
+		}
+
+		$saldoSebelum = cashflow_calculate_wallet_balance($con, $user, $walletId);
 		$statusSelesai = 'selesai';
 		$idKategori = null;
 
@@ -200,7 +246,7 @@ if($act == 'l'){
 
 		$stmtUpdate = $con->prepare("UPDATE piutang
 			SET status = 'selesai', tanggal_lunas = ?, id_wallet_penerimaan = ?, id_pemasukan = ?
-			WHERE id_piutang = ? AND user = ? AND status = 'pending'");
+			WHERE id_piutang = ? AND user = ? AND status = 'pending' AND id_pemasukan IS NULL");
 		if (!$stmtUpdate) {
 			throw new Exception('Prepare update piutang gagal.');
 		}
@@ -216,8 +262,12 @@ if($act == 'l'){
 			throw new Exception('Piutang sudah berubah status.');
 		}
 
-		mysqli_commit($con);
-		$transactionStarted = false;
+		$saldoSesudah = cashflow_calculate_wallet_balance($con, $user, $walletId);
+		if (abs($saldoSesudah - ($saldoSebelum + $jumlah)) > 0.00001) {
+			throw new RuntimeException('Perubahan saldo wallet tidak konsisten.');
+		}
+
+		$con->commit();
 
 		if (function_exists('record_activity')) {
 			record_activity($con, 'piutang', 'lunas', "Melunasi piutang ID {$id_piutang} ke wallet ID {$walletId}; pemasukan ID {$idPemasukan}.");
@@ -225,11 +275,7 @@ if($act == 'l'){
 
 		show_sweetalert_and_redirect('Berhasil', 'Piutang berhasil dilunasi dan pemasukan wallet otomatis dibuat.', 'success', 'main.php?module=piutang');
 	} catch (Throwable $e) {
-		if ($transactionStarted) {
-			mysqli_rollback($con);
-		}
-
-		show_sweetalert_and_redirect('Gagal', 'Pelunasan piutang gagal diproses.', 'error', 'main.php?module=piutang');
+		handle_piutang_transaction_failure($con, $e, 'Pelunasan piutang gagal diproses.');
 	}
 }
 
@@ -237,19 +283,19 @@ if($act == 'h'){
 	require_post_csrf_piutang();
 	$id = (int) ($_POST['id_piutang'] ?? 0);
 
-	$piutang = fetch_piutang_for_user($con, $id, $user);
-	if (!$piutang) {
-		show_sweetalert_and_redirect('Gagal', 'Data piutang tidak ditemukan atau bukan milik Anda.', 'warning', 'main.php?module=piutang');
+	if ($id <= 0) {
+		show_sweetalert_and_redirect('Gagal', 'ID piutang tidak valid.', 'error', 'main.php?module=piutang');
 	}
 
-	$idPemasukan = (int) ($piutang['id_pemasukan'] ?? 0);
-	$transactionStarted = false;
-
 	try {
-		if ($idPemasukan > 0) {
-			mysqli_begin_transaction($con);
-			$transactionStarted = true;
+		$con->begin_transaction();
+		$piutang = fetch_piutang_for_user($con, $id, $user, true);
+		if (!$piutang) {
+			throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
+		}
 
+		$idPemasukan = (int) ($piutang['id_pemasukan'] ?? 0);
+		if ($idPemasukan > 0) {
 			$stmtDeletePemasukan = $con->prepare("DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ?");
 			if (!$stmtDeletePemasukan) {
 				throw new Exception('Prepare delete pemasukan gagal.');
@@ -278,10 +324,7 @@ if($act == 'h'){
 			throw new Exception('Data piutang tidak terhapus.');
 		}
 
-		if ($transactionStarted) {
-			mysqli_commit($con);
-			$transactionStarted = false;
-		}
+		$con->commit();
 
 		if (function_exists('record_activity')) {
 			$description = $idPemasukan > 0
@@ -292,11 +335,7 @@ if($act == 'h'){
 
 		show_sweetalert_and_redirect('Berhasil', 'Data piutang berhasil dihapus.', 'success', 'main.php?module=piutang');
 	} catch (Throwable $e) {
-		if ($transactionStarted) {
-			mysqli_rollback($con);
-		}
-
-		show_sweetalert_and_redirect('Gagal', 'Data piutang gagal dihapus.', 'error', 'main.php?module=piutang');
+		handle_piutang_transaction_failure($con, $e, 'Data piutang gagal dihapus.');
 	}
 }
 

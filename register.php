@@ -12,6 +12,7 @@ if (isset($_SESSION['nama'])) {
     <?php include "includes/header.php"; ?>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="assets/css/auth-dashboard.css">
+    <script src="assets/js/auth-password-toggle.js" defer></script>
 </head>
 
 <body class="auth-page">
@@ -65,9 +66,19 @@ if (isset($_SESSION['nama'])) {
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Password</label>
-                                    <div class="auth-field">
+                                    <div class="auth-field auth-field--password">
                                         <span class="material-icons-round">lock</span>
-                                        <input type="password" name="password" class="auth-input" placeholder="Buat password" required>
+                                        <input type="password" id="register-password" name="password" class="auth-input" placeholder="Buat password" required>
+                                        <button
+                                            type="button"
+                                            class="auth-password-toggle"
+                                            data-password-toggle
+                                            aria-controls="register-password"
+                                            aria-label="Tampilkan password"
+                                            aria-pressed="false"
+                                        >
+                                            <span class="material-icons-round" aria-hidden="true">visibility</span>
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">

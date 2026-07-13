@@ -1,5 +1,6 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
 
 $userYangSedangLogin = (int) ($_SESSION['id_user'] ?? 0);
 
@@ -86,6 +87,7 @@ if ($userYangSedangLogin > 0) {
                         </div>
                     </div>
                     <form method="POST" action="tcpdf/examples/laprekap.php" target="_blank" id="formLaporan">
+                        <?= csrf_input() ?>
                         <input type="hidden" name="output" id="output" value="print">
                         <div class="row">
                             <div class="col-sm-6 text-center">Laporan Transaksi</div>

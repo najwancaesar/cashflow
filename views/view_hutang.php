@@ -8,12 +8,12 @@ $today = date('Y-m-d');
 function format_hutang_due_date($value)
 {
     if (empty($value) || $value === '0000-00-00') {
-        return '-';
+        return 'Tanpa jatuh tempo';
     }
 
     $timestamp = strtotime((string) $value);
     if ($timestamp === false) {
-        return '-';
+        return 'Tanpa jatuh tempo';
     }
 
     return date('d M Y', $timestamp);
@@ -253,7 +253,7 @@ $sql = $stmtHutang->get_result();
                     <div class="row my-3">
                         <label>Kreditur</label>
                         <div class="input-group input-group-outline">
-                            <input type="text" name="kreditur" id="kreditur" class="form-control">
+                            <input type="text" name="kreditur" id="kreditur" class="form-control" maxlength="100" required>
                         </div>
                     </div>
                     <div class="row my-3">
@@ -265,7 +265,7 @@ $sql = $stmtHutang->get_result();
                     <div class="row my-3">
                         <label>Catatan</label>
                         <div class="input-group input-group-outline">
-                            <textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3"></textarea>
+                            <textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3" maxlength="1000"></textarea>
                         </div>
                     </div>
                 </div>

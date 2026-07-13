@@ -8,12 +8,12 @@ $today = date('Y-m-d');
 function format_piutang_due_date($value)
 {
 	if (empty($value) || $value === '0000-00-00') {
-		return '-';
+		return 'Tanpa jatuh tempo';
 	}
 
 	$timestamp = strtotime((string) $value);
 	if ($timestamp === false) {
-		return '-';
+		return 'Tanpa jatuh tempo';
 	}
 
 	return date('d M Y', $timestamp);
@@ -254,7 +254,7 @@ $sql = $stmtPiutang->get_result();
 					<div class="row my-3">
 						<label>Debitur</label>
 						<div class="input-group input-group-outline">
-							<input type="text" name="debitur" id="debitur" class="form-control">
+							<input type="text" name="debitur" id="debitur" class="form-control" maxlength="100" required>
 						</div>
 					</div>
 					<div class="row my-3">
@@ -266,7 +266,7 @@ $sql = $stmtPiutang->get_result();
 					<div class="row my-3">
 						<label>Catatan</label>
 						<div class="input-group input-group-outline">
-							<textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3"></textarea>
+							<textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3" maxlength="1000"></textarea>
 						</div>
 					</div>
 				</div>

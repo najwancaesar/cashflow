@@ -1,4 +1,6 @@
 (function () {
+    'use strict';
+
     var lastModalTrigger = null;
     var modalTriggerSelector = [
         '[data-bs-toggle="modal"]',
@@ -192,6 +194,35 @@
         syncSidebarState();
     }
 
+    function setupMaterialDashboardResizeGuard() {
+        var vendorResizeHandler = window.navbarColorOnResize;
+        var sidenav = document.getElementById('sidenav-main');
+        var configuratorReference = document.querySelector('[data-class]');
+
+        if (typeof vendorResizeHandler !== 'function' || configuratorReference) {
+            return;
+        }
+
+        window.removeEventListener('resize', vendorResizeHandler);
+
+        function safeNavbarColorOnResize() {
+            if (!sidenav) {
+                return;
+            }
+
+            if (window.innerWidth > 1200) {
+                sidenav.classList.remove('bg-white', 'bg-transparent');
+                return;
+            }
+
+            sidenav.classList.add('bg-white');
+            sidenav.classList.remove('bg-transparent');
+        }
+
+        window.addEventListener('resize', safeNavbarColorOnResize);
+        safeNavbarColorOnResize();
+    }
+
     document.addEventListener('click', function (event) {
         var trigger = event.target.closest(modalTriggerSelector);
 
@@ -226,6 +257,7 @@
         safeFocus(lastModalTrigger);
     });
 
+    setupMaterialDashboardResizeGuard();
     setupDataTableToolbars();
     setupResponsiveTables();
     setupMobileMicroInteractions();

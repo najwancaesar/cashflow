@@ -1,6 +1,7 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 function fetch_single_value($con, $sql, $types = '', $params = [])
 {
@@ -57,7 +58,10 @@ function fetch_category_breakdown($con, $table, $userId, $month, $year, $limit =
                 ON transaksi.id_kategori = kategori.id_kategori
                AND kategori.user_id = transaksi.user
                AND kategori.tipe_kategori = ?
-            WHERE transaksi.user = ? AND MONTH(transaksi.tanggal) = ? AND YEAR(transaksi.tanggal) = ?
+            WHERE transaksi.user = ?
+              AND transaksi.status = 'selesai'
+              AND MONTH(transaksi.tanggal) = ?
+              AND YEAR(transaksi.tanggal) = ?
             GROUP BY COALESCE(kategori.nama_kategori, 'Belum dikategorikan')
             ORDER BY total_jumlah DESC, total_transaksi DESC
             LIMIT {$limit}";
@@ -122,7 +126,7 @@ function fetch_monthly_totals($con, $table, $userId, $startDate, $endDate)
 
     $sql = "SELECT DATE_FORMAT(tanggal, '%Y-%m') AS bulan, COALESCE(SUM(jumlah), 0) AS total
             FROM {$table}
-            WHERE user = ? AND tanggal BETWEEN ? AND ?
+            WHERE user = ? AND status = 'selesai' AND tanggal BETWEEN ? AND ?
             GROUP BY DATE_FORMAT(tanggal, '%Y-%m')";
 
     $stmt = $con->prepare($sql);
@@ -457,7 +461,8 @@ $total_pending = $tpemasukan_pending + $tpengeluaran_pending;
 $pendapatan_bulan = [
     'pendapatan_bulan' => fetch_single_value(
         $con,
-        "SELECT COALESCE(SUM(jumlah), 0) FROM pemasukan WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+        "SELECT COALESCE(SUM(jumlah), 0) FROM pemasukan
+         WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ? AND status = 'selesai'",
         "iii",
         [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
     ),
@@ -466,7 +471,8 @@ $pendapatan_bulan = [
 $pengeluaran_bulan = [
     'pengeluaran_bulan' => fetch_single_value(
         $con,
-        "SELECT COALESCE(SUM(jumlah), 0) FROM pengeluaran WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+        "SELECT COALESCE(SUM(jumlah), 0) FROM pengeluaran
+         WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ? AND status = 'selesai'",
         "iii",
         [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
     ),
@@ -476,21 +482,7 @@ $pemasukan_bulan_ini = (float) ($pendapatan_bulan['pendapatan_bulan'] ?? 0);
 $pengeluaran_bulan_ini = (float) ($pengeluaran_bulan['pengeluaran_bulan'] ?? 0);
 $sisa_cashflow_bulan = $pemasukan_bulan_ini - $pengeluaran_bulan_ini;
 
-$total_pemasukan_semua = (float) fetch_single_value(
-    $con,
-    "SELECT COALESCE(SUM(jumlah), 0) FROM pemasukan WHERE user = ?",
-    "i",
-    [$userYangSedangLogin]
-);
-
-$total_pengeluaran_semua = (float) fetch_single_value(
-    $con,
-    "SELECT COALESCE(SUM(jumlah), 0) FROM pengeluaran WHERE user = ?",
-    "i",
-    [$userYangSedangLogin]
-);
-
-$total_saldo_keseluruhan = $total_pemasukan_semua - $total_pengeluaran_semua;
+$total_saldo_keseluruhan = 0;
 $hari_berjalan_bulan_ini = max(1, (int) date('j', strtotime($tglSekarang)));
 $rata_pengeluaran_harian = $pengeluaran_bulan_ini / $hari_berjalan_bulan_ini;
 
@@ -531,18 +523,19 @@ for ($i = 0; $i < 6; $i++) {
 
 $has_cashflow_trend = (array_sum($cashflow_trend['pemasukan']) + array_sum($cashflow_trend['pengeluaran'])) > 0;
 $cashflow_bulan_class = $sisa_cashflow_bulan < 0 ? 'cashflow-icon-expense' : 'cashflow-icon-income';
-$saldo_total_class = $total_saldo_keseluruhan < 0 ? 'cashflow-icon-expense' : 'cashflow-icon-report';
 
 $tpemasukan_bulan = (int) fetch_single_value(
     $con,
-    "SELECT COUNT(*) FROM pemasukan WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+    "SELECT COUNT(*) FROM pemasukan
+     WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ? AND status = 'selesai'",
     "iii",
     [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
 );
 
 $tpengeluaran_bulan = (int) fetch_single_value(
     $con,
-    "SELECT COUNT(*) FROM pengeluaran WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ?",
+    "SELECT COUNT(*) FROM pengeluaran
+     WHERE MONTH(tanggal) = ? AND YEAR(tanggal) = ? AND user = ? AND status = 'selesai'",
     "iii",
     [$bulansekarang, $tahunsekarang, $userYangSedangLogin]
 );
@@ -689,79 +682,7 @@ $piutang_due_today_count = (int) fetch_single_value(
 
 $due_today_total_count = $hutang_due_today_count + $piutang_due_today_count;
 
-$wallet_summary_rows = fetch_all_rows(
-    $con,
-    "SELECT
-        wallet.id_wallet,
-        wallet.nama_wallet,
-        wallet.tipe_wallet,
-        wallet.saldo_awal,
-        wallet.is_default,
-        COALESCE(pemasukan_wallet.total_pemasukan, 0) AS total_pemasukan,
-        COALESCE(pengeluaran_wallet.total_pengeluaran, 0) AS total_pengeluaran,
-        COALESCE(transfer_masuk_wallet.total_transfer_masuk, 0) AS total_transfer_masuk,
-        COALESCE(transfer_keluar_wallet.total_transfer_keluar, 0) AS total_transfer_keluar,
-        COALESCE(celengan_setor_wallet.total_celengan_setor, 0) AS total_celengan_setor,
-        COALESCE(celengan_tarik_wallet.total_celengan_tarik, 0) AS total_celengan_tarik
-     FROM wallet
-     LEFT JOIN (
-        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_pemasukan
-        FROM pemasukan
-        WHERE user = ?
-          AND status = 'selesai'
-          AND id_wallet IS NOT NULL
-        GROUP BY id_wallet
-     ) AS pemasukan_wallet
-        ON pemasukan_wallet.id_wallet = wallet.id_wallet
-     LEFT JOIN (
-        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_pengeluaran
-        FROM pengeluaran
-        WHERE user = ?
-          AND status = 'selesai'
-          AND id_wallet IS NOT NULL
-        GROUP BY id_wallet
-     ) AS pengeluaran_wallet
-        ON pengeluaran_wallet.id_wallet = wallet.id_wallet
-     LEFT JOIN (
-        SELECT wallet_tujuan_id AS id_wallet, COALESCE(SUM(jumlah), 0) AS total_transfer_masuk
-        FROM transfer_wallet
-        WHERE user_id = ?
-          AND status = 'selesai'
-        GROUP BY wallet_tujuan_id
-     ) AS transfer_masuk_wallet
-        ON transfer_masuk_wallet.id_wallet = wallet.id_wallet
-     LEFT JOIN (
-        SELECT wallet_asal_id AS id_wallet, COALESCE(SUM(jumlah), 0) AS total_transfer_keluar
-        FROM transfer_wallet
-        WHERE user_id = ?
-          AND status = 'selesai'
-        GROUP BY wallet_asal_id
-     ) AS transfer_keluar_wallet
-        ON transfer_keluar_wallet.id_wallet = wallet.id_wallet
-     LEFT JOIN (
-        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_celengan_setor
-        FROM saving_goal_mutasi
-        WHERE user_id = ?
-          AND tipe = 'setor'
-          AND id_wallet IS NOT NULL
-        GROUP BY id_wallet
-     ) AS celengan_setor_wallet
-        ON celengan_setor_wallet.id_wallet = wallet.id_wallet
-     LEFT JOIN (
-        SELECT id_wallet, COALESCE(SUM(jumlah), 0) AS total_celengan_tarik
-        FROM saving_goal_mutasi
-        WHERE user_id = ?
-          AND tipe = 'tarik'
-          AND id_wallet IS NOT NULL
-        GROUP BY id_wallet
-     ) AS celengan_tarik_wallet
-        ON celengan_tarik_wallet.id_wallet = wallet.id_wallet
-     WHERE wallet.user_id = ?
-       AND wallet.is_active = 1
-     ORDER BY wallet.is_default DESC, wallet.nama_wallet ASC",
-    "iiiiiii",
-    [$userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin, $userYangSedangLogin]
-);
+$wallet_summary_rows = cashflow_get_user_wallet_balances($con, $userYangSedangLogin, true);
 
 $wallet_summary_items = [];
 $wallet_total_saldo_aktif = 0;
@@ -775,7 +696,7 @@ foreach ($wallet_summary_rows as $walletRow) {
     $walletTotalTransferKeluar = (float) ($walletRow['total_transfer_keluar'] ?? 0);
     $walletTotalCelenganSetor = (float) ($walletRow['total_celengan_setor'] ?? 0);
     $walletTotalCelenganTarik = (float) ($walletRow['total_celengan_tarik'] ?? 0);
-    $walletSaldoAkhir = $walletSaldoAwal + $walletTotalPemasukan - $walletTotalPengeluaran + $walletTotalTransferMasuk - $walletTotalTransferKeluar - $walletTotalCelenganSetor + $walletTotalCelenganTarik;
+    $walletSaldoAkhir = (float) ($walletRow['saldo_terkini'] ?? 0);
     $walletIsDefault = (int) ($walletRow['is_default'] ?? 0) === 1;
 
     if ($walletIsDefault) {
@@ -800,6 +721,8 @@ foreach ($wallet_summary_rows as $walletRow) {
 
 $wallet_aktif_count = count($wallet_summary_items);
 $has_wallet_summary = $wallet_aktif_count > 0;
+$total_saldo_keseluruhan = $wallet_total_saldo_aktif;
+$saldo_total_class = $total_saldo_keseluruhan < 0 ? 'cashflow-icon-expense' : 'cashflow-icon-report';
 
 $quick_add_kategori_pemasukan = fetch_all_rows(
     $con,
@@ -1429,7 +1352,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
-                    <p class="mb-0 text-sm text-secondary">Semua pemasukan dikurangi semua pengeluaran.</p>
+                    <p class="mb-0 text-sm text-secondary">Jumlah saldo terkini seluruh wallet aktif.</p>
                 </div>
             </div>
         </div>
@@ -1491,7 +1414,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
                         <div>
                             <h6 class="mb-0">Saldo Wallet</h6>
-                            <p class="text-sm text-secondary mb-0">Saldo akhir dihitung dari saldo awal, pemasukan selesai, dan pengeluaran selesai.</p>
+                            <p class="text-sm text-secondary mb-0">Saldo akhir mencakup saldo awal, transaksi selesai, transfer wallet, dan mutasi celengan.</p>
                         </div>
                         <span class="badge badge-sm <?= $has_wallet_summary ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
                             <?= number_format((float) $wallet_aktif_count) ?> wallet aktif
@@ -2216,8 +2139,16 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 </div>
             </div>
             <div class="card-body px-0 pb-2">
-                <div class="table-responsive p-0 dashboard-latest-desktop">
-                    <table class="table align-items-center mb-0 dashboard-latest-table dashboard-income-table">
+                <div class="table-responsive p-0 dashboard-latest-desktop dashboard-latest-scroll" role="region" aria-label="Pemasukan terbaru" tabindex="0">
+                    <table class="table align-items-center mb-0 dashboard-latest-table dashboard-income-table" data-skip-responsive="true">
+                        <colgroup>
+                            <col class="col-status">
+                            <col class="col-date">
+                            <col class="col-note">
+                            <col class="col-category">
+                            <col class="col-amount">
+                            <col class="col-wallet">
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th
@@ -2332,8 +2263,16 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 </div>
             </div>
             <div class="card-body px-0 pb-2">
-                <div class="table-responsive p-0 dashboard-latest-desktop">
-                    <table class="table align-items-center mb-0 dashboard-latest-table dashboard-expense-table">
+                <div class="table-responsive p-0 dashboard-latest-desktop dashboard-latest-scroll" role="region" aria-label="Pengeluaran terbaru" tabindex="0">
+                    <table class="table align-items-center mb-0 dashboard-latest-table dashboard-expense-table" data-skip-responsive="true">
+                        <colgroup>
+                            <col class="col-status">
+                            <col class="col-date">
+                            <col class="col-note">
+                            <col class="col-category">
+                            <col class="col-amount">
+                            <col class="col-wallet">
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th
