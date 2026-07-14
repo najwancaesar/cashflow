@@ -1,7 +1,21 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 include __DIR__ . "/../includes/koneksi.php";
 include __DIR__ . "/../includes/sweetalert_helper.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !verify_csrf_token()) {
+    $invalidRedirect = !empty($_SESSION['id_user']) ? 'main.php?module=home' : 'login.php';
+    show_sweetalert_and_redirect(
+        'Permintaan tidak valid',
+        'Permintaan logout tidak valid. Silakan coba kembali.',
+        'error',
+        $invalidRedirect
+    );
+}
+
 $logoutUserId = (int) ($_SESSION['id_user'] ?? 0);
 $logoutRole = strtolower((string) ($_SESSION['role'] ?? ''));
 include_once __DIR__ . "/../includes/activity_log_helper.php";

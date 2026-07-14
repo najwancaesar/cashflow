@@ -78,7 +78,7 @@ $walletRows = cashflow_get_user_wallet_balances($con, $userYangSedangLogin);
                                 <p class="text-xs text-secondary mb-0">Wallet pertama akan menjadi default jika belum ada default wallet.</p>
                             </div>
                         <?php } else { ?>
-                            <table class="table align-items-center mb-0" id="datatable">
+                            <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-md" id="datatable">
                                 <thead>
                                     <tr>
                                         <th>Nama Wallet</th>

@@ -79,7 +79,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
         <?php return;
     }
     ?>
-    <table class="table align-items-center mb-0 saving-goal-table" id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>">
+    <table class="table align-items-center mb-0 saving-goal-table cashflow-responsive-data cashflow-table-md" id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>">
         <thead>
             <tr>
                 <th>Celengan</th>

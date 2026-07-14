@@ -128,7 +128,7 @@ mysqli_stmt_close($transferStmt);
                                 <p class="text-xs text-secondary mb-0">Tambahkan transfer pertama untuk memindahkan saldo antar wallet.</p>
                             </div>
                         <?php } else { ?>
-                            <table class="table align-items-center mb-0" id="datatable">
+                            <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatable">
                                 <thead>
                                     <tr>
                                         <th>Tanggal</th>

@@ -1,5 +1,6 @@
 <?php
 session_start();
+include_once "includes/csrf_helper.php";
 if (isset($_SESSION['nama'])) {
     header('Location: main.php?module=home');
     exit;
@@ -40,6 +41,7 @@ if (isset($_SESSION['nama'])) {
                         <h3>Register</h3>
                         <p class="auth-subtitle">Isi data akun Anda untuk mulai memakai aplikasi.</p>
                         <form method="post" class="auth-form">
+                            <?= csrf_input() ?>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Username</label>
@@ -110,6 +112,11 @@ if (isset($_SESSION['nama'])) {
 </html>
 <?php
 if (isset($_POST['kirim'])) {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !verify_csrf_token()) {
+        echo "<script>Swal.fire({icon:'error',title:'Permintaan tidak valid',text:'Sesi form sudah kedaluwarsa. Muat ulang halaman lalu coba kembali.'});</script>";
+        exit;
+    }
+
     include "includes/koneksi.php";
     include "includes/default_categories.php";
     include "includes/avatar_helper.php";
@@ -150,6 +157,25 @@ if (isset($_POST['kirim'])) {
     $foto = default_avatar_filename();
     $is_active = '1';
 
+    $validationMessage = '';
+    if (!preg_match('/^[A-Za-z0-9_.-]{3,20}$/', $username)) {
+        $validationMessage = 'Username harus 3-20 karakter dan hanya boleh berisi huruf, angka, titik, garis bawah, atau tanda hubung.';
+    } elseif ($nama === '' || mb_strlen($nama, 'UTF-8') > 50) {
+        $validationMessage = 'Nama wajib diisi dan maksimal 50 karakter.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 50) {
+        $validationMessage = 'Format email tidak valid atau melebihi 50 karakter.';
+    } elseif (!preg_match('/^[0-9]{8,13}$/', $no_telp)) {
+        $validationMessage = 'Nomor telepon harus berisi 8-13 digit angka.';
+    } elseif (strlen($password) < 6 || strlen($password) > 72) {
+        $validationMessage = 'Password harus terdiri dari 6-72 karakter.';
+    }
+
+    if ($validationMessage !== '') {
+        $validationJson = json_encode($validationMessage, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo "<script>Swal.fire({icon:'warning',title:'Data tidak valid',text:{$validationJson}});</script>";
+        exit;
+    }
+
     $cekStmt = $con->prepare("SELECT id_user FROM user WHERE username = ? OR email = ? LIMIT 1");
     $cekStmt->bind_param("ss", $username, $email);
     $cekStmt->execute();
@@ -158,38 +184,49 @@ if (isset($_POST['kirim'])) {
     if ($cekResult && $cekResult->num_rows > 0) {
         echo "<script>Swal.fire({icon:'warning',title:'Pendaftaran ditolak',text:'Username atau email sudah terdaftar.'});</script>";
     } else {
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $con->prepare("INSERT INTO user(username, nama, email, password, no_telp, role, foto, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("ssssssss", $username, $nama, $email, $hashedPassword, $no_telp, $role, $foto, $is_active);
+        try {
+            $con->begin_transaction();
 
-        if ($stmt->execute()) {
-            $newUserId = (int) $stmt->insert_id;
-            seed_default_categories_for_user($con, $newUserId);
-
-            if (!create_default_wallet_for_registered_user($con, $newUserId)) {
-                echo "<script>
-                    Swal.fire({
-                        icon:'error',
-                        title:'Pendaftaran belum lengkap',
-                        text:'Akun berhasil dibuat, tetapi Dompet Utama gagal disiapkan. Silakan hubungi admin atau coba buat wallet setelah login.'
-                    });
-                </script>";
-            } else {
-                echo "<script>
-                    Swal.fire({
-                        icon:'success',
-                        title:'Akun berhasil dibuat',
-                        text:'Silakan login untuk mulai menggunakan aplikasi.'
-                    }).then(function () {
-                        window.location.href='login.php';
-                    });
-                </script>";
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            if ($hashedPassword === false) {
+                throw new RuntimeException('Password gagal diamankan.');
             }
-        } else {
+
+            $stmt = $con->prepare("INSERT INTO user(username, nama, email, password, no_telp, role, foto, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                throw new RuntimeException('Pendaftaran gagal disiapkan.');
+            }
+            $stmt->bind_param("ssssssss", $username, $nama, $email, $hashedPassword, $no_telp, $role, $foto, $is_active);
+            if (!$stmt->execute()) {
+                throw new RuntimeException('Akun gagal dibuat.');
+            }
+            $newUserId = (int) $stmt->insert_id;
+            $stmt->close();
+
+            seed_default_categories_for_user($con, $newUserId);
+            if (!create_default_wallet_for_registered_user($con, $newUserId)) {
+                throw new RuntimeException('Wallet default gagal dibuat.');
+            }
+
+            $con->commit();
+            echo "<script>
+                Swal.fire({
+                    icon:'success',
+                    title:'Akun berhasil dibuat',
+                    text:'Silakan login untuk mulai menggunakan aplikasi.'
+                }).then(function () {
+                    window.location.href='login.php';
+                });
+            </script>";
+        } catch (Throwable $exception) {
+            try {
+                $con->rollback();
+            } catch (Throwable $rollbackException) {
+                error_log('CashFlow registration rollback failed.');
+            }
+            error_log('CashFlow registration failed: ' . $exception->getMessage());
             echo "<script>Swal.fire({icon:'error',title:'Pendaftaran gagal',text:'Akun gagal dibuat. Silakan coba lagi.'});</script>";
         }
-
-        $stmt->close();
     }
 
     $cekStmt->close();

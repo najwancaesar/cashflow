@@ -1,6 +1,7 @@
 <?php
 session_start();
 include_once "includes/sweetalert_helper.php";
+include_once "includes/csrf_helper.php";
 if (isset($_SESSION['nama'])) {
     header('Location: main.php?module=home');
     exit;
@@ -42,6 +43,7 @@ if (isset($_SESSION['nama'])) {
                         <h3>Login</h3>
                         <p class="auth-subtitle">Masukkan akun Anda untuk membuka dashboard cashflow.</p>
                         <form method="post" class="auth-form">
+                            <?= csrf_input() ?>
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
                                 <div class="auth-field">
@@ -95,6 +97,7 @@ if (isset($_SESSION['nama'])) {
     }
     </script>
     <script src="assets/js/material-dashboard.min.js?v=3.0.0"></script>
+    <script src="assets/js/app-ui-fixes.js"></script>
     <?php render_sweetalert_flash_script(); ?>
 
     <?php include("./includes/footer.php"); ?>
@@ -103,6 +106,11 @@ if (isset($_SESSION['nama'])) {
 </html>
 <?php
 if (isset($_POST['kirim'])) {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !verify_csrf_token()) {
+        echo "<script>Swal.fire({icon:'error',title:'Permintaan tidak valid',text:'Sesi form sudah kedaluwarsa. Muat ulang halaman lalu coba kembali.'});</script>";
+        exit;
+    }
+
     include "includes/koneksi.php";
     include "includes/avatar_helper.php";
     include_once "includes/activity_log_helper.php";

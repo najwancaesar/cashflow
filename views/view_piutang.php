@@ -97,7 +97,7 @@ $sql = $stmtPiutang->get_result();
 						</button>
 					</div>
 					<div class="table-responsive p-4 mx-2">
-						<table class="table align-items-center mb-0" id="datatable">
+						<table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatable">
 							<thead>
 								<tr>
 									<th>

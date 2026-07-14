@@ -68,7 +68,7 @@ if ($userYangSedangLogin > 0) {
         </div>
     </div>
     <div class="row justify-content-center">
-        <div class="col-10 col-md-8">
+        <div class="col-12 col-md-10 col-lg-8 report-page-column">
 
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
@@ -150,7 +150,7 @@ if ($userYangSedangLogin > 0) {
                             <div class="col-sm-5">
                                 <input type="hidden" name="tanggal" id="tanggal">
                                 <div class="row g-2">
-                                    <div class="col-12 col-md-6">
+                                    <div class="col-12 col-lg-6">
                                         <label class="form-label text-xs text-secondary mb-1" for="tanggal_awal">Tanggal awal</label>
                                         <div class="input-group input-group-outline">
                                             <input
@@ -164,7 +164,7 @@ if ($userYangSedangLogin > 0) {
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12 col-md-6">
+                                    <div class="col-12 col-lg-6">
                                         <label class="form-label text-xs text-secondary mb-1" for="tanggal_akhir">Tanggal akhir</label>
                                         <div class="input-group input-group-outline">
                                             <input

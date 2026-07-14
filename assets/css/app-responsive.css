@@ -21,6 +21,34 @@ body.g-sidenav-show {
     margin-bottom: 0;
 }
 
+@media (min-width: 576px) {
+    .app-main-content .table-responsive .cashflow-table-md {
+        min-width: 820px;
+    }
+
+    .app-main-content .table-responsive .cashflow-table-lg {
+        min-width: 980px;
+    }
+
+    .app-main-content .table-responsive .cashflow-table-xl {
+        min-width: 1180px;
+    }
+
+    .app-main-content .cashflow-responsive-data td[data-label="Tanggal"],
+    .app-main-content .cashflow-responsive-data td[data-label="Jumlah"],
+    .app-main-content .cashflow-responsive-data td[data-label="Nominal"],
+    .app-main-content .cashflow-responsive-data td[data-label="Status"] {
+        white-space: nowrap !important;
+    }
+
+    .app-main-content .cashflow-responsive-data td[data-label="Tanggal"] > *,
+    .app-main-content .cashflow-responsive-data td[data-label="Jumlah"] > *,
+    .app-main-content .cashflow-responsive-data td[data-label="Nominal"] > *,
+    .app-main-content .cashflow-responsive-data td[data-label="Status"] > * {
+        white-space: nowrap !important;
+    }
+}
+
 .app-main-content .btn,
 .app-main-content .form-control,
 .app-main-content select.form-control {
@@ -1283,7 +1311,7 @@ body.g-sidenav-show {
         row-gap: 0.75rem;
     }
 
-    .app-main-content .col-10.col-md-8 {
+    .app-main-content .report-page-column {
         flex: 0 0 100%;
         max-width: 100%;
     }

@@ -343,7 +343,7 @@ if ($tableExists) {
                                 <p class="text-sm text-secondary mb-0">Belum ada aktivitas yang tercatat.</p>
                             </div>
                         <?php } else { ?>
-                            <table class="table align-items-center mb-0" id="datatableAuditLog">
+                            <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatableAuditLog">
                                 <thead>
                                     <tr>
                                         <th>Tanggal</th>

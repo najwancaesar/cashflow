@@ -199,7 +199,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                 <p class="text-xs text-secondary mb-0">Tambahkan template pertama untuk transaksi rutin seperti gaji, internet, atau subscription.</p>
                             </div>
                         <?php } else { ?>
-                            <table class="table align-items-center mb-0" id="datatableRecurring">
+                            <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-xl" id="datatableRecurring">
                                 <thead>
                                     <tr>
                                         <th>Template</th>

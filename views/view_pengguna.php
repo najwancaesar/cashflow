@@ -191,7 +191,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                         </button>
                     </div>
                     <div class="table-responsive p-4">
-                        <table class="table align-items-center mb-0 cashflow-user-table" id="datatable">
+                        <table class="table align-items-center mb-0 cashflow-user-table cashflow-responsive-data cashflow-table-xl" id="datatable">
                             <thead>
                                 <tr>
                                     <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Foto</th>

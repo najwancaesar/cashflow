@@ -1,4 +1,7 @@
-<?php include_once __DIR__ . "/avatar_helper.php"; ?>
+<?php
+include_once __DIR__ . "/avatar_helper.php";
+include_once __DIR__ . "/csrf_helper.php";
+?>
 <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur"
     navbar-scroll="true">
     <div class="container-fluid py-1 px-3 d-flex">
@@ -38,8 +41,12 @@
                             </a>
                         </li>
                         <li class="d-flex justify-content-end">
-                            <a href="actions/aksi_logout.php" class="w-100 btn btn-info"><i
-                                    class="fa fa-sign-out" aria-hidden="true"></i> Logout</a>
+                            <form action="actions/aksi_logout.php" method="post" class="w-100 mb-0">
+                                <?= csrf_input() ?>
+                                <button type="submit" class="w-100 btn btn-info mb-0">
+                                    <i class="fa fa-sign-out" aria-hidden="true"></i> Logout
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </li>
