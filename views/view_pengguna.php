@@ -200,7 +200,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tanggal Daftar</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Last Login</th>
-                                    <th class="text-secondary opacity-7"></th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 cashflow-action-col">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -236,9 +236,10 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                         <td>
                                             <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_user_datetime($row['last_login_at'])) ?></p>
                                         </td>
-                                        <td class="align-middle cashflow-user-action-cell">
-                                            <div class="cashflow-user-actions">
-                                                <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2">
+                                        <td class="align-middle cashflow-user-action-cell cashflow-action-col">
+                                            <div class="cashflow-user-actions cashflow-action-group">
+                                                <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2"
+                                                    title="Lihat detail user" aria-label="Lihat detail user">
                                                     <i class="fa fa-eye" aria-hidden="true"></i>
                                                 </a>
                                                 <form action="actions/aksi_backup.php" method="post" class="d-inline">
@@ -246,6 +247,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                     <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
                                                     <button type="submit"
                                                         title="Backup Data"
+                                                        aria-label="Backup data user"
                                                         data-confirm="true"
                                                         data-confirm-title="Backup data user?"
                                                         data-confirm-text="File SQL akan dibuat dan langsung diunduh."
@@ -256,7 +258,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                     </button>
                                                 </form>
                                                 <?php if (!$isSelf) { ?>
-                                                    <a type="button"
+                                                    <a href="#" role="button"
                                                         class="text-secondary text-warning font-weight-bold text-xs me-2 btnedituser"
                                                         data-id="<?= (int) $row['id_user'] ?>"
                                                         data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
@@ -264,7 +266,8 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                         data-email="<?= htmlspecialchars($row['email'], ENT_QUOTES) ?>"
                                                         data-no_telp="<?= htmlspecialchars($row['no_telp'], ENT_QUOTES) ?>"
                                                         data-role="<?= htmlspecialchars($row['role'], ENT_QUOTES) ?>"
-                                                        data-is_active="<?= htmlspecialchars($row['is_active'], ENT_QUOTES) ?>">
+                                                        data-is_active="<?= htmlspecialchars($row['is_active'], ENT_QUOTES) ?>"
+                                                        title="Edit user" aria-label="Edit user">
                                                         <i class="fa fa-pencil" aria-hidden="true"></i>
                                                     </a>
 
@@ -278,15 +281,18 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                             data-confirm-text="<?= $isActive ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login kembali ke sistem.' ?>"
                                                             data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
                                                             data-confirm-cancel-text="Batal"
-                                                            class="border-0 bg-transparent p-0 <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2">
+                                                            class="border-0 bg-transparent p-0 <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2"
+                                                            title="<?= $isActive ? 'Nonaktifkan user' : 'Aktifkan user' ?>"
+                                                            aria-label="<?= $isActive ? 'Nonaktifkan user' : 'Aktifkan user' ?>">
                                                             <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
                                                         </button>
                                                     </form>
 
-                                                    <a type="button"
+                                                    <a href="#" role="button"
                                                         class="text-secondary text-info font-weight-bold text-xs me-2 btnresetpassworduser"
                                                         data-id="<?= (int) $row['id_user'] ?>"
-                                                        data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>">
+                                                        data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
+                                                        title="Reset password user" aria-label="Reset password user">
                                                         <i class="fa fa-key" aria-hidden="true"></i>
                                                     </a>
 
@@ -294,7 +300,8 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
                                                         <button type="submit"
-                                                            title="hapus"
+                                                            title="Hapus user"
+                                                            aria-label="Hapus user"
                                                             data-confirm="true"
                                                             data-confirm-title="Hapus pengguna ini?"
                                                             data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
@@ -525,6 +532,9 @@ $(document).ready(function() {
                 "previous": "&lt"
             },
         },
+        columnDefs: [
+            { targets: -1, orderable: false, searchable: false }
+        ],
         dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
     });
 });

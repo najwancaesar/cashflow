@@ -75,7 +75,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                 <th>Progress</th>
                 <th>Target Tanggal</th>
                 <th>Status</th>
-                <th></th>
+                <th class="cashflow-action-col">Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -116,7 +116,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                             <?= htmlspecialchars($statusMeta['label'], ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </td>
-                    <td class="align-middle saving-goal-action-cell">
+                    <td class="align-middle saving-goal-action-cell cashflow-action-col">
                         <div class="dropdown saving-goal-action-dropdown">
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle mb-0" type="button"
                                 id="savingGoalAction<?= $goalId ?>" data-bs-toggle="dropdown"
@@ -705,6 +705,9 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                             "previous": "&lt"
                         },
                     },
+                    columnDefs: [
+                        { targets: -1, orderable: false, searchable: false }
+                    ],
                     dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
                 });
             }

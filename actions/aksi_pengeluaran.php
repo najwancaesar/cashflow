@@ -6,7 +6,6 @@ include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
-include_once __DIR__ . "/../includes/archive_helper.php";
 
 function clean_input($data) {
     global $con;
@@ -270,10 +269,6 @@ if (isset($_GET['act'])) {
                     if (!$existingPengeluaran) {
                         throw new DomainException('Data pengeluaran tidak ditemukan atau bukan milik Anda.');
                     }
-                    if (cashflow_archive_record_is_archived($con, 'pengeluaran', $id_pengeluaran, $user)) {
-                        throw new DomainException('Pengeluaran yang diarsipkan harus dipulihkan sebelum dapat diubah.');
-                    }
-
                     $oldWalletId = (int) ($existingPengeluaran['id_wallet'] ?? 0);
                     cashflow_lock_owned_wallets(
                         $con,
@@ -340,10 +335,6 @@ if (isset($_GET['act'])) {
                 if (!$existingPengeluaran) {
                     throw new DomainException('Data pengeluaran tidak ditemukan atau bukan milik Anda.');
                 }
-                if (cashflow_archive_record_is_archived($con, 'pengeluaran', $id_pengeluaran, $user)) {
-                    throw new DomainException('Pengeluaran yang diarsipkan harus dipulihkan sebelum statusnya diubah.');
-                }
-
                 if ((string) $existingPengeluaran['status'] === $targetStatus) {
                     $con->commit();
                     show_sweetalert_and_redirect('Berhasil!', 'Status pengeluaran tidak berubah.', 'success', 'main.php?module=pengeluaran');
@@ -414,11 +405,8 @@ if (isset($_GET['act'])) {
                 if (!$existingPengeluaran) {
                     throw new DomainException('Data pengeluaran tidak ditemukan atau bukan milik Anda.');
                 }
-                if (cashflow_archive_record_is_archived($con, 'pengeluaran', $id_pengeluaran, $user)) {
-                    throw new DomainException('Pengeluaran yang diarsipkan harus dipulihkan sebelum dapat dihapus.');
-                }
                 if ((string) ($existingPengeluaran['status'] ?? '') === 'selesai') {
-                    throw new DomainException('Pengeluaran selesai tidak dapat dihapus permanen. Gunakan aksi Arsipkan agar saldo dan histori tetap utuh.');
+                    throw new DomainException('Pengeluaran selesai tidak dapat dihapus permanen agar saldo dan histori tetap utuh.');
                 }
 
                 $relationStmt = $con->prepare("SELECT id_log FROM recurring_generation_log
@@ -431,7 +419,20 @@ if (isset($_GET['act'])) {
                 $hasRecurringRelation = (bool) $relationStmt->get_result()->fetch_assoc();
                 $relationStmt->close();
                 if ($hasRecurringRelation) {
-                    throw new DomainException('Pengeluaran hasil recurring memiliki riwayat generation dan tidak dapat dihapus permanen. Gunakan aksi Arsipkan.');
+                    throw new DomainException('Pengeluaran hasil recurring memiliki riwayat generation dan tidak dapat dihapus permanen.');
+                }
+
+                $linkedStmt = $con->prepare("SELECT id_hutang FROM hutang
+                                             WHERE user = ? AND id_pengeluaran = ? LIMIT 1");
+                if (!$linkedStmt) {
+                    throw new RuntimeException('Gagal memeriksa relasi utang pengeluaran.');
+                }
+                $linkedStmt->bind_param('ii', $user, $id_pengeluaran);
+                $linkedStmt->execute();
+                $hasLinkedHutang = (bool) $linkedStmt->get_result()->fetch_assoc();
+                $linkedStmt->close();
+                if ($hasLinkedHutang) {
+                    throw new DomainException('Pengeluaran linked pelunasan utang tidak dapat dihapus permanen.');
                 }
 
                 $stmt = $con->prepare("DELETE FROM pengeluaran

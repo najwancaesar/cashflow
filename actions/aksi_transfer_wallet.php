@@ -5,7 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
-include_once __DIR__ . "/../includes/archive_helper.php";
+include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 function require_transfer_post_csrf()
 {
@@ -90,6 +90,24 @@ function fetch_transfer_status_for_user($con, $transferId, $userId)
     return $transfer['status'] ?? null;
 }
 
+function fetch_transfer_for_user($con, $transferId, $userId, $forUpdate = false)
+{
+    $lockClause = $forUpdate ? ' FOR UPDATE' : '';
+    $stmt = $con->prepare("SELECT id_transfer, user_id, wallet_asal_id, wallet_tujuan_id, jumlah, status
+                           FROM transfer_wallet
+                           WHERE id_transfer = ? AND user_id = ?
+                           LIMIT 1{$lockClause}");
+    if (!$stmt) {
+        throw new RuntimeException('Gagal menyiapkan data transfer.');
+    }
+    $stmt->bind_param('ii', $transferId, $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+    return $row ?: null;
+}
+
 function count_active_wallets_for_transfer($con, $userId)
 {
     $stmt = $con->prepare("SELECT COUNT(*)
@@ -102,82 +120,6 @@ function count_active_wallets_for_transfer($con, $userId)
     $stmt->close();
 
     return (int) ($row[0] ?? 0);
-}
-
-function transfer_single_value($con, $sql, $types = '', $params = [])
-{
-    $stmt = $con->prepare($sql);
-    if ($types !== '' && !empty($params)) {
-        $bindParams = [$types];
-        foreach ($params as $key => $value) {
-            $bindParams[] = &$params[$key];
-        }
-        call_user_func_array([$stmt, 'bind_param'], $bindParams);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result ? $result->fetch_row() : null;
-    $stmt->close();
-
-    return (float) ($row[0] ?? 0);
-}
-
-function hitung_saldo_wallet($con, $userId, $walletId, $excludeTransferId = null)
-{
-    $saldoAwal = transfer_single_value(
-        $con,
-        "SELECT COALESCE(saldo_awal, 0)
-         FROM wallet
-         WHERE id_wallet = ? AND user_id = ?
-         LIMIT 1",
-        "ii",
-        [$walletId, $userId]
-    );
-
-    $totalPemasukan = transfer_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM pemasukan
-         WHERE user = ? AND id_wallet = ? AND status = 'selesai'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    $totalPengeluaran = transfer_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM pengeluaran
-         WHERE user = ? AND id_wallet = ? AND status = 'selesai'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    $transferMasukSql = "SELECT COALESCE(SUM(jumlah), 0)
-                         FROM transfer_wallet
-                         WHERE user_id = ? AND wallet_tujuan_id = ? AND status = 'selesai'";
-    $transferMasukTypes = "ii";
-    $transferMasukParams = [$userId, $walletId];
-
-    $transferKeluarSql = "SELECT COALESCE(SUM(jumlah), 0)
-                          FROM transfer_wallet
-                          WHERE user_id = ? AND wallet_asal_id = ? AND status = 'selesai'";
-    $transferKeluarTypes = "ii";
-    $transferKeluarParams = [$userId, $walletId];
-
-    if ($excludeTransferId !== null && (int) $excludeTransferId > 0) {
-        $transferMasukSql .= " AND id_transfer <> ?";
-        $transferMasukTypes .= "i";
-        $transferMasukParams[] = (int) $excludeTransferId;
-
-        $transferKeluarSql .= " AND id_transfer <> ?";
-        $transferKeluarTypes .= "i";
-        $transferKeluarParams[] = (int) $excludeTransferId;
-    }
-
-    $totalTransferMasuk = transfer_single_value($con, $transferMasukSql, $transferMasukTypes, $transferMasukParams);
-    $totalTransferKeluar = transfer_single_value($con, $transferKeluarSql, $transferKeluarTypes, $transferKeluarParams);
-
-    return $saldoAwal + $totalPemasukan - $totalPengeluaran + $totalTransferMasuk - $totalTransferKeluar;
 }
 
 if (!isset($_SESSION['id_user'])) {
@@ -241,50 +183,106 @@ if ($act === 't') {
         show_sweetalert_and_redirect('Data tidak valid', 'Status transfer tidak valid.', 'error', 'main.php?module=transfer_wallet');
     }
 
-    if ($status === 'selesai') {
-        $saldoWalletAsal = hitung_saldo_wallet($con, $userId, $walletAsalId, $transferId);
-        if ($saldoWalletAsal + 0.0001 < $jumlah) {
-            show_sweetalert_and_redirect('Saldo tidak cukup', 'Saldo wallet asal tidak mencukupi untuk transfer ini.', 'warning', 'main.php?module=transfer_wallet');
-        }
-    }
+    try {
+        $con->begin_transaction();
 
-    if ($transferId === null) {
-        $stmt = $con->prepare("INSERT INTO transfer_wallet (user_id, wallet_asal_id, wallet_tujuan_id, tanggal, jumlah, catatan, status, created_at, updated_at)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-        $stmt->bind_param("iiisdss", $userId, $walletAsalId, $walletTujuanId, $tanggal, $jumlah, $catatan, $status);
-        $result = $stmt->execute();
-        $newTransferId = (int) $stmt->insert_id;
-        $stmt->close();
-
-        if ($result) {
-            record_activity($con, 'transfer_wallet', 'tambah', "Menambahkan transfer wallet ID {$newTransferId}.");
-            show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil ditambahkan.', 'success', 'main.php?module=transfer_wallet');
+        $existingTransfer = null;
+        $walletIdsToLock = [$walletAsalId, $walletTujuanId];
+        if ($transferId !== null) {
+            if ($transferId <= 0) {
+                throw new DomainException('ID transfer tidak valid.');
+            }
+            $existingTransfer = fetch_transfer_for_user($con, $transferId, $userId, true);
+            if (!$existingTransfer) {
+                throw new DomainException('Transfer yang ingin diubah tidak ditemukan atau bukan milik Anda.');
+            }
+            $walletIdsToLock[] = (int) $existingTransfer['wallet_asal_id'];
+            $walletIdsToLock[] = (int) $existingTransfer['wallet_tujuan_id'];
         }
 
-        show_sweetalert_and_redirect('Gagal', 'Transfer wallet gagal ditambahkan.', 'error', 'main.php?module=transfer_wallet');
-    }
+        cashflow_lock_owned_wallets($con, $userId, $walletIdsToLock, [$walletAsalId, $walletTujuanId]);
 
-    if ($transferId <= 0 || !transfer_dimiliki_user($con, $transferId, $userId)) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Transfer yang ingin diubah tidak ditemukan.', 'warning', 'main.php?module=transfer_wallet');
-    }
-    if (cashflow_archive_record_is_archived($con, 'transfer_wallet', $transferId, $userId)) {
-        show_sweetalert_and_redirect('Aksi ditolak', 'Transfer yang diarsipkan harus dipulihkan sebelum dapat diubah.', 'warning', 'main.php?module=transfer_wallet&arsip=diarsipkan');
-    }
+        $excludeTransferId = $existingTransfer ? (int) $existingTransfer['id_transfer'] : null;
+        $affectedWalletIds = array_values(array_unique(array_map('intval', $walletIdsToLock)));
+        $baseBalances = [];
+        $currentBalances = [];
+        foreach ($affectedWalletIds as $affectedWalletId) {
+            $baseBalances[$affectedWalletId] = cashflow_calculate_wallet_balance(
+                $con,
+                $userId,
+                $affectedWalletId,
+                null,
+                $excludeTransferId
+            );
+            $currentBalances[$affectedWalletId] = cashflow_calculate_wallet_balance($con, $userId, $affectedWalletId);
+        }
 
-    $stmt = $con->prepare("UPDATE transfer_wallet
-                           SET wallet_asal_id = ?, wallet_tujuan_id = ?, tanggal = ?, jumlah = ?, catatan = ?, status = ?, updated_at = NOW()
-                           WHERE id_transfer = ? AND user_id = ?");
-    $stmt->bind_param("iisdssii", $walletAsalId, $walletTujuanId, $tanggal, $jumlah, $catatan, $status, $transferId, $userId);
-    $result = $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
+        $proposedBalances = $baseBalances;
+        if ($status === 'selesai') {
+            $proposedBalances[$walletAsalId] -= $jumlah;
+            $proposedBalances[$walletTujuanId] += $jumlah;
+            if ($proposedBalances[$walletAsalId] < -0.00001) {
+                throw new DomainException('Saldo wallet asal tidak mencukupi untuk transfer ini.');
+            }
+        }
 
-    if ($result && $affectedRows >= 0) {
-        record_activity($con, 'transfer_wallet', 'edit', "Mengubah transfer wallet ID {$transferId}.");
-        show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil diperbarui.', 'success', 'main.php?module=transfer_wallet');
+        foreach ($proposedBalances as $affectedWalletId => $proposedBalance) {
+            if ($proposedBalance < -0.00001 && $proposedBalance < $currentBalances[$affectedWalletId] - 0.00001) {
+                throw new DomainException('Perubahan transfer akan membuat saldo wallet terkait semakin negatif.');
+            }
+        }
+
+        if ($existingTransfer === null) {
+            $stmt = $con->prepare("INSERT INTO transfer_wallet (user_id, wallet_asal_id, wallet_tujuan_id, tanggal, jumlah, catatan, status, created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            if (!$stmt) {
+                throw new RuntimeException('Gagal menyiapkan transfer baru.');
+            }
+            $stmt->bind_param("iiisdss", $userId, $walletAsalId, $walletTujuanId, $tanggal, $jumlah, $catatan, $status);
+            if (!$stmt->execute()) {
+                $stmt->close();
+                throw new RuntimeException('Transfer wallet gagal ditambahkan.');
+            }
+            $savedTransferId = (int) $stmt->insert_id;
+            $stmt->close();
+            $activityAction = 'tambah';
+            $activityText = "Menambahkan transfer wallet ID {$savedTransferId}.";
+            $successMessage = 'Transfer wallet berhasil ditambahkan.';
+        } else {
+            $stmt = $con->prepare("UPDATE transfer_wallet
+                                   SET wallet_asal_id = ?, wallet_tujuan_id = ?, tanggal = ?, jumlah = ?, catatan = ?, status = ?, updated_at = NOW()
+                                   WHERE id_transfer = ? AND user_id = ?");
+            if (!$stmt) {
+                throw new RuntimeException('Gagal menyiapkan perubahan transfer.');
+            }
+            $stmt->bind_param("iisdssii", $walletAsalId, $walletTujuanId, $tanggal, $jumlah, $catatan, $status, $transferId, $userId);
+            if (!$stmt->execute()) {
+                $stmt->close();
+                throw new RuntimeException('Transfer wallet gagal diperbarui.');
+            }
+            $affectedRows = $stmt->affected_rows;
+            $stmt->close();
+            if ($affectedRows === 0) {
+                $con->commit();
+                show_sweetalert_and_redirect('Tidak ada perubahan', 'Data transfer tidak berubah.', 'info', 'main.php?module=transfer_wallet');
+            }
+            $savedTransferId = (int) $transferId;
+            $activityAction = 'edit';
+            $activityText = "Mengubah transfer wallet ID {$savedTransferId}.";
+            $successMessage = 'Transfer wallet berhasil diperbarui.';
+        }
+
+        $con->commit();
+        record_activity($con, 'transfer_wallet', $activityAction, $activityText);
+        show_sweetalert_and_redirect('Berhasil', $successMessage, 'success', 'main.php?module=transfer_wallet');
+    } catch (DomainException $error) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Aksi ditolak', $error->getMessage(), 'warning', 'main.php?module=transfer_wallet');
+    } catch (Throwable $error) {
+        $con->rollback();
+        error_log('Transfer wallet gagal: ' . $error->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Transfer wallet gagal diproses.', 'error', 'main.php?module=transfer_wallet');
     }
-
-    show_sweetalert_and_redirect('Gagal', 'Transfer wallet gagal diperbarui.', 'error', 'main.php?module=transfer_wallet');
 }
 
 if ($act === 'h') {
@@ -295,27 +293,53 @@ if ($act === 'h') {
         show_sweetalert_and_redirect('Data tidak valid', 'ID transfer tidak valid.', 'error', 'main.php?module=transfer_wallet');
     }
 
-    if (!transfer_dimiliki_user($con, $transferId, $userId)) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Transfer yang ingin dibatalkan tidak ditemukan.', 'warning', 'main.php?module=transfer_wallet');
-    }
-    if (cashflow_archive_record_is_archived($con, 'transfer_wallet', $transferId, $userId)) {
-        show_sweetalert_and_redirect('Aksi ditolak', 'Transfer yang diarsipkan harus dipulihkan sebelum dapat dibatalkan.', 'warning', 'main.php?module=transfer_wallet&arsip=diarsipkan');
-    }
+    try {
+        $con->begin_transaction();
+        $transfer = fetch_transfer_for_user($con, $transferId, $userId, true);
+        if (!$transfer) {
+            throw new DomainException('Transfer yang ingin dibatalkan tidak ditemukan atau bukan milik Anda.');
+        }
+        if ((string) $transfer['status'] === 'batal') {
+            $con->commit();
+            show_sweetalert_and_redirect('Tidak ada perubahan', 'Transfer wallet sudah berstatus batal.', 'info', 'main.php?module=transfer_wallet');
+        }
 
-    $stmt = $con->prepare("UPDATE transfer_wallet
-                           SET status = 'batal', updated_at = NOW()
-                           WHERE id_transfer = ? AND user_id = ? AND status <> 'batal'");
-    $stmt->bind_param("ii", $transferId, $userId);
-    $result = $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
+        $walletAsalId = (int) $transfer['wallet_asal_id'];
+        $walletTujuanId = (int) $transfer['wallet_tujuan_id'];
+        cashflow_lock_owned_wallets($con, $userId, [$walletAsalId, $walletTujuanId]);
 
-    if ($result && $affectedRows > 0) {
+        if ((string) $transfer['status'] === 'selesai') {
+            $saldoTujuanTanpaTransfer = cashflow_calculate_wallet_balance($con, $userId, $walletTujuanId, null, $transferId);
+            if ($saldoTujuanTanpaTransfer < -0.00001) {
+                throw new DomainException('Transfer selesai tidak dapat dibatalkan karena akan membuat saldo wallet tujuan negatif.');
+            }
+        }
+
+        $stmt = $con->prepare("UPDATE transfer_wallet
+                               SET status = 'batal', updated_at = NOW()
+                               WHERE id_transfer = ? AND user_id = ? AND status <> 'batal'");
+        if (!$stmt) {
+            throw new RuntimeException('Gagal menyiapkan pembatalan transfer.');
+        }
+        $stmt->bind_param('ii', $transferId, $userId);
+        $stmt->execute();
+        $affectedRows = $stmt->affected_rows;
+        $stmt->close();
+        if ($affectedRows !== 1) {
+            throw new RuntimeException('Status transfer gagal diperbarui.');
+        }
+
+        $con->commit();
         record_activity($con, 'transfer_wallet', 'batal', "Membatalkan transfer wallet ID {$transferId}.");
         show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil dibatalkan.', 'success', 'main.php?module=transfer_wallet');
+    } catch (DomainException $error) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Aksi ditolak', $error->getMessage(), 'warning', 'main.php?module=transfer_wallet');
+    } catch (Throwable $error) {
+        $con->rollback();
+        error_log('Pembatalan transfer gagal: ' . $error->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Transfer wallet gagal dibatalkan.', 'error', 'main.php?module=transfer_wallet');
     }
-
-    show_sweetalert_and_redirect('Tidak ada perubahan', 'Transfer wallet sudah berstatus batal.', 'warning', 'main.php?module=transfer_wallet');
 }
 
 if ($act === 'hp') {
@@ -326,31 +350,40 @@ if ($act === 'hp') {
         show_sweetalert_and_redirect('Data tidak valid', 'ID transfer tidak valid.', 'error', 'main.php?module=transfer_wallet');
     }
 
-    $statusTransfer = fetch_transfer_status_for_user($con, $transferId, $userId);
-    if ($statusTransfer === null) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Transfer yang ingin dihapus tidak ditemukan.', 'warning', 'main.php?module=transfer_wallet');
-    }
-    if (cashflow_archive_record_is_archived($con, 'transfer_wallet', $transferId, $userId)) {
-        show_sweetalert_and_redirect('Aksi ditolak', 'Transfer yang diarsipkan harus dipulihkan sebelum dapat dihapus.', 'warning', 'main.php?module=transfer_wallet&arsip=diarsipkan');
-    }
+    try {
+        $con->begin_transaction();
+        $transfer = fetch_transfer_for_user($con, $transferId, $userId, true);
+        if (!$transfer) {
+            throw new DomainException('Transfer yang ingin dihapus tidak ditemukan atau bukan milik Anda.');
+        }
+        if ((string) $transfer['status'] !== 'pending') {
+            throw new DomainException('Hanya transfer pending yang dapat dihapus permanen.');
+        }
 
-    if ($statusTransfer !== 'pending') {
-        show_sweetalert_and_redirect('Gunakan arsip', 'Transfer selesai atau batal tidak dapat dihapus permanen. Gunakan aksi Arsipkan agar histori tetap utuh.', 'warning', 'main.php?module=transfer_wallet');
+        $stmt = $con->prepare("DELETE FROM transfer_wallet
+                               WHERE id_transfer = ? AND user_id = ? AND status = 'pending'");
+        if (!$stmt) {
+            throw new RuntimeException('Gagal menyiapkan penghapusan transfer.');
+        }
+        $stmt->bind_param('ii', $transferId, $userId);
+        $stmt->execute();
+        $affectedRows = $stmt->affected_rows;
+        $stmt->close();
+        if ($affectedRows !== 1) {
+            throw new RuntimeException('Transfer pending gagal dihapus.');
+        }
+
+        $con->commit();
+        record_activity($con, 'transfer_wallet', 'hapus_permanen', "Menghapus permanen transfer pending ID {$transferId}.");
+        show_sweetalert_and_redirect('Berhasil', 'Transfer pending berhasil dihapus permanen.', 'success', 'main.php?module=transfer_wallet');
+    } catch (DomainException $error) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Aksi ditolak', $error->getMessage(), 'warning', 'main.php?module=transfer_wallet');
+    } catch (Throwable $error) {
+        $con->rollback();
+        error_log('Penghapusan transfer gagal: ' . $error->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Transfer wallet gagal dihapus.', 'error', 'main.php?module=transfer_wallet');
     }
-
-    $stmt = $con->prepare("DELETE FROM transfer_wallet
-                           WHERE id_transfer = ? AND user_id = ? AND status = 'pending'");
-    $stmt->bind_param("ii", $transferId, $userId);
-    $result = $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
-
-    if ($result && $affectedRows > 0) {
-        record_activity($con, 'transfer_wallet', 'hapus_permanen', "Menghapus permanen transfer wallet ID {$transferId}.");
-        show_sweetalert_and_redirect('Berhasil', 'Transfer wallet berhasil dihapus permanen.', 'success', 'main.php?module=transfer_wallet');
-    }
-
-    show_sweetalert_and_redirect('Gagal', 'Transfer wallet gagal dihapus permanen.', 'error', 'main.php?module=transfer_wallet');
 }
 
 show_sweetalert_and_redirect('Aksi tidak valid', 'Permintaan transfer wallet tidak dikenali.', 'error', 'main.php?module=transfer_wallet');

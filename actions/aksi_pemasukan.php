@@ -5,7 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
-include_once __DIR__ . "/../includes/archive_helper.php";
+include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 // Fungsi untuk membersihkan input
 function clean_input($data) {
@@ -111,6 +111,32 @@ function pemasukan_dimiliki_user($idPemasukan, $userId) {
     return $transaksi !== false;
 }
 
+function fetch_pemasukan_for_update($idPemasukan, $userId) {
+    global $con;
+
+    $stmt = $con->prepare("SELECT id_pemasukan, tanggal, catatan, status, jumlah, id_kategori, id_wallet
+                           FROM pemasukan
+                           WHERE id_pemasukan = ? AND user = ?
+                           LIMIT 1 FOR UPDATE");
+    if (!$stmt) {
+        throw new RuntimeException('Gagal menyiapkan data pemasukan.');
+    }
+    $stmt->bind_param('ii', $idPemasukan, $userId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return $row ?: null;
+}
+
+function ensure_pemasukan_change_does_not_worsen_negative_balance(array $currentBalances, array $proposedBalances) {
+    foreach ($proposedBalances as $walletId => $proposedBalance) {
+        $currentBalance = (float) ($currentBalances[$walletId] ?? 0);
+        if ($proposedBalance < -0.00001 && $proposedBalance < $currentBalance - 0.00001) {
+            throw new DomainException('Perubahan pemasukan akan membuat saldo wallet terkait menjadi atau semakin negatif.');
+        }
+    }
+}
+
 function normalize_pemasukan_ids($input) {
     if (!is_array($input)) {
         return [];
@@ -146,7 +172,8 @@ if ($act == 't') {
 
     $tanggal = clean_input($_POST['tanggal'] ?? '');
     $catatan = clean_input($_POST['catatan'] ?? '');
-    $jumlah = nominal_input_to_number($_POST['jumlah'] ?? '');
+    $jumlahRaw = (string) ($_POST['jumlah'] ?? '');
+    $jumlah = nominal_input_to_number($jumlahRaw);
     $status = clean_input($_POST['status'] ?? '');
     $kategoriId = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== ''
         ? (int) clean_input($_POST['id_kategori'])
@@ -155,7 +182,7 @@ if ($act == 't') {
         ? (int) clean_input($_POST['id_wallet'])
         : null;
 
-    if ($tanggal === '' || $jumlah <= 0 || $status === '') {
+    if ($tanggal === '' || $jumlah <= 0 || strpos($jumlahRaw, '-') !== false || $status === '') {
         show_sweetalert_and_redirect('Gagal!', 'Tanggal, jumlah, dan status wajib diisi.', 'error', 'main.php?module=pemasukan');
     }
 
@@ -170,44 +197,90 @@ if ($act == 't') {
 
     $validatedWalletId = resolve_pemasukan_wallet_id($walletId, $user);
 
-    if ($_POST['id_pemasukan'] == '') {
-        $query = "INSERT INTO pemasukan(tanggal, catatan, status, jumlah, user, id_kategori, id_wallet)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "sssdiii", $tanggal, $catatan, $status, $jumlah, $user, $validatedKategoriId, $validatedWalletId);
-        $hasil = mysqli_stmt_execute($stmt);
-        $newPemasukanId = (int) mysqli_insert_id($con);
-        mysqli_stmt_close($stmt);
+    if (empty($_POST['id_pemasukan'])) {
+        try {
+            $con->begin_transaction();
+            cashflow_lock_owned_wallets($con, $user, [$validatedWalletId], [$validatedWalletId]);
 
-        if ($hasil) {
-            record_activity($con, 'pemasukan', 'tambah', "Menambahkan pemasukan ID {$newPemasukanId}.");
-            show_sweetalert_and_redirect('Berhasil!', 'Data berhasil ditambahkan.', 'success', 'main.php?module=pemasukan');
-        } else {
+            $stmt = $con->prepare("INSERT INTO pemasukan(tanggal, catatan, status, jumlah, user, id_kategori, id_wallet)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?)");
+            if (!$stmt) {
+                throw new RuntimeException('Gagal menyiapkan penambahan pemasukan.');
+            }
+            $stmt->bind_param('sssdiii', $tanggal, $catatan, $status, $jumlah, $user, $validatedKategoriId, $validatedWalletId);
+            $stmt->execute();
+            $newPemasukanId = (int) $con->insert_id;
+            $stmt->close();
+            $con->commit();
+        } catch (Throwable $error) {
+            $con->rollback();
+            error_log('Tambah pemasukan gagal: ' . $error->getMessage());
             show_sweetalert_and_redirect('Gagal!', 'Gagal menambahkan data.', 'error', 'main.php?module=pemasukan');
         }
+
+        record_activity($con, 'pemasukan', 'tambah', "Menambahkan pemasukan ID {$newPemasukanId}.");
+        show_sweetalert_and_redirect('Berhasil!', 'Data berhasil ditambahkan.', 'success', 'main.php?module=pemasukan');
     } else {
         $id_pemasukan = (int) clean_input($_POST['id_pemasukan']);
-        if (!pemasukan_dimiliki_user($id_pemasukan, $user)) {
+        if ($id_pemasukan <= 0) {
             show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
         }
-        if (cashflow_archive_record_is_archived($con, 'pemasukan', $id_pemasukan, $user)) {
-            show_sweetalert_and_redirect('Aksi ditolak', 'Pemasukan yang diarsipkan harus dipulihkan sebelum dapat diubah.', 'warning', 'main.php?module=pemasukan&arsip=diarsipkan');
-        }
 
-        $query = "UPDATE pemasukan
-                 SET tanggal = ?, status = ?, catatan = ?, jumlah = ?, id_kategori = ?, id_wallet = ?
-                 WHERE id_pemasukan = ? AND user = ?";
-        $stmt = mysqli_prepare($con, $query);
-        mysqli_stmt_bind_param($stmt, "sssdiiii", $tanggal, $status, $catatan, $jumlah, $validatedKategoriId, $validatedWalletId, $id_pemasukan, $user);
-        $hasil = mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
+        try {
+            $con->begin_transaction();
+            $existingPemasukan = fetch_pemasukan_for_update($id_pemasukan, $user);
+            if (!$existingPemasukan) {
+                throw new DomainException('Data pemasukan tidak ditemukan atau bukan milik Anda.');
+            }
 
-        if ($hasil) {
-            record_activity($con, 'pemasukan', 'edit', "Mengubah pemasukan ID {$id_pemasukan}.");
-            show_sweetalert_and_redirect('Berhasil!', 'Data berhasil diubah.', 'success', 'main.php?module=pemasukan');
-        } else {
+            $oldWalletId = (int) ($existingPemasukan['id_wallet'] ?? 0);
+            cashflow_lock_owned_wallets($con, $user, [$oldWalletId, $validatedWalletId], [$validatedWalletId]);
+
+            $affectedWalletIds = array_values(array_unique([$oldWalletId, $validatedWalletId]));
+            $currentBalances = [];
+            $proposedBalances = [];
+            foreach ($affectedWalletIds as $affectedWalletId) {
+                $currentBalances[$affectedWalletId] = cashflow_calculate_wallet_balance($con, $user, $affectedWalletId);
+                $proposedBalances[$affectedWalletId] = cashflow_calculate_wallet_balance(
+                    $con,
+                    $user,
+                    $affectedWalletId,
+                    null,
+                    null,
+                    $id_pemasukan
+                );
+            }
+            if ($status === 'selesai') {
+                $proposedBalances[$validatedWalletId] += $jumlah;
+            }
+            ensure_pemasukan_change_does_not_worsen_negative_balance($currentBalances, $proposedBalances);
+
+            $stmt = $con->prepare("UPDATE pemasukan
+                                   SET tanggal = ?, status = ?, catatan = ?, jumlah = ?, id_kategori = ?, id_wallet = ?
+                                   WHERE id_pemasukan = ? AND user = ?");
+            if (!$stmt) {
+                throw new RuntimeException('Gagal menyiapkan perubahan pemasukan.');
+            }
+            $stmt->bind_param('sssdiiii', $tanggal, $status, $catatan, $jumlah, $validatedKategoriId, $validatedWalletId, $id_pemasukan, $user);
+            $stmt->execute();
+            $affectedRows = $stmt->affected_rows;
+            $stmt->close();
+            if ($affectedRows === 0) {
+                $con->commit();
+                show_sweetalert_and_redirect('Tidak ada perubahan', 'Data pemasukan tidak berubah.', 'info', 'main.php?module=pemasukan');
+            }
+            $con->commit();
+        } catch (DomainException $error) {
+            $con->rollback();
+            show_sweetalert_and_redirect('Aksi ditolak', $error->getMessage(), 'warning', 'main.php?module=pemasukan');
+        } catch (Throwable $error) {
+            $con->rollback();
+            error_log('Edit pemasukan gagal: ' . $error->getMessage());
             show_sweetalert_and_redirect('Gagal!', 'Gagal mengubah data.', 'error', 'main.php?module=pemasukan');
         }
+
+        record_activity($con, 'pemasukan', 'edit', "Mengubah pemasukan ID {$id_pemasukan}.");
+        show_sweetalert_and_redirect('Berhasil!', 'Data berhasil diubah.', 'success', 'main.php?module=pemasukan');
     }
 }
 
@@ -231,26 +304,53 @@ if ($act == 'l') {
         show_sweetalert_and_redirect('Gagal!', 'Status pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');
     }
 
-    if (!pemasukan_dimiliki_user($id_pemasukan, $user)) {
-        show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
-    }
-    if (cashflow_archive_record_is_archived($con, 'pemasukan', $id_pemasukan, $user)) {
-        show_sweetalert_and_redirect('Aksi ditolak', 'Pemasukan yang diarsipkan harus dipulihkan sebelum statusnya diubah.', 'warning', 'main.php?module=pemasukan&arsip=diarsipkan');
+    try {
+        $con->begin_transaction();
+        $existingPemasukan = fetch_pemasukan_for_update($id_pemasukan, $user);
+        if (!$existingPemasukan) {
+            throw new DomainException('Data pemasukan tidak ditemukan atau bukan milik Anda.');
+        }
+        if ((string) ($existingPemasukan['status'] ?? '') === $targetStatus) {
+            $con->commit();
+            show_sweetalert_and_redirect('Tidak ada perubahan', 'Status pemasukan tidak berubah.', 'info', 'main.php?module=pemasukan');
+        }
+
+        $walletId = (int) ($existingPemasukan['id_wallet'] ?? 0);
+        cashflow_lock_owned_wallets($con, $user, [$walletId]);
+        $currentBalance = cashflow_calculate_wallet_balance($con, $user, $walletId);
+        $proposedBalance = cashflow_calculate_wallet_balance($con, $user, $walletId, null, null, $id_pemasukan);
+        if ($targetStatus === 'selesai') {
+            $proposedBalance += (float) ($existingPemasukan['jumlah'] ?? 0);
+        }
+        ensure_pemasukan_change_does_not_worsen_negative_balance(
+            [$walletId => $currentBalance],
+            [$walletId => $proposedBalance]
+        );
+
+        $stmt = $con->prepare("UPDATE pemasukan SET status = ?
+                               WHERE id_pemasukan = ? AND user = ?");
+        if (!$stmt) {
+            throw new RuntimeException('Gagal menyiapkan perubahan status pemasukan.');
+        }
+        $stmt->bind_param('sii', $targetStatus, $id_pemasukan, $user);
+        $stmt->execute();
+        if ($stmt->affected_rows !== 1) {
+            $stmt->close();
+            throw new RuntimeException('Status pemasukan gagal diperbarui.');
+        }
+        $stmt->close();
+        $con->commit();
+    } catch (DomainException $error) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Aksi ditolak', $error->getMessage(), 'warning', 'main.php?module=pemasukan');
+    } catch (Throwable $error) {
+        $con->rollback();
+        error_log('Ubah status pemasukan gagal: ' . $error->getMessage());
+        show_sweetalert_and_redirect('Gagal!', 'Status pemasukan gagal diubah.', 'error', 'main.php?module=pemasukan');
     }
 
-    $query = "UPDATE pemasukan SET status = ? WHERE id_pemasukan = ? AND user = ?";
-    $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "sii", $targetStatus, $id_pemasukan, $user);
-    $hasil = mysqli_stmt_execute($stmt);
-    $affectedRows = mysqli_stmt_affected_rows($stmt);
-    mysqli_stmt_close($stmt);
-
-    if ($hasil && $affectedRows > 0) {
-        record_activity($con, 'pemasukan', 'ubah_status', "Mengubah status pemasukan ID {$id_pemasukan} menjadi {$targetStatus}.");
-        show_sweetalert_and_redirect('Berhasil!', 'Status pemasukan berhasil diubah.', 'success', 'main.php?module=pemasukan');
-    } else {
-        show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
-    }
+    record_activity($con, 'pemasukan', 'ubah_status', "Mengubah status pemasukan ID {$id_pemasukan} menjadi {$targetStatus}.");
+    show_sweetalert_and_redirect('Berhasil!', 'Status pemasukan berhasil diubah.', 'success', 'main.php?module=pemasukan');
 }
 
 if ($act == 'h') {
@@ -267,46 +367,69 @@ if ($act == 'h') {
         show_sweetalert_and_redirect('Gagal!', 'ID pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');
     }
 
-    if (!pemasukan_dimiliki_user($id_pemasukan, $user)) {
-        show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
+    try {
+        $con->begin_transaction();
+
+        $statusStmt = $con->prepare("SELECT status FROM pemasukan
+                                     WHERE id_pemasukan = ? AND user = ?
+                                     LIMIT 1 FOR UPDATE");
+        if (!$statusStmt) {
+            throw new RuntimeException('Gagal menyiapkan pemeriksaan pemasukan.');
+        }
+        $statusStmt->bind_param('ii', $id_pemasukan, $user);
+        $statusStmt->execute();
+        $statusRow = $statusStmt->get_result()->fetch_assoc();
+        $statusStmt->close();
+        if (!$statusRow) {
+            throw new DomainException('Data pemasukan tidak ditemukan atau bukan milik Anda.');
+        }
+        if (($statusRow['status'] ?? '') !== 'pending') {
+            throw new DomainException('Pemasukan selesai tidak dapat dihapus permanen agar saldo dan histori tetap utuh.');
+        }
+
+        $relationStmt = $con->prepare("SELECT id_log AS relation_id
+                                       FROM recurring_generation_log
+                                       WHERE user_id = ? AND tipe_transaksi = 'pemasukan' AND id_transaksi = ?
+                                       UNION ALL
+                                       SELECT id_piutang AS relation_id
+                                       FROM piutang
+                                       WHERE user = ? AND id_pemasukan = ?
+                                       LIMIT 1");
+        if (!$relationStmt) {
+            throw new RuntimeException('Gagal memeriksa relasi pemasukan.');
+        }
+        $relationStmt->bind_param('iiii', $user, $id_pemasukan, $user, $id_pemasukan);
+        $relationStmt->execute();
+        $hasProtectedRelation = (bool) $relationStmt->get_result()->fetch_assoc();
+        $relationStmt->close();
+        if ($hasProtectedRelation) {
+            throw new DomainException('Pemasukan linked atau hasil recurring tidak dapat dihapus permanen.');
+        }
+
+        $stmt = $con->prepare("DELETE FROM pemasukan
+                               WHERE id_pemasukan = ? AND user = ? AND status = 'pending'");
+        if (!$stmt) {
+            throw new RuntimeException('Gagal menyiapkan penghapusan pemasukan.');
+        }
+        $stmt->bind_param('ii', $id_pemasukan, $user);
+        $stmt->execute();
+        if ($stmt->affected_rows !== 1) {
+            $stmt->close();
+            throw new RuntimeException('Pemasukan gagal dihapus atau statusnya sudah berubah.');
+        }
+        $stmt->close();
+        $con->commit();
+    } catch (DomainException $error) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Aksi ditolak', $error->getMessage(), 'warning', 'main.php?module=pemasukan');
+    } catch (Throwable $error) {
+        $con->rollback();
+        error_log('Hapus pemasukan gagal: ' . $error->getMessage());
+        show_sweetalert_and_redirect('Gagal!', 'Pemasukan gagal dihapus. Tidak ada data yang diubah.', 'error', 'main.php?module=pemasukan');
     }
 
-    if (cashflow_archive_record_is_archived($con, 'pemasukan', $id_pemasukan, $user)) {
-        show_sweetalert_and_redirect('Aksi ditolak', 'Pemasukan yang diarsipkan harus dipulihkan sebelum dapat dihapus.', 'warning', 'main.php?module=pemasukan&arsip=diarsipkan');
-    }
-
-    $statusStmt = $con->prepare("SELECT status FROM pemasukan WHERE id_pemasukan = ? AND user = ? LIMIT 1");
-    $statusStmt->bind_param('ii', $id_pemasukan, $user);
-    $statusStmt->execute();
-    $statusRow = $statusStmt->get_result()->fetch_assoc();
-    $statusStmt->close();
-    if (($statusRow['status'] ?? '') === 'selesai') {
-        show_sweetalert_and_redirect('Gunakan arsip', 'Pemasukan selesai tidak dapat dihapus permanen. Gunakan aksi Arsipkan agar saldo dan histori tetap utuh.', 'warning', 'main.php?module=pemasukan');
-    }
-
-    $relationStmt = $con->prepare("SELECT id_log FROM recurring_generation_log
-                                   WHERE user_id = ? AND tipe_transaksi = 'pemasukan' AND id_transaksi = ? LIMIT 1");
-    $relationStmt->bind_param('ii', $user, $id_pemasukan);
-    $relationStmt->execute();
-    $hasRecurringRelation = (bool) $relationStmt->get_result()->fetch_assoc();
-    $relationStmt->close();
-    if ($hasRecurringRelation) {
-        show_sweetalert_and_redirect('Gunakan arsip', 'Pemasukan hasil recurring memiliki riwayat generation dan tidak dapat dihapus permanen.', 'warning', 'main.php?module=pemasukan');
-    }
-
-    $query = "DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ? AND status = 'pending'";
-    $stmt = mysqli_prepare($con, $query);
-    mysqli_stmt_bind_param($stmt, "ii", $id_pemasukan, $user);
-    $hasil = mysqli_stmt_execute($stmt);
-    $affectedRows = mysqli_stmt_affected_rows($stmt);
-    mysqli_stmt_close($stmt);
-
-    if ($hasil && $affectedRows > 0) {
-        record_activity($con, 'pemasukan', 'hapus', "Menghapus pemasukan pending ID {$id_pemasukan}.");
-        show_sweetalert_and_redirect('Berhasil!', 'Data berhasil dihapus.', 'success', 'main.php?module=pemasukan');
-    }
-
-    show_sweetalert_and_redirect('Gagal!', 'Pemasukan gagal dihapus atau statusnya sudah berubah.', 'error', 'main.php?module=pemasukan');
+    record_activity($con, 'pemasukan', 'hapus', "Menghapus pemasukan pending ID {$id_pemasukan}.");
+    show_sweetalert_and_redirect('Berhasil!', 'Data berhasil dihapus.', 'success', 'main.php?module=pemasukan');
 }
 
 if ($act == 'bulk_delete') {

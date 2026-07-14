@@ -4,7 +4,6 @@ include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
 include_once __DIR__ . "/../includes/financial_calendar_helper.php";
-include_once __DIR__ . "/../includes/archive_helper.php";
 
 function fetch_single_value($con, $sql, $types = '', $params = [])
 {
@@ -217,16 +216,6 @@ $mingguBerjalan = new DateTimeImmutable($tglSekarang);
 $tanggalAwalMinggu = $mingguBerjalan->modify('monday this week')->format('Y-m-d');
 $tanggalAkhirMinggu = $mingguBerjalan->modify('sunday this week')->format('Y-m-d');
 $userYangSedangLogin = (int) ($_SESSION["id_user"] ?? 0);
-$latestPemasukanArchiveWhere = cashflow_archive_filter_sql(
-    'pemasukan',
-    'aktif',
-    cashflow_archive_ready($con, 'pemasukan')
-);
-$latestPengeluaranArchiveWhere = cashflow_archive_filter_sql(
-    'pengeluaran',
-    'aktif',
-    cashflow_archive_ready($con, 'pengeluaran')
-);
 $isAdmin = strtolower((string) ($_SESSION['role'] ?? '')) === 'admin';
 
 if ($userYangSedangLogin <= 0) {
@@ -598,7 +587,6 @@ $q_pemasukan_terbaru = fetch_all_rows(
         ON pemasukan.id_wallet = wallet.id_wallet
        AND wallet.user_id = pemasukan.user
     WHERE pemasukan.user = ?
-      AND {$latestPemasukanArchiveWhere}
     ORDER BY pemasukan.id_pemasukan DESC
     LIMIT 5",
     "i",
@@ -621,7 +609,6 @@ $q_pengeluaran_terbaru = fetch_all_rows(
         ON pengeluaran.id_wallet = wallet.id_wallet
        AND wallet.user_id = pengeluaran.user
     WHERE pengeluaran.user = ?
-      AND {$latestPengeluaranArchiveWhere}
     ORDER BY pengeluaran.id_pengeluaran DESC
     LIMIT 5",
     "i",

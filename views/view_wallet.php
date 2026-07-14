@@ -72,7 +72,7 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                         <th>Default</th>
                                         <th>Status</th>
                                         <th>Diperbarui</th>
-                                        <th></th>
+                                        <th class="cashflow-action-col">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -119,14 +119,16 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                     <?= htmlspecialchars(date('d M Y H:i', strtotime($row['updated_at'] ?? $row['created_at']))) ?>
                                                 </p>
                                             </td>
-                                            <td class="align-middle">
-                                                <a type="button"
-                                                    class="text-secondary text-warning font-weight-bold text-xs me-2 btneditwallet"
+                                            <td class="align-middle cashflow-action-col">
+                                                <div class="cashflow-action-group">
+                                                <a href="#" role="button"
+                                                    class="text-secondary text-warning font-weight-bold text-xs btneditwallet"
                                                     data-id="<?= (int) $row['id_wallet'] ?>"
                                                     data-nama="<?= htmlspecialchars($row['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>"
                                                     data-tipe="<?= htmlspecialchars($walletTypeSelection, ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-saldo="<?= htmlspecialchars(number_format((float) $row['saldo_awal'], 0, '', ''), ENT_QUOTES, 'UTF-8') ?>">
-                                                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                                                    data-saldo="<?= htmlspecialchars(number_format((float) $row['saldo_awal'], 0, '', ''), ENT_QUOTES, 'UTF-8') ?>"
+                                                    title="Edit wallet" aria-label="Edit wallet">
+                                                    <i class="fa fa-pencil" aria-hidden="true"></i> Edit
                                                 </a>
 
                                                 <form action="actions/aksi_wallet.php?act=s" method="post" class="d-inline">
@@ -139,7 +141,9 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                         data-confirm-text="<?= $isActive ? 'Wallet nonaktif tidak disiapkan untuk transaksi berikutnya.' : 'Wallet akan aktif kembali.' ?>"
                                                         data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
                                                         data-confirm-cancel-text="Batal"
-                                                        class="text-secondary <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2 border-0 bg-transparent p-0">
+                                                        class="text-secondary <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2 border-0 bg-transparent p-0"
+                                                        title="<?= $isActive ? 'Nonaktifkan wallet' : 'Aktifkan wallet' ?>"
+                                                        aria-label="<?= $isActive ? 'Nonaktifkan wallet' : 'Aktifkan wallet' ?>">
                                                         <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
                                                         <?= $isActive ? 'NONAKTIFKAN' : 'AKTIFKAN' ?>
                                                     </button>
@@ -154,11 +158,11 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                         data-confirm-text="Wallet ini akan menjadi wallet default akun Anda."
                                                         data-confirm-confirm-text="Ya, jadikan default"
                                                         data-confirm-cancel-text="Batal"
-                                                        class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0">
-                                                        <i class="fa fa-star<?= $isDefault ? '' : '-o' ?>" aria-hidden="true"></i>
+                                                        class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0"
+                                                        title="Jadikan wallet default" aria-label="Jadikan wallet default">
+                                                        <i class="fa fa-star<?= $isDefault ? '' : '-o' ?>" aria-hidden="true"></i> Default
                                                     </button>
                                                 </form>
-
                                                 <form action="actions/aksi_wallet.php?act=h" method="post" class="d-inline">
                                                     <?= csrf_input() ?>
                                                     <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
@@ -168,10 +172,12 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                         data-confirm-text="Hanya wallet tanpa histori atau relasi finansial yang dapat dihapus permanen. Wallet yang sudah digunakan harus dinonaktifkan."
                                                         data-confirm-confirm-text="Ya, hapus"
                                                         data-confirm-cancel-text="Batal"
-                                                        class="text-secondary text-danger font-weight-bold text-xs ms-2 border-0 bg-transparent p-0">
+                                                        class="text-secondary text-danger font-weight-bold text-xs ms-2 border-0 bg-transparent p-0"
+                                                        title="Hapus wallet" aria-label="Hapus wallet">
                                                         <i class="fa fa-trash" aria-hidden="true"></i> HAPUS
                                                     </button>
                                                 </form>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php } ?>
@@ -367,6 +373,9 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                         "previous": "&lt"
                     },
                 },
+                columnDefs: [
+                    { targets: -1, orderable: false, searchable: false }
+                ],
                 dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
             });
         }

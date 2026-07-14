@@ -6,6 +6,32 @@ include_once __DIR__ . '/../includes/sweetalert_helper.php';
 include_once __DIR__ . '/../includes/activity_log_helper.php';
 include_once __DIR__ . '/../includes/archive_helper.php';
 
+/*
+ * Archive transaksi dihentikan berdasarkan keputusan bisnis final.
+ * Endpoint dipertahankan agar bookmark/form lama mendapat penolakan yang jelas,
+ * tanpa mengubah metadata archived_at/archived_by yang sudah tersimpan.
+ */
+$disabledArchiveEntities = cashflow_archive_entities();
+$disabledArchiveEntityKey = trim((string) ($_POST['entity'] ?? ''));
+$disabledArchiveEntity = $disabledArchiveEntities[$disabledArchiveEntityKey] ?? null;
+$disabledArchiveRedirect = $disabledArchiveEntity
+    ? 'main.php?module=' . $disabledArchiveEntity['module']
+    : 'main.php?module=home';
+
+if ((int) ($_SESSION['id_user'] ?? 0) <= 0) {
+    show_sweetalert_and_redirect('Login diperlukan', 'Silakan login terlebih dahulu.', 'warning', 'login.php');
+}
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !verify_csrf_token()) {
+    show_sweetalert_and_redirect('Akses ditolak', 'Permintaan Archive/Restore tidak valid.', 'error', $disabledArchiveRedirect);
+}
+show_sweetalert_and_redirect(
+    'Fitur tidak tersedia',
+    'Archive dan Restore tidak lagi digunakan pada modul transaksi ini. Metadata lama tetap dipertahankan.',
+    'warning',
+    $disabledArchiveRedirect
+);
+exit;
+
 function cashflow_archive_action_lock_record($con, $entityKey, $id, $userId)
 {
     $entities = cashflow_archive_entities();

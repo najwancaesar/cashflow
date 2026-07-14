@@ -77,7 +77,7 @@ if (!function_exists('cashflow_wallet_balance_from_components')) {
 }
 
 if (!function_exists('cashflow_calculate_wallet_balance')) {
-    function cashflow_calculate_wallet_balance($con, $userId, $walletId, $excludePengeluaranId = null)
+    function cashflow_calculate_wallet_balance($con, $userId, $walletId, $excludePengeluaranId = null, $excludeTransferId = null, $excludePemasukanId = null)
     {
         $saldoAwal = cashflow_wallet_scalar(
             $con,
@@ -89,14 +89,17 @@ if (!function_exists('cashflow_calculate_wallet_balance')) {
             [$walletId, $userId]
         );
 
-        $totalPemasukan = cashflow_wallet_scalar(
-            $con,
-            "SELECT COALESCE(SUM(jumlah), 0)
-             FROM pemasukan
-             WHERE user = ? AND id_wallet = ? AND status = 'selesai'",
-            'ii',
-            [$userId, $walletId]
-        );
+        $pemasukanSql = "SELECT COALESCE(SUM(jumlah), 0)
+                         FROM pemasukan
+                         WHERE user = ? AND id_wallet = ? AND status = 'selesai'";
+        $pemasukanTypes = 'ii';
+        $pemasukanParams = [$userId, $walletId];
+        if ($excludePemasukanId !== null && (int) $excludePemasukanId > 0) {
+            $pemasukanSql .= ' AND id_pemasukan <> ?';
+            $pemasukanTypes .= 'i';
+            $pemasukanParams[] = (int) $excludePemasukanId;
+        }
+        $totalPemasukan = cashflow_wallet_scalar($con, $pemasukanSql, $pemasukanTypes, $pemasukanParams);
 
         $pengeluaranSql = "SELECT COALESCE(SUM(jumlah), 0)
                            FROM pengeluaran
@@ -115,23 +118,22 @@ if (!function_exists('cashflow_calculate_wallet_balance')) {
             $pengeluaranParams
         );
 
-        $totalTransferMasuk = cashflow_wallet_scalar(
-            $con,
-            "SELECT COALESCE(SUM(jumlah), 0)
-             FROM transfer_wallet
-             WHERE user_id = ? AND wallet_tujuan_id = ? AND status = 'selesai'",
-            'ii',
-            [$userId, $walletId]
-        );
-
-        $totalTransferKeluar = cashflow_wallet_scalar(
-            $con,
-            "SELECT COALESCE(SUM(jumlah), 0)
-             FROM transfer_wallet
-             WHERE user_id = ? AND wallet_asal_id = ? AND status = 'selesai'",
-            'ii',
-            [$userId, $walletId]
-        );
+        $transferMasukSql = "SELECT COALESCE(SUM(jumlah), 0)
+                             FROM transfer_wallet
+                             WHERE user_id = ? AND wallet_tujuan_id = ? AND status = 'selesai'";
+        $transferKeluarSql = "SELECT COALESCE(SUM(jumlah), 0)
+                              FROM transfer_wallet
+                              WHERE user_id = ? AND wallet_asal_id = ? AND status = 'selesai'";
+        $transferTypes = 'ii';
+        $transferParams = [$userId, $walletId];
+        if ($excludeTransferId !== null && (int) $excludeTransferId > 0) {
+            $transferMasukSql .= ' AND id_transfer <> ?';
+            $transferKeluarSql .= ' AND id_transfer <> ?';
+            $transferTypes .= 'i';
+            $transferParams[] = (int) $excludeTransferId;
+        }
+        $totalTransferMasuk = cashflow_wallet_scalar($con, $transferMasukSql, $transferTypes, $transferParams);
+        $totalTransferKeluar = cashflow_wallet_scalar($con, $transferKeluarSql, $transferTypes, $transferParams);
 
         $totalSetorCelengan = cashflow_wallet_scalar(
             $con,

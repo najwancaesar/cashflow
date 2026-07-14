@@ -6,7 +6,6 @@ include __DIR__ . "/../includes/nominal_helper.php";
 include __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
-include_once __DIR__ . "/../includes/archive_helper.php";
 $act = $_GET['act'] ?? '';
 $user = (int) ($_SESSION['id_user'] ?? 0);
 
@@ -154,10 +153,6 @@ if($act == 't'){
 			if (!$existingPiutang) {
 				throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
 			}
-			if (cashflow_archive_record_is_archived($con, 'piutang', $id, $user)) {
-				throw new DomainException('Piutang yang diarsipkan harus dipulihkan sebelum dapat diubah.');
-			}
-
 			if (($existingPiutang['status'] ?? '') === 'selesai' && (int) ($existingPiutang['id_pemasukan'] ?? 0) > 0) {
 				$linkedFieldsChanged = (float) ($existingPiutang['jumlah'] ?? 0) !== (float) $jumlah
 					|| trim((string) ($existingPiutang['debitur'] ?? '')) !== $debitur
@@ -217,10 +212,6 @@ if($act == 'l'){
 		if (!$piutang) {
 			throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
 		}
-		if (cashflow_archive_record_is_archived($con, 'piutang', $id_piutang, $user)) {
-			throw new DomainException('Piutang yang diarsipkan harus dipulihkan sebelum dapat dilunasi.');
-		}
-
 		if (($piutang['status'] ?? '') === 'selesai' || (int) ($piutang['id_pemasukan'] ?? 0) > 0) {
 			$con->commit();
 			show_sweetalert_and_redirect('Sudah lunas', 'Piutang ini sudah lunas dan sudah tercatat ke wallet.', 'info', 'main.php?module=piutang');
@@ -300,13 +291,9 @@ if($act == 'h'){
 		if (!$piutang) {
 			throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
 		}
-		if (cashflow_archive_record_is_archived($con, 'piutang', $id, $user)) {
-			throw new DomainException('Piutang yang diarsipkan harus dipulihkan sebelum dapat dihapus.');
-		}
-
 		$idPemasukan = (int) ($piutang['id_pemasukan'] ?? 0);
 		if ((string) ($piutang['status'] ?? '') === 'selesai' || $idPemasukan > 0) {
-			throw new DomainException('Piutang lunas atau memiliki pemasukan linked tidak dapat dihapus permanen. Gunakan aksi Arsipkan.');
+			throw new DomainException('Piutang lunas atau memiliki pemasukan linked tidak dapat dihapus permanen.');
 		}
 
 		$stmt = $con->prepare("DELETE FROM piutang WHERE id_piutang = ? AND user = ?");

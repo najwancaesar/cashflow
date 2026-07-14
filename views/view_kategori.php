@@ -149,8 +149,8 @@ mysqli_stmt_close($budgetHistoryStmt);
                             Kategori umum disiapkan otomatis saat akun dibuat, dan Anda tetap bisa menambah kategori sendiri kapan saja.
                         </p>
                     </div>
-                    <div class="px-4 pt-3">
-                        <form method="get" action="main.php" class="row g-3 align-items-end category-budget-filter">
+                    <div class="cashflow-toolbar-panel category-budget-toolbar-panel mt-3">
+                        <form method="get" action="main.php" class="row g-3 align-items-end category-budget-filter cashflow-toolbar-row">
                             <input type="hidden" name="module" value="kategori">
                             <div class="col-md-4 col-sm-6 cashflow-filter-field">
                                 <label for="filterBudgetBulan" class="cashflow-filter-label">Bulan Budget</label>
@@ -192,7 +192,7 @@ mysqli_stmt_close($budgetHistoryStmt);
                                     <th>Tipe</th>
                                     <th>Budget Periode</th>
                                     <th>Dibuat</th>
-                                    <th></th>
+                                    <th class="cashflow-action-col">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -329,7 +329,8 @@ mysqli_stmt_close($budgetHistoryStmt);
                                                 <?= htmlspecialchars(date('d M Y H:i', strtotime($row['created_at']))) ?>
                                             </p>
                                         </td>
-                                        <td class="align-middle">
+                                        <td class="align-middle cashflow-action-col">
+                                            <div class="cashflow-action-group">
                                             <form action="actions/aksi_kategori.php?act=h" method="post" class="d-inline">
                                                 <?= csrf_input() ?>
                                                 <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
@@ -339,18 +340,21 @@ mysqli_stmt_close($budgetHistoryStmt);
                                                     data-confirm-text="Kategori yang dihapus tidak akan otomatis menghapus transaksi lama."
                                                     data-confirm-confirm-text="Ya, hapus"
                                                     data-confirm-cancel-text="Batal"
-                                                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+                                                    title="Hapus kategori" aria-label="Hapus kategori">
                                                     <i class="fa fa-trash" aria-hidden="true"></i>
                                                 </button>
                                             </form>
 
-                                            <a type="button"
+                                            <a href="#" role="button"
                                                 data-id="<?= (int) $row['id_kategori'] ?>"
                                                 data-nama="<?= htmlspecialchars($row['nama_kategori'], ENT_QUOTES) ?>"
                                                 data-tipe="<?= htmlspecialchars($row['tipe_kategori'], ENT_QUOTES) ?>"
-                                                class="text-secondary text-warning font-weight-bold text-xs btneditkategori">
-                                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                                                class="text-secondary text-warning font-weight-bold text-xs btneditkategori"
+                                                title="Edit kategori" aria-label="Edit kategori">
+                                                <i class="fa fa-pencil" aria-hidden="true"></i> Edit
                                             </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php } ?>
@@ -546,6 +550,9 @@ mysqli_stmt_close($budgetHistoryStmt);
                     "previous": "&lt"
                 },
             },
+            columnDefs: [
+                { targets: -1, orderable: false, searchable: false }
+            ],
             dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
         });
 

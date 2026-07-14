@@ -199,7 +199,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                         <th>Jadwal</th>
                                         <th>Status</th>
                                         <th>Bulan Ini</th>
-                                        <th></th>
+                                        <th class="cashflow-action-col">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -260,8 +260,8 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                                     <?= $logBulanIni ? 'Sudah Generate' : 'Belum Generate' ?>
                                                 </span>
                                             </td>
-                                            <td class="align-middle">
-                                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <td class="align-middle cashflow-action-col">
+                                                <div class="cashflow-action-group">
                                                     <button type="button"
                                                         class="text-secondary text-warning font-weight-bold text-xs border-0 bg-transparent p-0 btneditrecurring"
                                                         data-id="<?= (int) $row['id_recurring'] ?>"
@@ -441,6 +441,9 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                         "previous": "&lt"
                     },
                 },
+                columnDefs: [
+                    { targets: -1, orderable: false, searchable: false }
+                ],
                 dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
             });
         }

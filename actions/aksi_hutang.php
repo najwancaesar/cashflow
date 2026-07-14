@@ -6,7 +6,6 @@ include __DIR__ . "/../includes/nominal_helper.php";
 include __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
-include_once __DIR__ . "/../includes/archive_helper.php";
 $act = $_GET['act'] ?? '';
 $user = (int) ($_SESSION['id_user'] ?? 0);
 
@@ -151,10 +150,6 @@ if($act == 't'){
 			if (!$existingHutang) {
 				throw new DomainException('Data utang tidak ditemukan atau bukan milik Anda.');
 			}
-			if (cashflow_archive_record_is_archived($con, 'hutang', $id, $user)) {
-				throw new DomainException('Utang yang diarsipkan harus dipulihkan sebelum dapat diubah.');
-			}
-
 			if (($existingHutang['status'] ?? '') === 'selesai' && (int) ($existingHutang['id_pengeluaran'] ?? 0) > 0) {
 				$linkedFieldsChanged = (float) ($existingHutang['jumlah'] ?? 0) !== (float) $jumlah
 					|| trim((string) ($existingHutang['kreditur'] ?? '')) !== $kreditur
@@ -207,10 +202,6 @@ if($act == 'l'){
 		if (!$hutang) {
 			throw new DomainException('Data utang tidak ditemukan atau bukan milik Anda.');
 		}
-		if (cashflow_archive_record_is_archived($con, 'hutang', $id_hutang, $user)) {
-			throw new DomainException('Utang yang diarsipkan harus dipulihkan sebelum dapat dilunasi.');
-		}
-
 		if (($hutang['status'] ?? '') === 'selesai' || (int) ($hutang['id_pengeluaran'] ?? 0) > 0) {
 			$con->commit();
 			show_sweetalert_and_redirect('Sudah lunas', 'Utang ini sudah lunas dan sudah tercatat ke wallet.', 'info', 'main.php?module=hutang');
@@ -289,13 +280,9 @@ if($act == 'h'){
 		if (!$hutang) {
 			throw new DomainException('Data utang tidak ditemukan atau bukan milik Anda.');
 		}
-		if (cashflow_archive_record_is_archived($con, 'hutang', $id, $user)) {
-			throw new DomainException('Utang yang diarsipkan harus dipulihkan sebelum dapat dihapus.');
-		}
-
 		$idPengeluaran = (int) ($hutang['id_pengeluaran'] ?? 0);
 		if ((string) ($hutang['status'] ?? '') === 'selesai' || $idPengeluaran > 0) {
-			throw new DomainException('Utang lunas atau memiliki pengeluaran linked tidak dapat dihapus permanen. Gunakan aksi Arsipkan.');
+			throw new DomainException('Utang lunas atau memiliki pengeluaran linked tidak dapat dihapus permanen.');
 		}
 
 		$stmt = $con->prepare("DELETE FROM hutang WHERE id_hutang = ? AND user = ?");

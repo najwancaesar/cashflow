@@ -447,6 +447,158 @@ body .app-main-content .table-responsive .table .cashflow-long-text * {
     word-break: break-word;
 }
 
+/* Final stabilization: unified table toolbar and action columns. */
+.cashflow-toolbar-panel {
+    display: flex;
+    width: auto;
+    max-width: 100%;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1rem 1.5rem 0;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 0.9rem;
+    background: #fff;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+}
+
+.cashflow-toolbar-row {
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-toolbar-group {
+    display: flex;
+    min-width: 0;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.cashflow-toolbar-data {
+    flex: 1 1 420px;
+}
+
+.cashflow-toolbar-actions {
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.cashflow-toolbar-panel .cashflow-datatable-top {
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-toolbar-panel .cashflow-datatable-top .input-group {
+    width: min(100%, 340px);
+}
+
+.cashflow-toolbar-panel .dataTables_length select,
+.cashflow-toolbar-panel .dataTables_filter input {
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
+    background: #fff;
+}
+
+.cashflow-toolbar-panel .btn {
+    min-height: 44px;
+    margin: 0 !important;
+    white-space: nowrap;
+}
+
+.cashflow-action-col {
+    width: 1%;
+    min-width: 145px;
+    text-align: left !important;
+    white-space: normal !important;
+}
+
+.cashflow-action-group {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.cashflow-action-group form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.cashflow-action-group a,
+.cashflow-action-group button {
+    position: static !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+.mobile-transaction-toolbar {
+    margin-bottom: 1rem;
+}
+
+table.dataTable thead th.cashflow-action-col::before,
+table.dataTable thead th.cashflow-action-col::after {
+    display: none !important;
+    content: none !important;
+}
+
+table.dataTable thead th.cashflow-action-col {
+    background-image: none !important;
+    cursor: default;
+}
+
+@media (max-width: 1199.98px) {
+    .cashflow-toolbar-panel {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .cashflow-toolbar-data {
+        flex-basis: 100%;
+    }
+
+    .cashflow-toolbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .cashflow-toolbar-panel {
+        flex-direction: column;
+        margin-right: 1rem;
+        margin-left: 1rem;
+        padding: 0.85rem;
+    }
+
+    .cashflow-toolbar-group,
+    .cashflow-toolbar-actions,
+    .cashflow-toolbar-panel .cashflow-datatable-top,
+    .cashflow-toolbar-panel .cashflow-datatable-top .input-group,
+    .cashflow-toolbar-panel .dataTables_length,
+    .cashflow-toolbar-panel .dataTables_filter,
+    .cashflow-toolbar-panel .btn {
+        width: 100%;
+        max-width: none;
+    }
+
+    .cashflow-toolbar-group,
+    .cashflow-toolbar-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cashflow-action-col {
+        min-width: 132px;
+    }
+
+    .cashflow-action-group {
+        gap: 0.65rem 0.85rem;
+    }
+}
+
 @media (max-width: 380px) {
     .cashflow-quick-add-grid {
         grid-template-columns: 1fr;

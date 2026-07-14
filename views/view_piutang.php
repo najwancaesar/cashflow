@@ -2,14 +2,10 @@
 include __DIR__ . "/../includes/koneksi.php";
 include __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
-include_once __DIR__ . "/../includes/archive_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $today = date('Y-m-d');
-$archiveSchemaReady = cashflow_archive_ready($con, 'piutang');
-$archiveFilter = cashflow_archive_filter($_GET['arsip'] ?? 'aktif');
-$archiveWhere = cashflow_archive_filter_sql('piutang', $archiveFilter, $archiveSchemaReady);
 
 function format_piutang_due_date($value)
 {
@@ -74,7 +70,6 @@ $stmtPiutang = $con->prepare("SELECT piutang.*, user.nama,
 	LEFT JOIN wallet ON piutang.id_wallet_penerimaan = wallet.id_wallet AND wallet.user_id = piutang.user
 	LEFT JOIN pemasukan ON piutang.id_pemasukan = pemasukan.id_pemasukan AND pemasukan.user = piutang.user
 	WHERE user.id_user = ?
-	  AND {$archiveWhere}
 	ORDER BY piutang.tanggal DESC, piutang.id_piutang DESC");
 $stmtPiutang->bind_param("i", $userYangSedangLogin);
 $stmtPiutang->execute();
@@ -97,12 +92,14 @@ $sql = $stmtPiutang->get_result();
 					</div>
 				</div>
 				<div class="card-body px-0 pb-2">
-					<?php cashflow_render_archive_filter('piutang', $archiveFilter, $archiveSchemaReady); ?>
-					<div class="text-end me-3">
-						<button type="button" class="btn btn-secondary" data-bs-toggle="modal"
-							data-bs-target="#modalTambah">
-							<i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
-						</button>
+					<div class="cashflow-toolbar-panel mt-3">
+						<div id="piutangDataTableControls" class="cashflow-toolbar-group cashflow-toolbar-data"></div>
+						<div class="cashflow-toolbar-group cashflow-toolbar-actions">
+							<button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal"
+								data-bs-target="#modalTambah">
+								<i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
+							</button>
+						</div>
 					</div>
 					<div class="table-responsive cashflow-table-scroll p-4 mx-2">
 						<table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatable">
@@ -121,7 +118,7 @@ $sql = $stmtPiutang->get_result();
 									<th>Status Jatuh Tempo</th>
 									<th>User</th>
 									<th>Status</th>
-									<th></th>
+									<th class="cashflow-action-col">Aksi</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -129,7 +126,6 @@ $sql = $stmtPiutang->get_result();
 							$no = 1;
 							while ($row = mysqli_fetch_array($sql)) {
 								$dueBadge = piutang_due_badge($row['status'] ?? '', $row['tanggal_jatuh_tempo'] ?? '', $today);
-								$isArchived = !empty($row['archived_at']);
 							?>
 
 								<tr>
@@ -158,9 +154,6 @@ $sql = $stmtPiutang->get_result();
 										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
 									<td class="align-middle text-center text-sm">
-										<?php if ($isArchived) { ?>
-											<span class="badge badge-sm bg-gradient-secondary mb-1">Diarsipkan</span><br>
-										<?php } ?>
 										<?php if (($row['status'] ?? '') === 'selesai') { ?>
 											<span class="badge badge-sm bg-gradient-success">Selesai</span>
 											<?php if (!empty($row['tanggal_lunas']) || !empty($row['wallet_penerimaan_nama'])) { ?>
@@ -175,7 +168,7 @@ $sql = $stmtPiutang->get_result();
 													<?php } ?>
 												</small>
 											<?php } ?>
-										<?php } elseif (!$isArchived) { ?>
+										<?php } else { ?>
 											<button type="button"
 												class="badge badge-sm bg-gradient-warning border-0 text-white btnlunaspiutang"
 												data-bs-toggle="modal"
@@ -189,14 +182,10 @@ $sql = $stmtPiutang->get_result();
 											<?php if (!$hasActiveWallet) { ?>
 												<small class="d-block text-xs text-danger mt-1">Buat/aktifkan wallet terlebih dahulu.</small>
 											<?php } ?>
-										<?php } else { ?>
-											<span class="badge badge-sm bg-gradient-warning">Pending</span>
 										<?php } ?>
 									</td>
-									<td class="align-middle">
-										<?php if ($isArchived) { ?>
-											<?php cashflow_render_archive_action('piutang', $row['id_piutang'], $archiveFilter, true, $archiveSchemaReady); ?>
-										<?php } else { ?>
+									<td class="align-middle cashflow-action-col">
+										<div class="cashflow-action-group">
 										<?php if (($row['status'] ?? '') === 'pending' && empty($row['id_pemasukan'])) { ?>
 										<form action="actions/aksi_piutang.php?act=h" method="post" class="d-inline">
 											<?= csrf_input() ?>
@@ -207,25 +196,25 @@ $sql = $stmtPiutang->get_result();
 												data-confirm-text="Data piutang yang dihapus tidak bisa dikembalikan."
 												data-confirm-confirm-text="Ya, hapus"
 												data-confirm-cancel-text="Batal"
-												class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+												class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+												title="Hapus piutang pending" aria-label="Hapus piutang pending">
 												<i class="fa fa-trash" aria-hidden="true"></i>
 											</button>
 										</form>
 										<?php } ?>
 
-										<?php cashflow_render_archive_action('piutang', $row['id_piutang'], $archiveFilter, false, $archiveSchemaReady); ?>
-
-										<a type="submit"
+										<a href="#" role="button"
 											data-id="<?= (int) $row['id_piutang'] ?>"
 											data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?>"
 											data-debitur="<?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?>"
 											data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?>"
 											data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES, 'UTF-8') ?>"
 											data-jatuh_tempo="<?= htmlspecialchars($row['tanggal_jatuh_tempo'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-											class="text-secondary text-warning font-weight-bold text-xs btneditpiutang">
+											class="text-secondary text-warning font-weight-bold text-xs btneditpiutang"
+											title="Edit piutang" aria-label="Edit piutang">
 											<i class="fa fa-pencil" aria-hidden="true"></i>
 										</a>
-										<?php } ?>
+										</div>
 									</td>
 								</tr>
 
@@ -366,7 +355,15 @@ $sql = $stmtPiutang->get_result();
 					"previous": "&lt"
 				},
 			},
-			dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+			columnDefs: [
+				{ targets: -1, orderable: false, searchable: false }
+			],
+			dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">',
+			initComplete: function() {
+				$(this.api().table().container())
+					.find('.cashflow-datatable-top')
+					.appendTo('#piutangDataTableControls');
+			}
 		});
 
 		$(document).on("click", ".btneditpiutang", function() {
