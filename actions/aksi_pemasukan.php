@@ -5,6 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 // Fungsi untuk membersihkan input
 function clean_input($data) {
@@ -189,8 +190,11 @@ if ($act == 't') {
         if (!pemasukan_dimiliki_user($id_pemasukan, $user)) {
             show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
         }
+        if (cashflow_archive_record_is_archived($con, 'pemasukan', $id_pemasukan, $user)) {
+            show_sweetalert_and_redirect('Aksi ditolak', 'Pemasukan yang diarsipkan harus dipulihkan sebelum dapat diubah.', 'warning', 'main.php?module=pemasukan&arsip=diarsipkan');
+        }
 
-        $query = "UPDATE pemasukan 
+        $query = "UPDATE pemasukan
                  SET tanggal = ?, status = ?, catatan = ?, jumlah = ?, id_kategori = ?, id_wallet = ?
                  WHERE id_pemasukan = ? AND user = ?";
         $stmt = mysqli_prepare($con, $query);
@@ -230,6 +234,9 @@ if ($act == 'l') {
     if (!pemasukan_dimiliki_user($id_pemasukan, $user)) {
         show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
     }
+    if (cashflow_archive_record_is_archived($con, 'pemasukan', $id_pemasukan, $user)) {
+        show_sweetalert_and_redirect('Aksi ditolak', 'Pemasukan yang diarsipkan harus dipulihkan sebelum statusnya diubah.', 'warning', 'main.php?module=pemasukan&arsip=diarsipkan');
+    }
 
     $query = "UPDATE pemasukan SET status = ? WHERE id_pemasukan = ? AND user = ?";
     $stmt = mysqli_prepare($con, $query);
@@ -264,7 +271,30 @@ if ($act == 'h') {
         show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
     }
 
-    $query = "DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ?";
+    if (cashflow_archive_record_is_archived($con, 'pemasukan', $id_pemasukan, $user)) {
+        show_sweetalert_and_redirect('Aksi ditolak', 'Pemasukan yang diarsipkan harus dipulihkan sebelum dapat dihapus.', 'warning', 'main.php?module=pemasukan&arsip=diarsipkan');
+    }
+
+    $statusStmt = $con->prepare("SELECT status FROM pemasukan WHERE id_pemasukan = ? AND user = ? LIMIT 1");
+    $statusStmt->bind_param('ii', $id_pemasukan, $user);
+    $statusStmt->execute();
+    $statusRow = $statusStmt->get_result()->fetch_assoc();
+    $statusStmt->close();
+    if (($statusRow['status'] ?? '') === 'selesai') {
+        show_sweetalert_and_redirect('Gunakan arsip', 'Pemasukan selesai tidak dapat dihapus permanen. Gunakan aksi Arsipkan agar saldo dan histori tetap utuh.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    $relationStmt = $con->prepare("SELECT id_log FROM recurring_generation_log
+                                   WHERE user_id = ? AND tipe_transaksi = 'pemasukan' AND id_transaksi = ? LIMIT 1");
+    $relationStmt->bind_param('ii', $user, $id_pemasukan);
+    $relationStmt->execute();
+    $hasRecurringRelation = (bool) $relationStmt->get_result()->fetch_assoc();
+    $relationStmt->close();
+    if ($hasRecurringRelation) {
+        show_sweetalert_and_redirect('Gunakan arsip', 'Pemasukan hasil recurring memiliki riwayat generation dan tidak dapat dihapus permanen.', 'warning', 'main.php?module=pemasukan');
+    }
+
+    $query = "DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ? AND status = 'pending'";
     $stmt = mysqli_prepare($con, $query);
     mysqli_stmt_bind_param($stmt, "ii", $id_pemasukan, $user);
     $hasil = mysqli_stmt_execute($stmt);
@@ -272,11 +302,11 @@ if ($act == 'h') {
     mysqli_stmt_close($stmt);
 
     if ($hasil && $affectedRows > 0) {
-        record_activity($con, 'pemasukan', 'hapus', "Menghapus pemasukan ID {$id_pemasukan}.");
+        record_activity($con, 'pemasukan', 'hapus', "Menghapus pemasukan pending ID {$id_pemasukan}.");
         show_sweetalert_and_redirect('Berhasil!', 'Data berhasil dihapus.', 'success', 'main.php?module=pemasukan');
-    } else {
-        show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
     }
+
+    show_sweetalert_and_redirect('Gagal!', 'Pemasukan gagal dihapus atau statusnya sudah berubah.', 'error', 'main.php?module=pemasukan');
 }
 
 if ($act == 'bulk_delete') {
@@ -295,9 +325,16 @@ if ($act == 'bulk_delete') {
     }
 
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $bulkArchiveClause = cashflow_archive_ready($con, 'pemasukan') ? ' AND pemasukan.archived_at IS NULL' : '';
     $countQuery = "SELECT COUNT(*) AS total
                    FROM pemasukan
-                   WHERE user = ? AND id_pemasukan IN ({$placeholders})";
+                   WHERE user = ? AND status = 'pending' AND id_pemasukan IN ({$placeholders})
+                     AND NOT EXISTS (
+                        SELECT 1 FROM recurring_generation_log
+                        WHERE recurring_generation_log.user_id = pemasukan.user
+                          AND recurring_generation_log.tipe_transaksi = 'pemasukan'
+                          AND recurring_generation_log.id_transaksi = pemasukan.id_pemasukan
+                     ){$bulkArchiveClause}";
     $countStmt = mysqli_prepare($con, $countQuery);
     $countTypes = 'i' . str_repeat('i', count($ids));
     $countParams = array_merge([$user], $ids);
@@ -308,11 +345,17 @@ if ($act == 'bulk_delete') {
     mysqli_stmt_close($countStmt);
 
     if ((int) ($countRow['total'] ?? 0) !== count($ids)) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Sebagian data tidak valid atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
+        show_sweetalert_and_redirect('Aksi ditolak', 'Hapus massal hanya dapat dilakukan pada pemasukan pending milik Anda.', 'warning', 'main.php?module=pemasukan');
     }
 
     $deleteQuery = "DELETE FROM pemasukan
-                    WHERE user = ? AND id_pemasukan IN ({$placeholders})";
+                    WHERE user = ? AND status = 'pending' AND id_pemasukan IN ({$placeholders})
+                      AND NOT EXISTS (
+                        SELECT 1 FROM recurring_generation_log
+                        WHERE recurring_generation_log.user_id = pemasukan.user
+                          AND recurring_generation_log.tipe_transaksi = 'pemasukan'
+                          AND recurring_generation_log.id_transaksi = pemasukan.id_pemasukan
+                      ){$bulkArchiveClause}";
     $deleteStmt = mysqli_prepare($con, $deleteQuery);
     $deleteTypes = 'i' . str_repeat('i', count($ids));
     $deleteParams = array_merge([$user], $ids);

@@ -3,12 +3,54 @@ include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/ui_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
+include_once __DIR__ . "/../includes/budget_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 $walletCustomTypeMap = [];
 if ($userYangSedangLogin > 0) {
     $loadedWalletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
     $walletCustomTypeMap = is_array($loadedWalletCustomTypeMap) ? $loadedWalletCustomTypeMap : [];
+}
+$budgetUsageMap = $userYangSedangLogin > 0
+    ? cashflow_get_user_budget_usage_map($con, $userYangSedangLogin)
+    : [];
+$archiveSchemaReady = cashflow_archive_ready($con, 'pengeluaran');
+$archiveFilter = cashflow_archive_filter($_GET['arsip'] ?? 'aktif');
+$archiveWhere = cashflow_archive_filter_sql('pengeluaran', $archiveFilter, $archiveSchemaReady);
+
+function build_pengeluaran_budget_confirmation(array $row, array $budgetUsageMap)
+{
+    $default = [
+        'title' => 'Ubah status transaksi?',
+        'text' => 'Status transaksi akan diubah menjadi Selesai.',
+    ];
+
+    if ((string) ($row['status'] ?? '') === 'selesai') {
+        $default['text'] = 'Status transaksi akan diubah menjadi Pending.';
+        return $default;
+    }
+
+    $key = cashflow_budget_period_key($row['id_kategori'] ?? 0, $row['tanggal'] ?? '');
+    $budget = $key !== '' ? ($budgetUsageMap[$key] ?? null) : null;
+    $budgetNominal = (float) ($budget['nominal_budget'] ?? 0);
+    if ($budgetNominal <= 0) {
+        return $default;
+    }
+
+    $projectedUsage = (float) ($budget['total_terpakai'] ?? 0) + (float) ($row['jumlah'] ?? 0);
+    if ($projectedUsage < $budgetNominal) {
+        return $default;
+    }
+
+    return [
+        'title' => 'Budget kategori akan terlampaui',
+        'text' => 'Jika diselesaikan, penggunaan kategori menjadi Rp. '
+            . number_format($projectedUsage)
+            . ' dari budget Rp. '
+            . number_format($budgetNominal)
+            . '. Transaksi tetap boleh dilanjutkan.',
+    ];
 }
 
 if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
@@ -61,7 +103,8 @@ $transaksiQuery = "SELECT
                        kategori.nama_kategori,
                        wallet.nama_wallet,
                        wallet.tipe_wallet,
-                       wallet.is_active AS wallet_is_active
+                       wallet.is_active AS wallet_is_active,
+                       recurring_generation_log.id_log AS recurring_log_id
                    FROM pengeluaran
                    LEFT JOIN kategori
                        ON pengeluaran.id_kategori = kategori.id_kategori
@@ -70,7 +113,12 @@ $transaksiQuery = "SELECT
                    LEFT JOIN wallet
                        ON pengeluaran.id_wallet = wallet.id_wallet
                       AND wallet.user_id = pengeluaran.user
+                   LEFT JOIN recurring_generation_log
+                       ON recurring_generation_log.user_id = pengeluaran.user
+                      AND recurring_generation_log.tipe_transaksi = 'pengeluaran'
+                      AND recurring_generation_log.id_transaksi = pengeluaran.id_pengeluaran
                    WHERE pengeluaran.user = ?
+                     AND {$archiveWhere}
                    ORDER BY pengeluaran.tanggal DESC, pengeluaran.id_pengeluaran DESC";
 $transaksiStmt = mysqli_prepare($con, $transaksiQuery);
 mysqli_stmt_bind_param($transaksiStmt, "i", $userYangSedangLogin);
@@ -83,13 +131,15 @@ while ($row = mysqli_fetch_assoc($transaksiResult)) {
 }
 mysqli_stmt_close($transaksiStmt);
 
-$renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap) {
+$renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap, $budgetUsageMap, $archiveFilter, $archiveSchemaReady) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
+    $isArchived = !empty($row['archived_at']);
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
     $walletDisplayTypeMeta = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
     $walletDisplayType = cashflow_wallet_type_text($walletDisplayTypeMeta);
+    $budgetConfirmation = build_pengeluaran_budget_confirmation($row, $budgetUsageMap);
     $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
         ? (int) $row['id_wallet']
         : $defaultWalletId;
@@ -97,6 +147,7 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
     <tr>
         <?php if ($includeBulkColumn) { ?>
             <td class="bulk-select-col text-center">
+                <?php if (!$isArchived && $statusTransaksi === 'pending' && empty($row['recurring_log_id'])) { ?>
                 <input
                     type="checkbox"
                     class="bulk-select-row bulk-pengeluaran-checkbox"
@@ -104,6 +155,7 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
                     value="<?= (int) $row['id_pengeluaran'] ?>"
                     form="bulkDeletePengeluaranForm"
                     aria-label="Pilih transaksi pengeluaran ini">
+                <?php } ?>
             </td>
         <?php } ?>
         <td class="align-middle text-center">
@@ -125,22 +177,33 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
             <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletDisplayTypeMeta) ?></p>
         </td>
         <td class="align-middle text-center text-sm">
+            <?php if ($isArchived) { ?>
+                <span class="badge badge-sm bg-gradient-secondary mb-1">Diarsipkan</span><br>
+            <?php } ?>
+            <?php if (!$isArchived) { ?>
             <form action="actions/aksi_pengeluaran.php?act=l" method="post" class="d-inline">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
                 <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
                 <button type="submit"
                     data-confirm="true"
-                    data-confirm-title="Ubah status transaksi?"
-                    data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
+                    data-confirm-title="<?= htmlspecialchars($budgetConfirmation['title'], ENT_QUOTES, 'UTF-8') ?>"
+                    data-confirm-text="<?= htmlspecialchars($budgetConfirmation['text'], ENT_QUOTES, 'UTF-8') ?>"
                     data-confirm-confirm-text="Ya, ubah"
                     data-confirm-cancel-text="Batal"
                     class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
                     <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
                 </button>
             </form>
+            <?php } else { ?>
+                <span class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?>"><?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?></span>
+            <?php } ?>
         </td>
         <td class="align-middle">
+            <?php if ($isArchived) { ?>
+                <?php cashflow_render_archive_action('pengeluaran', $row['id_pengeluaran'], $archiveFilter, true, $archiveSchemaReady); ?>
+            <?php } else { ?>
+            <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id'])) { ?>
             <form action="actions/aksi_pengeluaran.php?act=h" method="post" class="d-inline">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
@@ -154,6 +217,9 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
                     <i class="fa fa-trash" aria-hidden="true"></i>
                 </button>
             </form>
+            <?php } ?>
+
+            <?php cashflow_render_archive_action('pengeluaran', $row['id_pengeluaran'], $archiveFilter, false, $archiveSchemaReady); ?>
 
             <a type="submit"
                 data-id="<?= (int) $row['id_pengeluaran'] ?>"
@@ -166,18 +232,21 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
                 class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
                 <i class="fa fa-pencil" aria-hidden="true"></i>
             </a>
+            <?php } ?>
         </td>
     </tr>
 <?php
 };
 
-$renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap) {
+$renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap, $budgetUsageMap, $archiveFilter, $archiveSchemaReady) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
+    $isArchived = !empty($row['archived_at']);
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
     $walletDisplayTypeMeta = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
     $walletDisplayType = cashflow_wallet_type_text($walletDisplayTypeMeta);
+    $budgetConfirmation = build_pengeluaran_budget_confirmation($row, $budgetUsageMap);
     $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
         ? (int) $row['id_wallet']
         : $defaultWalletId;
@@ -218,25 +287,34 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Status</span>
             <span class="mobile-transaction-value">
+                <?php if ($isArchived) { ?><span class="badge badge-sm bg-gradient-secondary me-1">Diarsipkan</span><?php } ?>
+                <?php if (!$isArchived) { ?>
                 <form action="actions/aksi_pengeluaran.php?act=l" method="post" class="d-inline">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
                     <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
                     <button type="submit"
                         data-confirm="true"
-                        data-confirm-title="Ubah status transaksi?"
-                        data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
+                        data-confirm-title="<?= htmlspecialchars($budgetConfirmation['title'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-confirm-text="<?= htmlspecialchars($budgetConfirmation['text'], ENT_QUOTES, 'UTF-8') ?>"
                         data-confirm-confirm-text="Ya, ubah"
                         data-confirm-cancel-text="Batal"
                         class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
                         <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
                     </button>
                 </form>
+                <?php } else { ?>
+                    <span class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?>"><?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php } ?>
             </span>
         </div>
         <div class="mobile-transaction-row mobile-transaction-actions-row">
             <span class="mobile-transaction-label">Aksi</span>
             <span class="mobile-transaction-value mobile-transaction-actions">
+                <?php if ($isArchived) { ?>
+                    <?php cashflow_render_archive_action('pengeluaran', $row['id_pengeluaran'], $archiveFilter, true, $archiveSchemaReady); ?>
+                <?php } else { ?>
+                <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id'])) { ?>
                 <form action="actions/aksi_pengeluaran.php?act=h" method="post" class="d-inline">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
@@ -250,6 +328,9 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                         <i class="fa fa-trash" aria-hidden="true"></i>
                     </button>
                 </form>
+                <?php } ?>
+
+                <?php cashflow_render_archive_action('pengeluaran', $row['id_pengeluaran'], $archiveFilter, false, $archiveSchemaReady); ?>
 
                 <a type="submit"
                     data-id="<?= (int) $row['id_pengeluaran'] ?>"
@@ -262,6 +343,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                     class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
                     <i class="fa fa-pencil" aria-hidden="true"></i>
                 </a>
+                <?php } ?>
             </span>
         </div>
     </article>
@@ -284,6 +366,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
+                    <?php cashflow_render_archive_filter('pengeluaran', $archiveFilter, $archiveSchemaReady); ?>
                     <form id="bulkDeletePengeluaranForm" action="actions/aksi_pengeluaran.php?act=bulk_delete" method="post" class="d-none">
                         <?= csrf_input() ?>
                     </form>
@@ -373,7 +456,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="actions/aksi_pengeluaran.php?act=t" method="post">
+            <form action="actions/aksi_pengeluaran.php?act=t" method="post" id="pengeluaranTransactionForm" class="budget-warning-expense-form">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
@@ -458,6 +541,8 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
 <script>
     $(document).ready(function() {
         var defaultWalletId = "<?= htmlspecialchars((string) $defaultWalletId, ENT_QUOTES, 'UTF-8') ?>";
+        var budgetUsageMap = <?= json_encode($budgetUsageMap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        var originalExpenseBudgetState = null;
         var datatableLanguage = {
             "emptyTable": "Belum ada pengeluaran.",
             "zeroRecords": "Tidak ada pengeluaran yang cocok dengan pencarian.",
@@ -575,13 +660,120 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         syncPengeluaranCheckboxNodes(pengeluaranDesktopTable.rows({ page: 'current' }).nodes());
         updateBulkPengeluaranState();
 
+        function budgetPeriodKey(categoryId, transactionDate) {
+            var category = parseInt(categoryId, 10);
+            var date = String(transactionDate || '');
+            if (!category || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                return '';
+            }
+
+            return date.slice(0, 7) + ':' + category;
+        }
+
+        function budgetNominalNumber(value) {
+            var digits = String(value || '').replace(/\D/g, '');
+            return digits ? Number(digits) : 0;
+        }
+
+        function continueExpenseSubmit(form, submitter) {
+            form.dataset.budgetWarningConfirmed = 'true';
+            if (typeof form.requestSubmit === 'function') {
+                submitter ? form.requestSubmit(submitter) : form.requestSubmit();
+                return;
+            }
+
+            form.submit();
+        }
+
+        $('#pengeluaranTransactionForm').on('submit', function(event) {
+            var form = this;
+            if (form.dataset.budgetWarningConfirmed === 'true') {
+                delete form.dataset.budgetWarningConfirmed;
+                return;
+            }
+
+            var status = String($(form).find('[name="status"]').val() || '');
+            var categoryId = $(form).find('[name="id_kategori"]').val();
+            var transactionDate = $(form).find('[name="tanggal"]').val();
+            var amount = budgetNominalNumber($(form).find('[name="jumlah"]').val());
+            var key = budgetPeriodKey(categoryId, transactionDate);
+            var budget = key ? budgetUsageMap[key] : null;
+            var budgetNominal = Number(budget && budget.nominal_budget || 0);
+
+            if (status !== 'selesai' || amount <= 0 || budgetNominal <= 0) {
+                return;
+            }
+
+            var currentUsage = Number(budget.total_terpakai || 0);
+            if (originalExpenseBudgetState && originalExpenseBudgetState.status === 'selesai') {
+                var originalKey = budgetPeriodKey(
+                    originalExpenseBudgetState.categoryId,
+                    originalExpenseBudgetState.transactionDate
+                );
+                if (originalKey === key) {
+                    currentUsage = Math.max(0, currentUsage - originalExpenseBudgetState.amount);
+                }
+            }
+
+            var projectedUsage = currentUsage + amount;
+            if (projectedUsage < budgetNominal) {
+                return;
+            }
+
+            event.preventDefault();
+            var nativeEvent = event.originalEvent || event;
+            var submitter = nativeEvent.submitter || null;
+            var warningText = 'Penggunaan kategori akan menjadi Rp. '
+                + projectedUsage.toLocaleString('id-ID')
+                + ' dari budget Rp. '
+                + budgetNominal.toLocaleString('id-ID')
+                + '. Budget tidak memblokir transaksi.';
+
+            if (typeof Swal === 'undefined') {
+                if (window.confirm('Budget kategori akan terlampaui\n\n' + warningText + '\n\nTetap simpan pengeluaran?')) {
+                    continueExpenseSubmit(form, submitter);
+                }
+                return;
+            }
+
+            Swal.fire({
+                title: 'Budget kategori akan terlampaui',
+                text: warningText,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Tetap simpan',
+                cancelButtonText: 'Periksa kembali',
+                confirmButtonColor: '#0ea5e9',
+                cancelButtonColor: '#94a3b8',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    continueExpenseSubmit(form, submitter);
+                }
+            });
+        });
+
         $(document).on("click", ".btneditpengeluaran", function() {
             var walletId = $(this).attr("data-wallet") || defaultWalletId;
             $('#id_wallet').val(walletId);
+            originalExpenseBudgetState = {
+                status: String($(this).attr('data-status') || ''),
+                transactionDate: String($(this).attr('data-tanggal') || ''),
+                categoryId: String($(this).attr('data-kategori') || ''),
+                amount: Number($(this).attr('data-jumlah') || 0)
+            };
+        });
+
+        $(document).on('click', '[data-bs-target="#modalTambah"]:not(.btneditpengeluaran)', function() {
+            originalExpenseBudgetState = null;
+            delete document.getElementById('pengeluaranTransactionForm').dataset.budgetWarningConfirmed;
         });
 
         $('#modalTambah').on('hidden.bs.modal', function() {
             $('#id_wallet').val(defaultWalletId);
+            originalExpenseBudgetState = null;
+            delete document.getElementById('pengeluaranTransactionForm').dataset.budgetWarningConfirmed;
         });
 
         $(document).on('input', '.mobile-transaction-search', function() {

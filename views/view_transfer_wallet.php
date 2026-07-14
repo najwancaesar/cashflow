@@ -3,6 +3,7 @@ include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/ui_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -15,6 +16,9 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 }
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$archiveSchemaReady = cashflow_archive_ready($con, 'transfer_wallet');
+$archiveFilter = cashflow_archive_filter($_GET['arsip'] ?? 'aktif');
+$archiveWhere = cashflow_archive_filter_sql('transfer_wallet', $archiveFilter, $archiveSchemaReady);
 $tanggalHariIni = date('Y-m-d');
 $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 
@@ -61,6 +65,7 @@ $transferQuery = "SELECT
                     ON wallet_tujuan.id_wallet = transfer_wallet.wallet_tujuan_id
                    AND wallet_tujuan.user_id = transfer_wallet.user_id
                   WHERE transfer_wallet.user_id = ?
+                    AND {$archiveWhere}
                   ORDER BY transfer_wallet.tanggal DESC, transfer_wallet.id_transfer DESC";
 $transferStmt = mysqli_prepare($con, $transferQuery);
 mysqli_stmt_bind_param($transferStmt, "i", $userYangSedangLogin);
@@ -85,6 +90,7 @@ mysqli_stmt_close($transferStmt);
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
+                    <?php cashflow_render_archive_filter('transfer_wallet', $archiveFilter, $archiveSchemaReady); ?>
                     <div class="px-4 pt-2">
                         <p class="text-sm text-secondary mb-0">
                             Pindahkan saldo antar wallet tanpa mencatatnya sebagai pemasukan atau pengeluaran.
@@ -128,6 +134,7 @@ mysqli_stmt_close($transferStmt);
                                     <?php foreach ($transferRows as $row) { ?>
                                         <?php
                                         $statusTransfer = (string) ($row['status'] ?? 'selesai');
+                                        $isArchived = !empty($row['archived_at']);
                                         $jumlahTransfer = (float) ($row['jumlah'] ?? 0);
                                         $walletAsalTypeMeta = cashflow_wallet_type_meta_for_wallet($row['tipe_wallet_asal'], $row['wallet_asal_id'], $walletCustomTypeMap);
                                         $walletTujuanTypeMeta = cashflow_wallet_type_meta_for_wallet($row['tipe_wallet_tujuan'], $row['wallet_tujuan_id'], $walletCustomTypeMap);
@@ -148,6 +155,9 @@ mysqli_stmt_close($transferStmt);
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($jumlahTransfer), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
+                                                <?php if ($isArchived) { ?>
+                                                    <span class="badge badge-sm bg-gradient-secondary mb-1">Diarsipkan</span><br>
+                                                <?php } ?>
                                                 <span class="badge badge-sm <?= htmlspecialchars(transfer_wallet_status_badge($statusTransfer), ENT_QUOTES, 'UTF-8') ?>">
                                                     <?= htmlspecialchars(ucfirst($statusTransfer), ENT_QUOTES, 'UTF-8') ?>
                                                 </span>
@@ -156,6 +166,9 @@ mysqli_stmt_close($transferStmt);
                                                 <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td class="align-middle">
+                                                <?php if ($isArchived) { ?>
+                                                    <?php cashflow_render_archive_action('transfer_wallet', $row['id_transfer'], $archiveFilter, true, $archiveSchemaReady); ?>
+                                                <?php } else { ?>
                                                 <a type="button"
                                                     class="text-secondary text-warning font-weight-bold text-xs me-2 btnedittransferwallet"
                                                     data-id="<?= (int) $row['id_transfer'] ?>"
@@ -182,7 +195,7 @@ mysqli_stmt_close($transferStmt);
                                                             <i class="fa fa-ban" aria-hidden="true"></i> Batalkan
                                                         </button>
                                                     </form>
-                                                <?php } elseif (in_array($statusTransfer, ['pending', 'batal'], true)) { ?>
+                                                <?php } elseif ($statusTransfer === 'pending') { ?>
                                                     <form action="actions/aksi_transfer_wallet.php?act=hp" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_transfer" value="<?= (int) $row['id_transfer'] ?>">
@@ -196,6 +209,8 @@ mysqli_stmt_close($transferStmt);
                                                             <i class="fa fa-trash" aria-hidden="true"></i> Hapus Permanen
                                                         </button>
                                                     </form>
+                                                <?php } ?>
+                                                <?php cashflow_render_archive_action('transfer_wallet', $row['id_transfer'], $archiveFilter, false, $archiveSchemaReady); ?>
                                                 <?php } ?>
                                             </td>
                                         </tr>

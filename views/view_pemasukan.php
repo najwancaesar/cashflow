@@ -3,8 +3,12 @@ include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/ui_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$archiveSchemaReady = cashflow_archive_ready($con, 'pemasukan');
+$archiveFilter = cashflow_archive_filter($_GET['arsip'] ?? 'aktif');
+$archiveWhere = cashflow_archive_filter_sql('pemasukan', $archiveFilter, $archiveSchemaReady);
 $walletCustomTypeMap = [];
 if ($userYangSedangLogin > 0) {
     $loadedWalletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
@@ -61,7 +65,8 @@ $transaksiQuery = "SELECT
                        kategori.nama_kategori,
                        wallet.nama_wallet,
                        wallet.tipe_wallet,
-                       wallet.is_active AS wallet_is_active
+                       wallet.is_active AS wallet_is_active,
+                       recurring_generation_log.id_log AS recurring_log_id
                    FROM pemasukan
                    LEFT JOIN kategori
                        ON pemasukan.id_kategori = kategori.id_kategori
@@ -70,7 +75,12 @@ $transaksiQuery = "SELECT
                    LEFT JOIN wallet
                        ON pemasukan.id_wallet = wallet.id_wallet
                       AND wallet.user_id = pemasukan.user
+                   LEFT JOIN recurring_generation_log
+                       ON recurring_generation_log.user_id = pemasukan.user
+                      AND recurring_generation_log.tipe_transaksi = 'pemasukan'
+                      AND recurring_generation_log.id_transaksi = pemasukan.id_pemasukan
                    WHERE pemasukan.user = ?
+                     AND {$archiveWhere}
                    ORDER BY pemasukan.tanggal DESC, pemasukan.id_pemasukan DESC";
 $transaksiStmt = mysqli_prepare($con, $transaksiQuery);
 mysqli_stmt_bind_param($transaksiStmt, "i", $userYangSedangLogin);
@@ -83,8 +93,9 @@ while ($row = mysqli_fetch_assoc($transaksiResult)) {
 }
 mysqli_stmt_close($transaksiStmt);
 
-$renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap) {
+$renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap, $archiveFilter, $archiveSchemaReady) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
+    $isArchived = !empty($row['archived_at']);
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
@@ -97,6 +108,7 @@ $renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use
     <tr>
         <?php if ($includeBulkColumn) { ?>
             <td class="bulk-select-col text-center">
+                <?php if (!$isArchived && $statusTransaksi === 'pending' && empty($row['recurring_log_id'])) { ?>
                 <input
                     type="checkbox"
                     class="bulk-select-row bulk-pemasukan-checkbox"
@@ -104,6 +116,7 @@ $renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use
                     value="<?= (int) $row['id_pemasukan'] ?>"
                     form="bulkDeletePemasukanForm"
                     aria-label="Pilih transaksi pemasukan ini">
+                <?php } ?>
             </td>
         <?php } ?>
         <td class="align-middle text-center">
@@ -125,6 +138,10 @@ $renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use
             <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletDisplayTypeMeta) ?></p>
         </td>
         <td class="align-middle text-center text-sm">
+            <?php if ($isArchived) { ?>
+                <span class="badge badge-sm bg-gradient-secondary mb-1">Diarsipkan</span><br>
+            <?php } ?>
+            <?php if (!$isArchived) { ?>
             <form action="actions/aksi_pemasukan.php?act=l" method="post" class="d-inline">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
@@ -139,8 +156,17 @@ $renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use
                     <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
                 </button>
             </form>
+            <?php } else { ?>
+                <span class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?>">
+                    <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
+                </span>
+            <?php } ?>
         </td>
         <td class="align-middle">
+            <?php if ($isArchived) { ?>
+                <?php cashflow_render_archive_action('pemasukan', $row['id_pemasukan'], $archiveFilter, true, $archiveSchemaReady); ?>
+            <?php } else { ?>
+            <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id'])) { ?>
             <form action="actions/aksi_pemasukan.php?act=h" method="post" class="d-inline">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
@@ -154,6 +180,9 @@ $renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use
                     <i class="fa fa-trash" aria-hidden="true"></i>
                 </button>
             </form>
+            <?php } ?>
+
+            <?php cashflow_render_archive_action('pemasukan', $row['id_pemasukan'], $archiveFilter, false, $archiveSchemaReady); ?>
 
             <a type="submit"
                 data-id="<?= (int) $row['id_pemasukan'] ?>"
@@ -166,13 +195,15 @@ $renderPemasukanRow = function (array $row, bool $includeBulkColumn = false) use
                 class="text-secondary text-warning font-weight-bold text-xs btneditpemasukan">
                 <i class="fa fa-pencil" aria-hidden="true"></i>
             </a>
+            <?php } ?>
         </td>
     </tr>
 <?php
 };
 
-$renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap) {
+$renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap, $archiveFilter, $archiveSchemaReady) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
+    $isArchived = !empty($row['archived_at']);
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
@@ -218,6 +249,8 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Status</span>
             <span class="mobile-transaction-value">
+                <?php if ($isArchived) { ?><span class="badge badge-sm bg-gradient-secondary me-1">Diarsipkan</span><?php } ?>
+                <?php if (!$isArchived) { ?>
                 <form action="actions/aksi_pemasukan.php?act=l" method="post" class="d-inline">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
@@ -232,11 +265,18 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
                         <?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?>
                     </button>
                 </form>
+                <?php } else { ?>
+                    <span class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?>"><?= htmlspecialchars($statusTransaksi, ENT_QUOTES, 'UTF-8') ?></span>
+                <?php } ?>
             </span>
         </div>
         <div class="mobile-transaction-row mobile-transaction-actions-row">
             <span class="mobile-transaction-label">Aksi</span>
             <span class="mobile-transaction-value mobile-transaction-actions">
+                <?php if ($isArchived) { ?>
+                    <?php cashflow_render_archive_action('pemasukan', $row['id_pemasukan'], $archiveFilter, true, $archiveSchemaReady); ?>
+                <?php } else { ?>
+                <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id'])) { ?>
                 <form action="actions/aksi_pemasukan.php?act=h" method="post" class="d-inline">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
@@ -250,6 +290,9 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
                         <i class="fa fa-trash" aria-hidden="true"></i>
                     </button>
                 </form>
+                <?php } ?>
+
+                <?php cashflow_render_archive_action('pemasukan', $row['id_pemasukan'], $archiveFilter, false, $archiveSchemaReady); ?>
 
                 <a type="submit"
                     data-id="<?= (int) $row['id_pemasukan'] ?>"
@@ -262,6 +305,7 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
                     class="text-secondary text-warning font-weight-bold text-xs btneditpemasukan">
                     <i class="fa fa-pencil" aria-hidden="true"></i>
                 </a>
+                <?php } ?>
             </span>
         </div>
     </article>
@@ -284,6 +328,7 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
+                    <?php cashflow_render_archive_filter('pemasukan', $archiveFilter, $archiveSchemaReady); ?>
                     <form id="bulkDeletePemasukanForm" action="actions/aksi_pemasukan.php?act=bulk_delete" method="post" class="d-none">
                         <?= csrf_input() ?>
                     </form>

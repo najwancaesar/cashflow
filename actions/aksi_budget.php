@@ -63,6 +63,10 @@ if ($tahun < 2000 || $tahun > 2100) {
     redirect_budget('Gagal!', 'Tahun budget tidak valid.', 'error');
 }
 
+if ($bulan !== (int) date('n') || $tahun !== (int) date('Y')) {
+    redirect_budget('Periode hanya baca', 'Budget histori tidak dapat diubah. Atur budget pada bulan berjalan.', 'warning');
+}
+
 if ($nominalBudget === null) {
     redirect_budget('Gagal!', 'Nominal budget harus angka 0 atau lebih.', 'error');
 }

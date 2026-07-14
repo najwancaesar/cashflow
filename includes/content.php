@@ -7,6 +7,7 @@ $allowedModules = [
     'transfer_wallet' => __DIR__ . "/../views/view_transfer_wallet.php",
     'saving_goal' => __DIR__ . "/../views/view_saving_goal.php",
     'recurring' => __DIR__ . "/../views/view_recurring.php",
+    'kalender_keuangan' => __DIR__ . "/../views/view_financial_calendar.php",
     'kategori' => __DIR__ . "/../views/view_kategori.php",
     'pemasukan' => __DIR__ . "/../views/view_pemasukan.php",
     'pengeluaran' => __DIR__ . "/../views/view_pengeluaran.php",
@@ -19,7 +20,7 @@ $allowedModules = [
 ];
 
 $adminOnlyModules = ['pengguna', 'audit_log'];
-$userOnlyModules = ['wallet', 'transfer_wallet', 'saving_goal', 'recurring', 'kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang', 'laporan'];
+$userOnlyModules = ['wallet', 'transfer_wallet', 'saving_goal', 'recurring', 'kalender_keuangan', 'kategori', 'pemasukan', 'pengeluaran', 'hutang', 'piutang', 'laporan'];
 
 // Jika session nama tidak ada, arahkan ke login
 if (!isset($_SESSION['nama'])) {

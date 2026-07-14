@@ -2,10 +2,14 @@
 include __DIR__ . "/../includes/koneksi.php";
 include __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $today = date('Y-m-d');
+$archiveSchemaReady = cashflow_archive_ready($con, 'hutang');
+$archiveFilter = cashflow_archive_filter($_GET['arsip'] ?? 'aktif');
+$archiveWhere = cashflow_archive_filter_sql('hutang', $archiveFilter, $archiveSchemaReady);
 
 function format_hutang_due_date($value)
 {
@@ -70,6 +74,7 @@ $stmtHutang = $con->prepare("SELECT hutang.*, user.nama,
     LEFT JOIN wallet ON hutang.id_wallet_pembayaran = wallet.id_wallet AND wallet.user_id = hutang.user
     LEFT JOIN pengeluaran ON hutang.id_pengeluaran = pengeluaran.id_pengeluaran AND pengeluaran.user = hutang.user
     WHERE user.id_user = ?
+      AND {$archiveWhere}
     ORDER BY hutang.tanggal DESC, hutang.id_hutang DESC");
 $stmtHutang->bind_param("i", $userYangSedangLogin);
 $stmtHutang->execute();
@@ -92,6 +97,7 @@ $sql = $stmtHutang->get_result();
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
+                    <?php cashflow_render_archive_filter('hutang', $archiveFilter, $archiveSchemaReady); ?>
                     <div class="text-end me-3">
                         <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
                             data-bs-target="#modalTambah">
@@ -123,6 +129,7 @@ $sql = $stmtHutang->get_result();
                             $no = 1;
                             while ($row = mysqli_fetch_array($sql)) {
                                 $dueBadge = hutang_due_badge($row['status'] ?? '', $row['tanggal_jatuh_tempo'] ?? '', $today);
+                                $isArchived = !empty($row['archived_at']);
                             ?>
 
                             <tr>
@@ -151,6 +158,9 @@ $sql = $stmtHutang->get_result();
                                     <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
                                 <td class="align-middle text-center text-sm">
+                                    <?php if ($isArchived) { ?>
+                                        <span class="badge badge-sm bg-gradient-secondary mb-1">Diarsipkan</span><br>
+                                    <?php } ?>
                                     <?php if (($row['status'] ?? '') === 'selesai') { ?>
                                         <span class="badge badge-sm bg-gradient-success">Selesai</span>
                                         <?php if (!empty($row['tanggal_lunas']) || !empty($row['wallet_pembayaran_nama'])) { ?>
@@ -165,7 +175,7 @@ $sql = $stmtHutang->get_result();
                                                 <?php } ?>
                                             </small>
                                         <?php } ?>
-                                    <?php } else { ?>
+                                    <?php } elseif (!$isArchived) { ?>
                                         <button type="button"
                                             class="badge badge-sm bg-gradient-warning border-0 text-white btnlunashutang"
                                             data-bs-toggle="modal"
@@ -179,9 +189,15 @@ $sql = $stmtHutang->get_result();
                                         <?php if (!$hasActiveWallet) { ?>
                                             <small class="d-block text-xs text-danger mt-1">Buat/aktifkan wallet terlebih dahulu.</small>
                                         <?php } ?>
+                                    <?php } else { ?>
+                                        <span class="badge badge-sm bg-gradient-warning">Pending</span>
                                     <?php } ?>
                                 </td>
                                 <td class="align-middle">
+                                    <?php if ($isArchived) { ?>
+                                        <?php cashflow_render_archive_action('hutang', $row['id_hutang'], $archiveFilter, true, $archiveSchemaReady); ?>
+                                    <?php } else { ?>
+                                    <?php if (($row['status'] ?? '') === 'pending' && empty($row['id_pengeluaran'])) { ?>
                                     <form action="actions/aksi_hutang.php?act=h" method="post" class="d-inline">
                                         <?= csrf_input() ?>
                                         <input type="hidden" name="id_hutang" value="<?= (int) $row['id_hutang'] ?>">
@@ -195,6 +211,9 @@ $sql = $stmtHutang->get_result();
                                             <i class="fa fa-trash" aria-hidden="true"></i>
                                         </button>
                                     </form>
+                                    <?php } ?>
+
+                                    <?php cashflow_render_archive_action('hutang', $row['id_hutang'], $archiveFilter, false, $archiveSchemaReady); ?>
 
                                     <a type="submit" data-id="<?= (int) $row['id_hutang'] ?>"
                                         data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?>"
@@ -205,6 +224,7 @@ $sql = $stmtHutang->get_result();
                                         class="text-secondary text-warning font-weight-bold text-xs btnedithutang">
                                         <i class="fa fa-pencil" aria-hidden="true"></i>
                                     </a>
+                                    <?php } ?>
                                 </td>
                             </tr>
 

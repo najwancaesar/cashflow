@@ -3,6 +3,8 @@ include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
+include_once __DIR__ . "/../includes/financial_calendar_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 function fetch_single_value($con, $sql, $types = '', $params = [])
 {
@@ -118,6 +120,50 @@ function get_top_category_summary($rows, $defaultLabel)
     return $topRow;
 }
 
+function build_dashboard_period_comparison($currentTotal, $previousTotal, $label, $increaseIsPositive)
+{
+    $currentTotal = (float) $currentTotal;
+    $previousTotal = (float) $previousTotal;
+    $difference = $currentTotal - $previousTotal;
+
+    if ($previousTotal <= 0) {
+        if ($currentTotal <= 0) {
+            return [
+                'percentage' => null,
+                'direction' => 'tetap',
+                'badge_class' => 'bg-gradient-secondary',
+                'text' => $label . ' belum tercatat pada kedua rentang perbandingan.',
+            ];
+        }
+
+        return [
+            'percentage' => null,
+            'direction' => 'baru',
+            'badge_class' => $increaseIsPositive ? 'bg-gradient-success' : 'bg-gradient-warning',
+            'text' => $label . ' mulai tercatat; rentang setara bulan lalu masih nol.',
+        ];
+    }
+
+    $percentage = abs(($difference / $previousTotal) * 100);
+    if (abs($difference) < 0.01) {
+        return [
+            'percentage' => 0.0,
+            'direction' => 'tetap',
+            'badge_class' => 'bg-gradient-secondary',
+            'text' => $label . ' sama dengan rentang setara bulan lalu.',
+        ];
+    }
+
+    $isIncrease = $difference > 0;
+    return [
+        'percentage' => $percentage,
+        'direction' => $isIncrease ? 'naik' : 'turun',
+        'badge_class' => $isIncrease === (bool) $increaseIsPositive ? 'bg-gradient-success' : 'bg-gradient-danger',
+        'text' => $label . ' ' . ($isIncrease ? 'naik ' : 'turun ')
+            . number_format($percentage, 1) . '% dibanding rentang setara bulan lalu.',
+    ];
+}
+
 function fetch_monthly_totals($con, $table, $userId, $startDate, $endDate)
 {
     $allowedTables = ['pemasukan', 'pengeluaran'];
@@ -171,6 +217,16 @@ $mingguBerjalan = new DateTimeImmutable($tglSekarang);
 $tanggalAwalMinggu = $mingguBerjalan->modify('monday this week')->format('Y-m-d');
 $tanggalAkhirMinggu = $mingguBerjalan->modify('sunday this week')->format('Y-m-d');
 $userYangSedangLogin = (int) ($_SESSION["id_user"] ?? 0);
+$latestPemasukanArchiveWhere = cashflow_archive_filter_sql(
+    'pemasukan',
+    'aktif',
+    cashflow_archive_ready($con, 'pemasukan')
+);
+$latestPengeluaranArchiveWhere = cashflow_archive_filter_sql(
+    'pengeluaran',
+    'aktif',
+    cashflow_archive_ready($con, 'pengeluaran')
+);
 $isAdmin = strtolower((string) ($_SESSION['role'] ?? '')) === 'admin';
 
 if ($userYangSedangLogin <= 0) {
@@ -373,6 +429,13 @@ if ($isAdmin) {
     return;
 }
 
+$financial_calendar_events = cashflow_get_financial_calendar_events(
+    $con,
+    $userYangSedangLogin,
+    new DateTimeImmutable($tglSekarang)
+);
+$financial_calendar_summary = cashflow_financial_calendar_summary($financial_calendar_events);
+
 $pemasukan_minggu_ini = (float) fetch_single_value(
         $con,
         "SELECT COALESCE(SUM(jumlah), 0)
@@ -535,6 +598,7 @@ $q_pemasukan_terbaru = fetch_all_rows(
         ON pemasukan.id_wallet = wallet.id_wallet
        AND wallet.user_id = pemasukan.user
     WHERE pemasukan.user = ?
+      AND {$latestPemasukanArchiveWhere}
     ORDER BY pemasukan.id_pemasukan DESC
     LIMIT 5",
     "i",
@@ -557,6 +621,7 @@ $q_pengeluaran_terbaru = fetch_all_rows(
         ON pengeluaran.id_wallet = wallet.id_wallet
        AND wallet.user_id = pengeluaran.user
     WHERE pengeluaran.user = ?
+      AND {$latestPengeluaranArchiveWhere}
     ORDER BY pengeluaran.id_pengeluaran DESC
     LIMIT 5",
     "i",
@@ -664,6 +729,7 @@ $wallet_summary_rows = cashflow_get_user_wallet_balances($con, $userYangSedangLo
 $wallet_summary_items = [];
 $wallet_total_saldo_aktif = 0;
 $wallet_default_name = 'Belum ada default wallet aktif';
+$wallet_saldo_terbesar = null;
 
 foreach ($wallet_summary_rows as $walletRow) {
     $walletSaldoAwal = (float) ($walletRow['saldo_awal'] ?? 0);
@@ -682,7 +748,7 @@ foreach ($wallet_summary_rows as $walletRow) {
 
     $wallet_total_saldo_aktif += $walletSaldoAkhir;
     $walletTypeMeta = cashflow_wallet_type_meta_from_row($walletRow, $walletCustomTypeMap);
-    $wallet_summary_items[] = [
+    $walletSummaryItem = [
         'id_wallet' => (int) ($walletRow['id_wallet'] ?? 0),
         'nama_wallet' => (string) ($walletRow['nama_wallet'] ?? '-'),
         'tipe_wallet' => (string) ($walletRow['tipe_wallet'] ?? 'lainnya'),
@@ -697,6 +763,11 @@ foreach ($wallet_summary_rows as $walletRow) {
         'saldo_akhir' => $walletSaldoAkhir,
         'is_default' => $walletIsDefault,
     ];
+    $wallet_summary_items[] = $walletSummaryItem;
+
+    if ($wallet_saldo_terbesar === null || $walletSaldoAkhir > (float) $wallet_saldo_terbesar['saldo_akhir']) {
+        $wallet_saldo_terbesar = $walletSummaryItem;
+    }
 }
 
 $wallet_aktif_count = count($wallet_summary_items);
@@ -959,39 +1030,90 @@ $top_kategori_pengeluaran = get_top_category_summary($kategori_pengeluaran_break
 $chart_kategori_pemasukan = build_chart_series_from_breakdown($kategori_pemasukan_breakdown);
 $chart_kategori_pengeluaran = build_chart_series_from_breakdown($kategori_pengeluaran_breakdown);
 
-$bulan_lalu = (new DateTimeImmutable('first day of this month'))->modify('-1 month');
-$bulan_lalu_nomor = (int) $bulan_lalu->format('m');
-$tahun_bulan_lalu = (int) $bulan_lalu->format('Y');
-
-$insight_pemasukan_bulan_ini = (float) fetch_single_value(
-    $con,
-    "SELECT COALESCE(SUM(jumlah), 0)
-     FROM pemasukan
-     WHERE user = ? AND status = 'selesai'
-       AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?",
-    "iii",
-    [$userYangSedangLogin, $bulansekarang, $tahunsekarang]
+$insight_hari_ini = new DateTimeImmutable($tglSekarang);
+$insight_awal_bulan_ini = $insight_hari_ini->modify('first day of this month');
+$insight_akhir_bulan_ini = $insight_hari_ini;
+$insight_awal_bulan_lalu = $insight_awal_bulan_ini->modify('-1 month');
+$insight_hari_bulan_lalu = min(
+    (int) $insight_hari_ini->format('j'),
+    (int) $insight_awal_bulan_lalu->format('t')
+);
+$insight_akhir_bulan_lalu = $insight_awal_bulan_lalu->setDate(
+    (int) $insight_awal_bulan_lalu->format('Y'),
+    (int) $insight_awal_bulan_lalu->format('m'),
+    $insight_hari_bulan_lalu
 );
 
-$insight_pengeluaran_bulan_ini = (float) fetch_single_value(
+$insight_awal_bulan_ini_sql = $insight_awal_bulan_ini->format('Y-m-d');
+$insight_akhir_bulan_ini_sql = $insight_akhir_bulan_ini->format('Y-m-d');
+$insight_awal_bulan_lalu_sql = $insight_awal_bulan_lalu->format('Y-m-d');
+$insight_akhir_bulan_lalu_sql = $insight_akhir_bulan_lalu->format('Y-m-d');
+
+$insight_perbandingan_rows = fetch_all_rows(
     $con,
-    "SELECT COALESCE(SUM(jumlah), 0)
-     FROM pengeluaran
-     WHERE user = ? AND status = 'selesai'
-       AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?",
-    "iii",
-    [$userYangSedangLogin, $bulansekarang, $tahunsekarang]
+    "SELECT
+        transaksi.jenis,
+        COALESCE(SUM(CASE WHEN transaksi.tanggal BETWEEN ? AND ? THEN transaksi.jumlah ELSE 0 END), 0) AS total_sekarang,
+        COALESCE(SUM(CASE WHEN transaksi.tanggal BETWEEN ? AND ? THEN transaksi.jumlah ELSE 0 END), 0) AS total_sebelumnya
+     FROM (
+        SELECT 'pemasukan' AS jenis, tanggal, jumlah
+        FROM pemasukan
+        WHERE user = ? AND status = 'selesai' AND tanggal BETWEEN ? AND ?
+        UNION ALL
+        SELECT 'pengeluaran' AS jenis, tanggal, jumlah
+        FROM pengeluaran
+        WHERE user = ? AND status = 'selesai' AND tanggal BETWEEN ? AND ?
+     ) AS transaksi
+     GROUP BY transaksi.jenis",
+    "ssssississ",
+    [
+        $insight_awal_bulan_ini_sql,
+        $insight_akhir_bulan_ini_sql,
+        $insight_awal_bulan_lalu_sql,
+        $insight_akhir_bulan_lalu_sql,
+        $userYangSedangLogin,
+        $insight_awal_bulan_lalu_sql,
+        $insight_akhir_bulan_ini_sql,
+        $userYangSedangLogin,
+        $insight_awal_bulan_lalu_sql,
+        $insight_akhir_bulan_ini_sql,
+    ]
 );
 
-$insight_pengeluaran_bulan_lalu = (float) fetch_single_value(
-    $con,
-    "SELECT COALESCE(SUM(jumlah), 0)
-     FROM pengeluaran
-     WHERE user = ? AND status = 'selesai'
-       AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?",
-    "iii",
-    [$userYangSedangLogin, $bulan_lalu_nomor, $tahun_bulan_lalu]
+$insight_perbandingan_total = [
+    'pemasukan' => ['sekarang' => 0.0, 'sebelumnya' => 0.0],
+    'pengeluaran' => ['sekarang' => 0.0, 'sebelumnya' => 0.0],
+];
+foreach ($insight_perbandingan_rows as $insightPerbandinganRow) {
+    $insightJenis = (string) ($insightPerbandinganRow['jenis'] ?? '');
+    if (!isset($insight_perbandingan_total[$insightJenis])) {
+        continue;
+    }
+
+    $insight_perbandingan_total[$insightJenis] = [
+        'sekarang' => (float) ($insightPerbandinganRow['total_sekarang'] ?? 0),
+        'sebelumnya' => (float) ($insightPerbandinganRow['total_sebelumnya'] ?? 0),
+    ];
+}
+
+$insight_pemasukan_bulan_ini = $insight_perbandingan_total['pemasukan']['sekarang'];
+$insight_pemasukan_bulan_lalu = $insight_perbandingan_total['pemasukan']['sebelumnya'];
+$insight_pengeluaran_bulan_ini = $insight_perbandingan_total['pengeluaran']['sekarang'];
+$insight_pengeluaran_bulan_lalu = $insight_perbandingan_total['pengeluaran']['sebelumnya'];
+$insight_perbandingan_pemasukan = build_dashboard_period_comparison(
+    $insight_pemasukan_bulan_ini,
+    $insight_pemasukan_bulan_lalu,
+    'Pemasukan',
+    true
 );
+$insight_perbandingan_pengeluaran = build_dashboard_period_comparison(
+    $insight_pengeluaran_bulan_ini,
+    $insight_pengeluaran_bulan_lalu,
+    'Pengeluaran',
+    false
+);
+$insight_rentang_label = $insight_awal_bulan_ini->format('d M') . ' - ' . $insight_akhir_bulan_ini->format('d M Y');
+$insight_rentang_lalu_label = $insight_awal_bulan_lalu->format('d M') . ' - ' . $insight_akhir_bulan_lalu->format('d M Y');
 
 $insight_top_pengeluaran_rows = fetch_all_rows(
     $con,
@@ -1016,12 +1138,68 @@ $insight_top_pengeluaran_rows = fetch_all_rows(
 );
 
 $insight_top_pengeluaran = $insight_top_pengeluaran_rows[0] ?? null;
+$insight_pengeluaran_terbesar_rows = fetch_all_rows(
+    $con,
+    "SELECT
+        pengeluaran.id_pengeluaran,
+        pengeluaran.tanggal,
+        pengeluaran.catatan,
+        pengeluaran.jumlah,
+        COALESCE(kategori.nama_kategori, 'Belum dikategorikan') AS kategori_nama
+     FROM pengeluaran
+     LEFT JOIN kategori
+        ON kategori.id_kategori = pengeluaran.id_kategori
+       AND kategori.user_id = pengeluaran.user
+       AND kategori.tipe_kategori = 'pengeluaran'
+     WHERE pengeluaran.user = ?
+       AND pengeluaran.status = 'selesai'
+       AND pengeluaran.tanggal BETWEEN ? AND ?
+     ORDER BY pengeluaran.jumlah DESC, pengeluaran.id_pengeluaran DESC
+     LIMIT 1",
+    "iss",
+    [$userYangSedangLogin, $insight_awal_bulan_ini_sql, $insight_akhir_bulan_ini_sql]
+);
+$insight_pengeluaran_terbesar = $insight_pengeluaran_terbesar_rows[0] ?? null;
+
+$insight_kewajiban_rows = fetch_all_rows(
+    $con,
+    "SELECT 'hutang' AS jenis, COUNT(*) AS total_item, COALESCE(SUM(jumlah), 0) AS total_nominal
+     FROM hutang
+     WHERE user = ? AND status = 'pending'
+     UNION ALL
+     SELECT 'piutang' AS jenis, COUNT(*) AS total_item, COALESCE(SUM(jumlah), 0) AS total_nominal
+     FROM piutang
+     WHERE user = ? AND status = 'pending'",
+    "ii",
+    [$userYangSedangLogin, $userYangSedangLogin]
+);
+$insight_kewajiban = [
+    'hutang' => ['total_item' => 0, 'total_nominal' => 0.0],
+    'piutang' => ['total_item' => 0, 'total_nominal' => 0.0],
+];
+foreach ($insight_kewajiban_rows as $insightKewajibanRow) {
+    $insightJenis = (string) ($insightKewajibanRow['jenis'] ?? '');
+    if (!isset($insight_kewajiban[$insightJenis])) {
+        continue;
+    }
+
+    $insight_kewajiban[$insightJenis] = [
+        'total_item' => (int) ($insightKewajibanRow['total_item'] ?? 0),
+        'total_nominal' => (float) ($insightKewajibanRow['total_nominal'] ?? 0),
+    ];
+}
+
 $insight_rata_harian = $insight_pengeluaran_bulan_ini / $hari_berjalan_bulan_ini;
+$rata_pengeluaran_harian = $insight_rata_harian;
 $insight_rasio_pengeluaran = $insight_pemasukan_bulan_ini > 0
     ? ($insight_pengeluaran_bulan_ini / $insight_pemasukan_bulan_ini) * 100
     : null;
-$has_monthly_insight = ($insight_pemasukan_bulan_ini + $insight_pengeluaran_bulan_ini + $insight_pengeluaran_bulan_lalu) > 0
-    || $insight_top_pengeluaran !== null;
+$has_monthly_insight = (
+    $insight_pemasukan_bulan_ini
+    + $insight_pemasukan_bulan_lalu
+    + $insight_pengeluaran_bulan_ini
+    + $insight_pengeluaran_bulan_lalu
+) > 0 || $insight_top_pengeluaran !== null || $insight_pengeluaran_terbesar !== null;
 
 $insight_kategori_label = $insight_top_pengeluaran
     ? (string) ($insight_top_pengeluaran['kategori_nama'] ?? 'Belum dikategorikan')
@@ -1033,30 +1211,8 @@ $insight_kategori_transaksi = $insight_top_pengeluaran
     ? (int) ($insight_top_pengeluaran['total_transaksi'] ?? 0)
     : 0;
 
-if (!$has_monthly_insight) {
-    $insight_perbandingan_text = 'Belum cukup data untuk membandingkan pengeluaran bulan ini.';
-    $insight_perbandingan_badge = 'bg-gradient-secondary';
-} elseif ($insight_pengeluaran_bulan_lalu <= 0 && $insight_pengeluaran_bulan_ini > 0) {
-    $insight_perbandingan_text = 'Pengeluaran bulan ini mulai tercatat; bulan lalu belum ada pengeluaran selesai.';
-    $insight_perbandingan_badge = 'bg-gradient-warning';
-} elseif ($insight_pengeluaran_bulan_lalu <= 0) {
-    $insight_perbandingan_text = 'Pengeluaran bulan ini sama dengan bulan lalu.';
-    $insight_perbandingan_badge = 'bg-gradient-success';
-} else {
-    $insight_selisih_pengeluaran = $insight_pengeluaran_bulan_ini - $insight_pengeluaran_bulan_lalu;
-    $insight_persen_perubahan = abs($insight_selisih_pengeluaran / $insight_pengeluaran_bulan_lalu * 100);
-
-    if (abs($insight_selisih_pengeluaran) < 0.01) {
-        $insight_perbandingan_text = 'Pengeluaran bulan ini sama dengan bulan lalu.';
-        $insight_perbandingan_badge = 'bg-gradient-success';
-    } elseif ($insight_selisih_pengeluaran > 0) {
-        $insight_perbandingan_text = 'Pengeluaran bulan ini naik ' . number_format((float) $insight_persen_perubahan, 1) . '% dibanding bulan lalu.';
-        $insight_perbandingan_badge = 'bg-gradient-danger';
-    } else {
-        $insight_perbandingan_text = 'Pengeluaran bulan ini turun ' . number_format((float) $insight_persen_perubahan, 1) . '% dibanding bulan lalu.';
-        $insight_perbandingan_badge = 'bg-gradient-success';
-    }
-}
+$insight_perbandingan_text = $insight_perbandingan_pengeluaran['text'];
+$insight_perbandingan_badge = $insight_perbandingan_pengeluaran['badge_class'];
 
 $insight_kategori_sentence = $insight_top_pengeluaran
     ? 'Kategori paling boros bulan ini adalah ' . $insight_kategori_label . '.'
@@ -1257,6 +1413,9 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
+                    <p class="mb-0 text-sm text-secondary">
+                        Pemasukan <?= number_format((float) $tpemasukan_pending) ?> &bull; Pengeluaran <?= number_format((float) $tpengeluaran_pending) ?>
+                    </p>
                 </div>
             </div>
         </div>
@@ -1699,68 +1858,171 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                     <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
                         <div>
                             <h6 class="mb-0">Insight Bulan Ini</h6>
-                            <p class="text-sm text-secondary mb-0">Ringkasan ringan berdasarkan transaksi selesai bulan berjalan.</p>
+                            <p class="text-sm text-secondary mb-0">Perbandingan transaksi selesai pada rentang tanggal yang setara.</p>
                         </div>
-                        <span class="badge badge-sm <?= htmlspecialchars($insight_perbandingan_badge, ENT_QUOTES, 'UTF-8') ?>">
-                            Transaksi selesai
+                        <span class="badge badge-sm bg-gradient-info">
+                            <?= htmlspecialchars($insight_rentang_label, ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </div>
                 </div>
                 <div class="card-body p-3">
                     <?php if (!$has_monthly_insight) { ?>
-                        <div class="border border-radius-lg p-4 text-center">
+                        <div class="border border-radius-lg p-4 text-center mb-3">
                             <i class="fa fa-lightbulb-o text-secondary mb-2" aria-hidden="true"></i>
                             <p class="text-sm text-secondary mb-1">Belum cukup data untuk menampilkan insight bulan ini.</p>
                             <p class="text-xs text-secondary mb-0">Insight akan muncul setelah ada pemasukan atau pengeluaran berstatus selesai.</p>
                         </div>
-                    <?php } else { ?>
-                        <div class="row">
-                            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-                                <div class="border border-radius-lg p-3 h-100">
-                                    <p class="text-xs text-secondary mb-1">Kategori Paling Boros</p>
-                                    <h6 class="mb-1"><?= htmlspecialchars($insight_kategori_label, ENT_QUOTES, 'UTF-8') ?></h6>
-                                    <p class="text-xs text-secondary mb-0">
-                                        <?= format_rupiah($insight_kategori_total) ?> dari <?= number_format((float) $insight_kategori_transaksi) ?> transaksi.
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
-                                <div class="border border-radius-lg p-3 h-100">
-                                    <p class="text-xs text-secondary mb-1">Rata-rata Harian</p>
-                                    <h6 class="mb-1"><?= format_rupiah($insight_rata_harian) ?></h6>
-                                    <p class="text-xs text-secondary mb-0"><?= number_format((float) $hari_berjalan_bulan_ini) ?> hari berjalan bulan ini.</p>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-sm-6 mb-sm-0 mb-4">
-                                <div class="border border-radius-lg p-3 h-100">
-                                    <p class="text-xs text-secondary mb-1">Rasio Pengeluaran</p>
-                                    <h6 class="mb-1">
-                                        <?= $insight_rasio_pengeluaran !== null ? number_format((float) $insight_rasio_pengeluaran, 1) . '%' : '-' ?>
-                                    </h6>
-                                    <p class="text-xs text-secondary mb-0">Terhadap pemasukan selesai bulan ini.</p>
-                                </div>
-                            </div>
-                            <div class="col-xl-3 col-sm-6">
-                                <div class="border border-radius-lg p-3 h-100">
-                                    <p class="text-xs text-secondary mb-1">Vs Bulan Lalu</p>
-                                    <span class="badge badge-sm <?= htmlspecialchars($insight_perbandingan_badge, ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= format_rupiah($insight_pengeluaran_bulan_ini) ?>
+                    <?php } ?>
+                    <div class="row">
+                        <div class="col-xl-4 col-md-6 mb-3">
+                            <div class="border border-radius-lg p-3 h-100">
+                                <p class="text-xs text-secondary mb-1">Pemasukan vs Bulan Lalu</p>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <h6 class="mb-0"><?= format_rupiah($insight_pemasukan_bulan_ini) ?></h6>
+                                    <span class="badge badge-sm <?= htmlspecialchars($insight_perbandingan_pemasukan['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <?php if ($insight_perbandingan_pemasukan['percentage'] === null) { ?>
+                                            <?= htmlspecialchars(ucfirst($insight_perbandingan_pemasukan['direction']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?php } else { ?>
+                                            <?= htmlspecialchars(ucfirst($insight_perbandingan_pemasukan['direction']), ENT_QUOTES, 'UTF-8') ?>
+                                            <?= number_format((float) $insight_perbandingan_pemasukan['percentage'], 1) ?>%
+                                        <?php } ?>
                                     </span>
-                                    <p class="text-xs text-secondary mb-0 mt-2">Bulan lalu <?= format_rupiah($insight_pengeluaran_bulan_lalu) ?>.</p>
                                 </div>
+                                <p class="text-xs text-secondary mb-0">Rentang lalu <?= format_rupiah($insight_pemasukan_bulan_lalu) ?>.</p>
                             </div>
                         </div>
-                        <div class="border border-radius-lg p-3 mt-3">
-                            <p class="text-sm font-weight-bold mb-2">Catatan Insight</p>
-                            <p class="text-sm text-secondary mb-1">
-                                <i class="fa fa-pie-chart me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_kategori_sentence, ENT_QUOTES, 'UTF-8') ?>
-                            </p>
-                            <p class="text-sm text-secondary mb-1">
-                                <i class="fa fa-percent me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_rasio_sentence, ENT_QUOTES, 'UTF-8') ?>
-                            </p>
-                            <p class="text-sm text-secondary mb-0">
-                                <i class="fa fa-exchange me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_perbandingan_text, ENT_QUOTES, 'UTF-8') ?>
-                            </p>
+                        <div class="col-xl-4 col-md-6 mb-3">
+                            <div class="border border-radius-lg p-3 h-100">
+                                <p class="text-xs text-secondary mb-1">Pengeluaran vs Bulan Lalu</p>
+                                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                    <h6 class="mb-0"><?= format_rupiah($insight_pengeluaran_bulan_ini) ?></h6>
+                                    <span class="badge badge-sm <?= htmlspecialchars($insight_perbandingan_pengeluaran['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <?php if ($insight_perbandingan_pengeluaran['percentage'] === null) { ?>
+                                            <?= htmlspecialchars(ucfirst($insight_perbandingan_pengeluaran['direction']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?php } else { ?>
+                                            <?= htmlspecialchars(ucfirst($insight_perbandingan_pengeluaran['direction']), ENT_QUOTES, 'UTF-8') ?>
+                                            <?= number_format((float) $insight_perbandingan_pengeluaran['percentage'], 1) ?>%
+                                        <?php } ?>
+                                    </span>
+                                </div>
+                                <p class="text-xs text-secondary mb-0">Rentang lalu <?= format_rupiah($insight_pengeluaran_bulan_lalu) ?>.</p>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-6 mb-3">
+                            <div class="border border-radius-lg p-3 h-100">
+                                <p class="text-xs text-secondary mb-1">Pengeluaran Terbesar</p>
+                                <?php if ($insight_pengeluaran_terbesar) { ?>
+                                    <h6 class="mb-1"><?= format_rupiah((float) $insight_pengeluaran_terbesar['jumlah']) ?></h6>
+                                    <p class="text-xs text-secondary mb-0">
+                                        <?= htmlspecialchars(trim((string) ($insight_pengeluaran_terbesar['catatan'] ?? '')) ?: (string) $insight_pengeluaran_terbesar['kategori_nama'], ENT_QUOTES, 'UTF-8') ?>
+                                    </p>
+                                <?php } else { ?>
+                                    <h6 class="mb-1">Belum ada data</h6>
+                                    <p class="text-xs text-secondary mb-0">Belum ada pengeluaran selesai bulan ini.</p>
+                                <?php } ?>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-6 mb-3 mb-xl-0">
+                            <div class="border border-radius-lg p-3 h-100">
+                                <p class="text-xs text-secondary mb-1">Saldo Wallet Aktif Terbesar</p>
+                                <?php if ($wallet_saldo_terbesar) { ?>
+                                    <h6 class="mb-1"><?= format_rupiah((float) $wallet_saldo_terbesar['saldo_akhir']) ?></h6>
+                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($wallet_saldo_terbesar['nama_wallet'], ENT_QUOTES, 'UTF-8') ?></p>
+                                <?php } else { ?>
+                                    <h6 class="mb-1">Belum ada wallet aktif</h6>
+                                    <p class="text-xs text-secondary mb-0">Aktifkan wallet untuk melihat saldo terbesar.</p>
+                                <?php } ?>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-6 mb-3 mb-md-0">
+                            <div class="border border-radius-lg p-3 h-100">
+                                <p class="text-xs text-secondary mb-1">Utang Belum Lunas</p>
+                                <h6 class="mb-1"><?= format_rupiah($insight_kewajiban['hutang']['total_nominal']) ?></h6>
+                                <p class="text-xs text-secondary mb-0"><?= number_format((float) $insight_kewajiban['hutang']['total_item']) ?> item pending.</p>
+                            </div>
+                        </div>
+                        <div class="col-xl-4 col-md-6">
+                            <div class="border border-radius-lg p-3 h-100">
+                                <p class="text-xs text-secondary mb-1">Piutang Belum Lunas</p>
+                                <h6 class="mb-1"><?= format_rupiah($insight_kewajiban['piutang']['total_nominal']) ?></h6>
+                                <p class="text-xs text-secondary mb-0"><?= number_format((float) $insight_kewajiban['piutang']['total_item']) ?> item pending.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border border-radius-lg p-3 mt-3">
+                        <p class="text-sm font-weight-bold mb-2">Catatan Faktual</p>
+                        <p class="text-xs text-secondary mb-2">
+                            Dibandingkan <?= htmlspecialchars($insight_rentang_label, ENT_QUOTES, 'UTF-8') ?> dengan <?= htmlspecialchars($insight_rentang_lalu_label, ENT_QUOTES, 'UTF-8') ?>.
+                        </p>
+                        <p class="text-sm text-secondary mb-1">
+                            <i class="fa fa-arrow-circle-down me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_perbandingan_pemasukan['text'], ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+                        <p class="text-sm text-secondary mb-1">
+                            <i class="fa fa-arrow-circle-up me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_perbandingan_pengeluaran['text'], ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+                        <p class="text-sm text-secondary mb-1">
+                            <i class="fa fa-pie-chart me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_kategori_sentence, ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+                        <p class="text-sm text-secondary mb-1">
+                            <i class="fa fa-percent me-2" aria-hidden="true"></i><?= htmlspecialchars($insight_rasio_sentence, ENT_QUOTES, 'UTF-8') ?>
+                        </p>
+                        <p class="text-sm text-secondary mb-0">
+                            <i class="fa fa-clock-o me-2" aria-hidden="true"></i>
+                            Pending untuk perhatian: <?= number_format((float) $tpemasukan_pending) ?> pemasukan dan <?= number_format((float) $tpengeluaran_pending) ?> pengeluaran; tidak masuk analitik finansial.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card financial-reminder-card">
+                <div class="card-header p-3 pb-0">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                        <div>
+                            <h6 class="mb-1">Pengingat Kalender Keuangan</h6>
+                            <p class="text-sm text-secondary mb-0">Kewajiban, tagihan, recurring, dan target celengan terdekat.</p>
+                        </div>
+                        <a href="main.php?module=kalender_keuangan" class="btn btn-sm btn-outline-info mb-0">Lihat Kalender</a>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="financial-reminder-summary mb-3">
+                        <div class="calendar-summary-card calendar-accent-danger">
+                            <span class="text-xs text-secondary">Terlambat</span>
+                            <strong><?= number_format((int) $financial_calendar_summary['overdue']) ?></strong>
+                        </div>
+                        <div class="calendar-summary-card calendar-accent-warning">
+                            <span class="text-xs text-secondary">Hari Ini</span>
+                            <strong><?= number_format((int) $financial_calendar_summary['today']) ?></strong>
+                        </div>
+                        <div class="calendar-summary-card calendar-accent-warning">
+                            <span class="text-xs text-secondary">7 Hari ke Depan</span>
+                            <strong><?= number_format((int) $financial_calendar_summary['next7']) ?></strong>
+                        </div>
+                    </div>
+
+                    <?php if (empty($financial_calendar_summary['nearest'])) { ?>
+                        <div class="calendar-empty-state py-3">
+                            <i class="fa fa-calendar-check-o text-secondary mb-2" aria-hidden="true"></i>
+                            <p class="text-sm text-secondary mb-0">Belum ada agenda bertanggal yang perlu diingatkan.</p>
+                        </div>
+                    <?php } else { ?>
+                        <div class="financial-reminder-nearest">
+                            <?php foreach ($financial_calendar_summary['nearest'] as $reminderEvent) { ?>
+                                <a href="<?= htmlspecialchars($reminderEvent['url'], ENT_QUOTES, 'UTF-8') ?>"
+                                    class="financial-reminder-item <?= htmlspecialchars($reminderEvent['accent_class'], ENT_QUOTES, 'UTF-8') ?>">
+                                    <span class="financial-reminder-date">
+                                        <?= htmlspecialchars(date('d M Y', strtotime($reminderEvent['due_date'])), ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                    <span class="financial-reminder-title"><?= htmlspecialchars($reminderEvent['title'], ENT_QUOTES, 'UTF-8') ?></span>
+                                    <span class="badge badge-sm <?= htmlspecialchars($reminderEvent['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars($reminderEvent['status_label'], ENT_QUOTES, 'UTF-8') ?>
+                                    </span>
+                                </a>
+                            <?php } ?>
                         </div>
                     <?php } ?>
                 </div>

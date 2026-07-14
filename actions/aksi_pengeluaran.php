@@ -6,6 +6,7 @@ include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 function clean_input($data) {
     global $con;
@@ -269,6 +270,9 @@ if (isset($_GET['act'])) {
                     if (!$existingPengeluaran) {
                         throw new DomainException('Data pengeluaran tidak ditemukan atau bukan milik Anda.');
                     }
+                    if (cashflow_archive_record_is_archived($con, 'pengeluaran', $id_pengeluaran, $user)) {
+                        throw new DomainException('Pengeluaran yang diarsipkan harus dipulihkan sebelum dapat diubah.');
+                    }
 
                     $oldWalletId = (int) ($existingPengeluaran['id_wallet'] ?? 0);
                     cashflow_lock_owned_wallets(
@@ -335,6 +339,9 @@ if (isset($_GET['act'])) {
                 $existingPengeluaran = fetch_pengeluaran_for_update($id_pengeluaran, $user);
                 if (!$existingPengeluaran) {
                     throw new DomainException('Data pengeluaran tidak ditemukan atau bukan milik Anda.');
+                }
+                if (cashflow_archive_record_is_archived($con, 'pengeluaran', $id_pengeluaran, $user)) {
+                    throw new DomainException('Pengeluaran yang diarsipkan harus dipulihkan sebelum statusnya diubah.');
                 }
 
                 if ((string) $existingPengeluaran['status'] === $targetStatus) {
@@ -407,9 +414,28 @@ if (isset($_GET['act'])) {
                 if (!$existingPengeluaran) {
                     throw new DomainException('Data pengeluaran tidak ditemukan atau bukan milik Anda.');
                 }
+                if (cashflow_archive_record_is_archived($con, 'pengeluaran', $id_pengeluaran, $user)) {
+                    throw new DomainException('Pengeluaran yang diarsipkan harus dipulihkan sebelum dapat dihapus.');
+                }
+                if ((string) ($existingPengeluaran['status'] ?? '') === 'selesai') {
+                    throw new DomainException('Pengeluaran selesai tidak dapat dihapus permanen. Gunakan aksi Arsipkan agar saldo dan histori tetap utuh.');
+                }
+
+                $relationStmt = $con->prepare("SELECT id_log FROM recurring_generation_log
+                                               WHERE user_id = ? AND tipe_transaksi = 'pengeluaran' AND id_transaksi = ? LIMIT 1");
+                if (!$relationStmt) {
+                    throw new RuntimeException('Gagal memeriksa relasi recurring pengeluaran.');
+                }
+                $relationStmt->bind_param('ii', $user, $id_pengeluaran);
+                $relationStmt->execute();
+                $hasRecurringRelation = (bool) $relationStmt->get_result()->fetch_assoc();
+                $relationStmt->close();
+                if ($hasRecurringRelation) {
+                    throw new DomainException('Pengeluaran hasil recurring memiliki riwayat generation dan tidak dapat dihapus permanen. Gunakan aksi Arsipkan.');
+                }
 
                 $stmt = $con->prepare("DELETE FROM pengeluaran
-                                       WHERE id_pengeluaran = ? AND user = ?");
+                                       WHERE id_pengeluaran = ? AND user = ? AND status = 'pending'");
                 if (!$stmt) {
                     throw new RuntimeException('Gagal menyiapkan penghapusan pengeluaran.');
                 }
@@ -446,9 +472,16 @@ if (isset($_GET['act'])) {
             }
 
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $bulkArchiveClause = cashflow_archive_ready($con, 'pengeluaran') ? ' AND pengeluaran.archived_at IS NULL' : '';
             $countQuery = "SELECT COUNT(*) AS total
                            FROM pengeluaran
-                           WHERE user = ? AND id_pengeluaran IN ({$placeholders})";
+                           WHERE user = ? AND status = 'pending' AND id_pengeluaran IN ({$placeholders})
+                             AND NOT EXISTS (
+                                SELECT 1 FROM recurring_generation_log
+                                WHERE recurring_generation_log.user_id = pengeluaran.user
+                                  AND recurring_generation_log.tipe_transaksi = 'pengeluaran'
+                                  AND recurring_generation_log.id_transaksi = pengeluaran.id_pengeluaran
+                             ){$bulkArchiveClause}";
             $countStmt = mysqli_prepare($con, $countQuery);
             $countTypes = 'i' . str_repeat('i', count($ids));
             $countParams = array_merge([$user], $ids);
@@ -459,11 +492,17 @@ if (isset($_GET['act'])) {
             mysqli_stmt_close($countStmt);
 
             if ((int) ($countRow['total'] ?? 0) !== count($ids)) {
-                show_sweetalert_and_redirect('Akses ditolak', 'Sebagian data tidak valid atau bukan milik Anda.', 'error', 'main.php?module=pengeluaran');
+                show_sweetalert_and_redirect('Aksi ditolak', 'Hapus massal hanya dapat dilakukan pada pengeluaran pending milik Anda.', 'warning', 'main.php?module=pengeluaran');
             }
 
             $deleteQuery = "DELETE FROM pengeluaran
-                            WHERE user = ? AND id_pengeluaran IN ({$placeholders})";
+                            WHERE user = ? AND status = 'pending' AND id_pengeluaran IN ({$placeholders})
+                              AND NOT EXISTS (
+                                SELECT 1 FROM recurring_generation_log
+                                WHERE recurring_generation_log.user_id = pengeluaran.user
+                                  AND recurring_generation_log.tipe_transaksi = 'pengeluaran'
+                                  AND recurring_generation_log.id_transaksi = pengeluaran.id_pengeluaran
+                              ){$bulkArchiveClause}";
             $deleteStmt = mysqli_prepare($con, $deleteQuery);
             $deleteTypes = 'i' . str_repeat('i', count($ids));
             $deleteParams = array_merge([$user], $ids);

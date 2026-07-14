@@ -3,6 +3,251 @@ html {
     overflow-x: hidden;
 }
 
+/* Financial calendar and read-only reminders */
+.calendar-summary-grid,
+.financial-reminder-summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.financial-reminder-summary {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.calendar-summary-card {
+    display: flex;
+    min-width: 0;
+    min-height: 72px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-left-width: 4px;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.calendar-summary-card strong {
+    color: #344767;
+    font-size: 1.25rem;
+}
+
+.calendar-accent-danger {
+    border-left-color: #ef4444 !important;
+}
+
+.calendar-accent-warning {
+    border-left-color: #f59e0b !important;
+}
+
+.calendar-accent-info {
+    border-left-color: #2688eb !important;
+}
+
+.calendar-accent-secondary {
+    border-left-color: #94a3b8 !important;
+}
+
+.calendar-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.calendar-filter-grid .form-control {
+    width: 100%;
+    min-height: 46px;
+    background-color: #fff;
+}
+
+.calendar-filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.calendar-filter-actions .btn {
+    display: inline-flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.financial-calendar-list,
+.financial-reminder-nearest {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.financial-calendar-event {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(120px, 150px) minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-left-width: 4px;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.calendar-event-date {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.calendar-event-main,
+.calendar-event-main h6,
+.calendar-event-main p {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.calendar-event-action .btn {
+    white-space: nowrap;
+}
+
+.calendar-empty-state {
+    padding: 28px 16px;
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 14px;
+    text-align: center;
+}
+
+.financial-reminder-item {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(100px, 130px) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-left-width: 4px;
+    border-radius: 10px;
+    color: #344767;
+}
+
+.financial-reminder-item:hover {
+    color: #344767;
+    background: rgba(248, 250, 252, 0.9);
+}
+
+.financial-reminder-date {
+    color: #64748b;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.financial-reminder-title {
+    min-width: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+/* Transaction archive filters and actions */
+.archive-filter-toolbar {
+    width: 100%;
+}
+
+.archive-filter-form {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.archive-filter-form .form-label {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.archive-filter-form .form-control {
+    width: auto;
+    min-width: 170px;
+    min-height: 42px;
+    background-color: #fff;
+}
+
+.archive-filter-form .btn {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+}
+
+.archive-action-form {
+    margin-right: 0.55rem;
+}
+
+@media (max-width: 1199.98px) {
+    .calendar-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .calendar-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .calendar-filter-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .calendar-summary-grid,
+    .financial-reminder-summary,
+    .calendar-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .calendar-filter-actions {
+        grid-column: auto;
+        flex-direction: column;
+    }
+
+    .calendar-filter-actions .btn,
+    .calendar-filter-actions a {
+        width: 100%;
+    }
+
+    .financial-calendar-event,
+    .financial-reminder-item {
+        grid-template-columns: 1fr;
+        gap: 9px;
+        align-items: start;
+    }
+
+    .calendar-event-action,
+    .calendar-event-action .btn {
+        width: 100%;
+    }
+
+    .financial-reminder-item .badge {
+        justify-self: start;
+    }
+
+    .archive-filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .archive-filter-form .form-control,
+    .archive-filter-form .btn {
+        width: 100%;
+    }
+}
+
 :root {
     --cashflow-sidenav-width: 15.625rem;
     --cashflow-sidenav-gutter: 1.5rem;
@@ -1940,33 +2185,33 @@ body.g-sidenav-show {
 }
 
 @media (max-width: 575.98px) {
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] {
         display: block;
         width: 100%;
         min-width: 0;
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"]::before {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"]::before {
         display: block;
         width: 100%;
         margin-bottom: 0.55rem;
         text-align: left;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box {
         padding: 0.85rem;
         border-radius: 0.9rem;
         background: #f8fafc;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-summary {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-summary {
         width: 100%;
         max-width: 100%;
         padding: 0.85rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-summary-header {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-summary-header {
         display: flex;
         width: 100%;
         align-items: flex-start;
@@ -1975,42 +2220,42 @@ body.g-sidenav-show {
         margin-bottom: 0.45rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box p,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box span:not(.badge),
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box strong {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box p,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box span:not(.badge),
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box strong {
         text-align: left !important;
         overflow-wrap: anywhere;
         word-break: break-word;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-form {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-form {
         display: block;
         width: 100%;
         margin-top: 0.65rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-progress {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-progress {
         width: 100%;
         height: 0.5rem;
         margin-top: 0.45rem;
         margin-bottom: 0.45rem !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-title {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-title {
         font-size: 0.75rem;
         line-height: 1.35;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-period {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-period {
         margin-bottom: 0.55rem;
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-amount {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-amount {
         margin-bottom: 0.55rem !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-meta {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-meta {
         display: flex;
         width: 100%;
         flex-direction: column;
@@ -2019,7 +2264,7 @@ body.g-sidenav-show {
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .btn-budget-modal {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .btn-budget-modal {
         display: inline-flex;
         width: 100%;
         min-height: 42px;
@@ -2029,8 +2274,8 @@ body.g-sidenav-show {
         border-radius: 0.75rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-control,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-form {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-control,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-form {
         display: flex;
         width: 100%;
         min-width: 0;
@@ -2039,7 +2284,7 @@ body.g-sidenav-show {
         gap: 0.6rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-input-field {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-input-field {
         display: block;
         width: 100% !important;
         min-width: 0;
@@ -2052,7 +2297,7 @@ body.g-sidenav-show {
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-submit {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-submit {
         display: inline-flex;
         width: 100%;
         min-height: 44px;
@@ -2062,11 +2307,11 @@ body.g-sidenav-show {
         border-radius: 0.75rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal p,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal span:not(.badge),
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal strong,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal .text-xs {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal p,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal span:not(.badge),
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal strong,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal .text-xs {
         text-align: left !important;
     }
 

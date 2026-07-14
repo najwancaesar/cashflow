@@ -5,6 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
+include_once __DIR__ . "/../includes/archive_helper.php";
 
 function require_transfer_post_csrf()
 {
@@ -266,6 +267,9 @@ if ($act === 't') {
     if ($transferId <= 0 || !transfer_dimiliki_user($con, $transferId, $userId)) {
         show_sweetalert_and_redirect('Akses ditolak', 'Transfer yang ingin diubah tidak ditemukan.', 'warning', 'main.php?module=transfer_wallet');
     }
+    if (cashflow_archive_record_is_archived($con, 'transfer_wallet', $transferId, $userId)) {
+        show_sweetalert_and_redirect('Aksi ditolak', 'Transfer yang diarsipkan harus dipulihkan sebelum dapat diubah.', 'warning', 'main.php?module=transfer_wallet&arsip=diarsipkan');
+    }
 
     $stmt = $con->prepare("UPDATE transfer_wallet
                            SET wallet_asal_id = ?, wallet_tujuan_id = ?, tanggal = ?, jumlah = ?, catatan = ?, status = ?, updated_at = NOW()
@@ -293,6 +297,9 @@ if ($act === 'h') {
 
     if (!transfer_dimiliki_user($con, $transferId, $userId)) {
         show_sweetalert_and_redirect('Akses ditolak', 'Transfer yang ingin dibatalkan tidak ditemukan.', 'warning', 'main.php?module=transfer_wallet');
+    }
+    if (cashflow_archive_record_is_archived($con, 'transfer_wallet', $transferId, $userId)) {
+        show_sweetalert_and_redirect('Aksi ditolak', 'Transfer yang diarsipkan harus dipulihkan sebelum dapat dibatalkan.', 'warning', 'main.php?module=transfer_wallet&arsip=diarsipkan');
     }
 
     $stmt = $con->prepare("UPDATE transfer_wallet
@@ -323,13 +330,16 @@ if ($act === 'hp') {
     if ($statusTransfer === null) {
         show_sweetalert_and_redirect('Akses ditolak', 'Transfer yang ingin dihapus tidak ditemukan.', 'warning', 'main.php?module=transfer_wallet');
     }
+    if (cashflow_archive_record_is_archived($con, 'transfer_wallet', $transferId, $userId)) {
+        show_sweetalert_and_redirect('Aksi ditolak', 'Transfer yang diarsipkan harus dipulihkan sebelum dapat dihapus.', 'warning', 'main.php?module=transfer_wallet&arsip=diarsipkan');
+    }
 
-    if (!in_array($statusTransfer, ['pending', 'batal'], true)) {
-        show_sweetalert_and_redirect('Aksi ditolak', 'Transfer selesai harus dibatalkan terlebih dahulu sebelum dihapus permanen.', 'warning', 'main.php?module=transfer_wallet');
+    if ($statusTransfer !== 'pending') {
+        show_sweetalert_and_redirect('Gunakan arsip', 'Transfer selesai atau batal tidak dapat dihapus permanen. Gunakan aksi Arsipkan agar histori tetap utuh.', 'warning', 'main.php?module=transfer_wallet');
     }
 
     $stmt = $con->prepare("DELETE FROM transfer_wallet
-                           WHERE id_transfer = ? AND user_id = ? AND status IN ('pending', 'batal')");
+                           WHERE id_transfer = ? AND user_id = ? AND status = 'pending'");
     $stmt->bind_param("ii", $transferId, $userId);
     $result = $stmt->execute();
     $affectedRows = $stmt->affected_rows;
