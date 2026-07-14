@@ -1,6 +1,11 @@
 (function () {
     'use strict';
 
+    if (window.__cashflowUiFixesInitialized) {
+        return;
+    }
+    window.__cashflowUiFixesInitialized = true;
+
     var lastModalTrigger = null;
     var modalTriggerSelector = [
         '[data-bs-toggle="modal"]',
@@ -185,20 +190,53 @@
             return;
         }
 
+        var resizeFrame = null;
+
+        function setClassState(element, className, enabled) {
+            if (element.classList.contains(className) !== enabled) {
+                element.classList.toggle(className, enabled);
+            }
+        }
+
+        function setAttributeValue(element, name, value) {
+            if (element.getAttribute(name) !== value) {
+                element.setAttribute(name, value);
+            }
+        }
+
         function isMobileSidebar() {
             return window.innerWidth < 1200;
         }
 
         function syncSidebarState() {
-            var isOpen = isMobileSidebar() && body.classList.contains('g-sidenav-pinned');
-
-            if (body.classList.contains('cashflow-sidenav-open') !== isOpen) {
-                body.classList.toggle('cashflow-sidenav-open', isOpen);
+            if (!isMobileSidebar()) {
+                setClassState(body, 'g-sidenav-pinned', false);
+                setClassState(body, 'cashflow-sidenav-open', false);
+                setClassState(sidebarToggle, 'cashflow-sidebar-open', false);
+                setAttributeValue(sidebarToggle, 'aria-expanded', 'false');
+                setAttributeValue(sidebarToggle, 'aria-label', 'Buka menu navigasi');
+                setAttributeValue(backdrop, 'aria-hidden', 'true');
+                return;
             }
-            sidebarToggle.classList.toggle('cashflow-sidebar-open', isOpen);
-            sidebarToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-            sidebarToggle.setAttribute('aria-label', isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi');
-            backdrop.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+
+            var isOpen = body.classList.contains('g-sidenav-pinned');
+
+            setClassState(body, 'cashflow-sidenav-open', isOpen);
+            setClassState(sidebarToggle, 'cashflow-sidebar-open', isOpen);
+            setAttributeValue(sidebarToggle, 'aria-expanded', isOpen ? 'true' : 'false');
+            setAttributeValue(sidebarToggle, 'aria-label', isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi');
+            setAttributeValue(backdrop, 'aria-hidden', isOpen ? 'false' : 'true');
+        }
+
+        function scheduleSidebarSync() {
+            if (resizeFrame !== null) {
+                return;
+            }
+
+            resizeFrame = window.requestAnimationFrame(function () {
+                resizeFrame = null;
+                syncSidebarState();
+            });
         }
 
         function closeSidebar(restoreFocus) {
@@ -211,14 +249,14 @@
         }
 
         sidebarToggle.addEventListener('click', function () {
-            window.setTimeout(syncSidebarState, 0);
+            scheduleSidebarSync();
         });
 
         if (sidebarClose) {
             sidebarClose.addEventListener('click', function () {
-                window.setTimeout(function () {
+                window.requestAnimationFrame(function () {
                     closeSidebar(true);
-                }, 0);
+                });
             });
         }
 
@@ -233,17 +271,48 @@
             }
         });
 
-        var classObserver = new MutationObserver(syncSidebarState);
-        classObserver.observe(body, { attributes: true, attributeFilter: ['class'] });
-
-        window.addEventListener('resize', function () {
-            if (!isMobileSidebar()) {
-                body.classList.remove('g-sidenav-pinned', 'cashflow-sidenav-open');
-            }
-            syncSidebarState();
-        });
+        window.addEventListener('resize', scheduleSidebarSync, { passive: true });
 
         syncSidebarState();
+    }
+
+    function setupFormLoadingStates() {
+        function restoreSubmitButtons() {
+            document.querySelectorAll('[data-cashflow-loading="true"]').forEach(function (button) {
+                button.disabled = false;
+                button.classList.remove('cashflow-is-loading');
+                button.removeAttribute('aria-busy');
+                button.removeAttribute('data-cashflow-loading');
+                if (button.dataset.cashflowOriginalHtml) {
+                    button.innerHTML = button.dataset.cashflowOriginalHtml;
+                    delete button.dataset.cashflowOriginalHtml;
+                }
+            });
+        }
+
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            var button = event.submitter;
+
+            if (!form || !button || form.dataset.noLoading === 'true' || form.target === '_blank') {
+                return;
+            }
+
+            window.setTimeout(function () {
+                if (event.defaultPrevented || button.disabled) {
+                    return;
+                }
+
+                button.dataset.cashflowOriginalHtml = button.innerHTML;
+                button.dataset.cashflowLoading = 'true';
+                button.classList.add('cashflow-is-loading');
+                button.setAttribute('aria-busy', 'true');
+                button.disabled = true;
+                button.innerHTML = '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Memproses...';
+            }, 0);
+        });
+
+        window.addEventListener('pageshow', restoreSubmitButtons);
     }
 
     function setupMaterialDashboardResizeGuard() {
@@ -257,22 +326,44 @@
 
         window.removeEventListener('resize', vendorResizeHandler);
 
-        function safeNavbarColorOnResize() {
+        var resizeFrame = null;
+
+        function applyNavbarColor() {
             if (!sidenav) {
                 return;
             }
 
             if (window.innerWidth > 1200) {
-                sidenav.classList.remove('bg-white', 'bg-transparent');
+                if (sidenav.classList.contains('bg-white')) {
+                    sidenav.classList.remove('bg-white');
+                }
+                if (sidenav.classList.contains('bg-transparent')) {
+                    sidenav.classList.remove('bg-transparent');
+                }
                 return;
             }
 
-            sidenav.classList.add('bg-white');
-            sidenav.classList.remove('bg-transparent');
+            if (!sidenav.classList.contains('bg-white')) {
+                sidenav.classList.add('bg-white');
+            }
+            if (sidenav.classList.contains('bg-transparent')) {
+                sidenav.classList.remove('bg-transparent');
+            }
         }
 
-        window.addEventListener('resize', safeNavbarColorOnResize);
-        safeNavbarColorOnResize();
+        function safeNavbarColorOnResize() {
+            if (resizeFrame !== null) {
+                return;
+            }
+
+            resizeFrame = window.requestAnimationFrame(function () {
+                resizeFrame = null;
+                applyNavbarColor();
+            });
+        }
+
+        window.addEventListener('resize', safeNavbarColorOnResize, { passive: true });
+        applyNavbarColor();
     }
 
     document.addEventListener('click', function (event) {
@@ -314,4 +405,5 @@
     setupResponsiveTables();
     setupMobileMicroInteractions();
     setupMobileSidebar();
+    setupFormLoadingStates();
 })();

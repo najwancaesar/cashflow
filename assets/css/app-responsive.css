@@ -3,6 +3,12 @@ html {
     overflow-x: hidden;
 }
 
+:root {
+    --cashflow-sidenav-width: 15.625rem;
+    --cashflow-sidenav-gutter: 1.5rem;
+    --cashflow-desktop-content-offset: calc(var(--cashflow-sidenav-width) + var(--cashflow-sidenav-gutter));
+}
+
 body.g-sidenav-show {
     min-height: 100vh;
     overflow-x: hidden;
@@ -19,6 +25,177 @@ body.g-sidenav-show {
 
 .app-main-content .table-responsive .table {
     margin-bottom: 0;
+}
+
+/* Sprint 1: shared daily usability components. */
+.cashflow-global-quick-add {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.cashflow-quick-add-modal .modal-dialog {
+    max-width: 560px;
+}
+
+.cashflow-quick-add-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.cashflow-quick-add-item {
+    min-width: 0;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.85rem;
+    background: #fff;
+    color: #344767;
+    font-size: 0.84rem;
+    font-weight: 700;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cashflow-quick-add-item:hover,
+.cashflow-quick-add-item:focus-visible {
+    border-color: rgba(14, 165, 233, 0.45);
+    color: #344767;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.cashflow-quick-add-icon,
+.cashflow-wallet-type-icon {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.cashflow-empty-state {
+    width: 100%;
+    padding: 1.5rem;
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 1rem;
+    background: rgba(248, 250, 252, 0.75);
+    color: #64748b;
+    text-align: center;
+}
+
+.cashflow-empty-state > i {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-size: 1.5rem;
+}
+
+.cashflow-page-actions .btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0;
+}
+
+.cashflow-wallet-type-badge {
+    display: inline-flex;
+    align-items: center;
+}
+
+.cashflow-wallet-type-inline {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.35;
+}
+
+.cashflow-wallet-type-inline > i {
+    flex: 0 0 auto;
+}
+
+.cashflow-wallet-type-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cashflow-wallet-type-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.85rem;
+}
+
+.min-width-0 {
+    min-width: 0;
+}
+
+.cashflow-is-loading {
+    cursor: wait !important;
+    opacity: 0.75;
+}
+
+@media (max-width: 767.98px) {
+    .app-main-content .modal-dialog {
+        max-height: calc(100dvh - 1.5rem);
+        margin: 0.75rem;
+    }
+
+    .app-main-content .modal-content {
+        max-height: calc(100dvh - 1.5rem);
+        overflow: hidden;
+    }
+
+    .app-main-content .modal-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .cashflow-quick-add-modal .modal-dialog {
+        min-height: 100%;
+        align-items: flex-end;
+        margin: 0;
+        max-height: 100dvh;
+    }
+
+    .cashflow-quick-add-modal .modal-content {
+        max-height: min(82dvh, 680px);
+        border-radius: 1.25rem 1.25rem 0 0;
+    }
+
+    .cashflow-page-actions,
+    .cashflow-wallet-type-item {
+        align-items: stretch !important;
+        flex-direction: column;
+    }
+
+    .cashflow-page-actions .btn,
+    .cashflow-wallet-type-item > .d-flex:last-child,
+    .cashflow-wallet-type-item > .d-flex:last-child .btn,
+    .cashflow-wallet-type-item > .d-flex:last-child form {
+        width: 100%;
+    }
+}
+
+@media (max-width: 380px) {
+    .cashflow-quick-add-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (min-width: 576px) {
@@ -638,6 +815,44 @@ body.g-sidenav-show {
 
 .cashflow-sidenav-backdrop {
     display: none;
+}
+
+/*
+ * The mobile backdrop sits between the sidenav and main content, so the
+ * Material Dashboard adjacent-sibling desktop offset no longer matches.
+ * Preserve the legacy desktop dimensions without depending on DOM adjacency.
+ */
+@media (min-width: 1200px) {
+    body.g-sidenav-show > .sidenav.fixed-start {
+        width: var(--cashflow-sidenav-width);
+        max-width: var(--cashflow-sidenav-width);
+        transform: translateX(0) !important;
+    }
+
+    body.g-sidenav-show > .app-main-content {
+        width: calc(100% - var(--cashflow-desktop-content-offset)) !important;
+        max-width: calc(100% - var(--cashflow-desktop-content-offset));
+        margin-left: var(--cashflow-desktop-content-offset) !important;
+    }
+
+    body.g-sidenav-show > .cashflow-sidenav-backdrop {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    body.g-sidenav-show,
+    body.g-sidenav-show.cashflow-sidenav-open {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: auto;
+    }
+
+    #iconNavbarSidenav,
+    .cashflow-sidenav-close {
+        display: none !important;
+    }
 }
 
 @media (max-width: 1199.98px) {
@@ -2191,5 +2406,20 @@ table.dataTable thead th.bulk-select-col {
     .audit-log-filter-actions .btn,
     .audit-log-filter-actions a {
         width: 100%;
+    }
+}
+
+/* Keep the global Quick Add as a bottom sheet after legacy modal overrides. */
+@media (max-width: 767.98px) {
+    body .app-main-content .cashflow-quick-add-modal .modal-dialog {
+        min-height: 100%;
+        max-height: 100dvh;
+        align-items: flex-end;
+        margin: 0;
+    }
+
+    body .app-main-content .cashflow-quick-add-modal .modal-content {
+        max-height: min(82dvh, 680px);
+        border-radius: 1.25rem 1.25rem 0 0;
     }
 }

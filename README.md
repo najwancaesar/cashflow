@@ -6,6 +6,107 @@
   - Keep database/schema file updated when adding new tables or columns.
 -->
 
+## Dokumentasi Inti
+
+CashFlow Control adalah aplikasi pencatatan keuangan berbasis web untuk mengelola multi-wallet, pemasukan, pengeluaran, transfer internal, celengan virtual, utang/piutang, transaksi berulang, dan laporan.
+
+Dokumentasi pada bagian ini menjadi acuan instalasi dan business rule aktif. Bagian dokumentasi legacy di bawah dipertahankan sementara sebagai referensi tampilan dan sejarah project.
+
+### Fitur aktif
+
+- Multi-wallet dengan saldo berjalan dan wallet default.
+- Quick Add global untuk pemasukan, pengeluaran, transfer, celengan, utang, dan piutang.
+- Kategori pemasukan/pengeluaran dan budget kategori.
+- Transfer antar-wallet.
+- Saving Goal/Celengan Virtual dengan setor dan tarik.
+- Utang dan piutang dengan transaksi pelunasan yang saling terhubung.
+- Recurring transaction dengan generation log idempotent.
+- Preview serta export laporan PDF/CSV.
+- Role user/admin, backup user, dan audit log.
+- Tipe wallet bawaan serta tipe kustom setelah migration opsional dijalankan.
+
+### Teknologi
+
+- PHP Native.
+- MySQL atau MariaDB dengan engine InnoDB.
+- Bootstrap dan Material Dashboard.
+- JavaScript/jQuery, DataTables, dan SweetAlert.
+- TCPDF untuk dokumen PDF.
+
+### Business rule keuangan
+
+Saldo wallet dihitung dengan rumus resmi berikut:
+
+```text
+saldo awal
++ pemasukan selesai
+- pengeluaran selesai
++ transfer masuk selesai
+- transfer keluar selesai
+- setor celengan
++ tarik celengan
+```
+
+- Pemasukan/pengeluaran `pending` tidak mengubah saldo dan tidak masuk total cashflow.
+- Transfer `selesai` memindahkan saldo antar-wallet, bukan cashflow baru.
+- Transfer `pending` atau `batal` tidak mengubah saldo.
+- Setor/tarik celengan merupakan mutasi internal, bukan pemasukan/pengeluaran baru.
+- Pelunasan utang membuat satu pengeluaran linked; pelunasan piutang membuat satu pemasukan linked.
+- Template recurring bukan transaksi. Satu template dan satu occurrence hanya boleh menghasilkan satu transaksi.
+
+### Instalasi lokal
+
+1. Salin project ke document root web server lokal.
+2. Aktifkan Apache/Nginx dan MySQL/MariaDB.
+3. Buat database kosong berkarakter `utf8mb4`.
+4. Import `database/db_cashflow(default).sql`.
+5. Atur koneksi database melalui konfigurasi lokal project. Jangan commit password database.
+6. Pastikan extension PHP `mysqli`, `mbstring`, dan `fileinfo` aktif.
+7. Buka aplikasi dari URL lokal yang dipetakan ke folder project.
+
+Custom tipe wallet membutuhkan migration manual berikut setelah backup database dibuat:
+
+```text
+database/migrations/20260714_sprint1_wallet_type_up.sql
+```
+
+Rollback tersedia di:
+
+```text
+database/migrations/20260714_sprint1_wallet_type_down.sql
+```
+
+Migration tidak dijalankan otomatis oleh aplikasi. Wallet legacy tetap valid karena relasi tipe kustom bersifat nullable dan kolom `tipe_wallet` lama tetap dipertahankan.
+
+### Struktur folder
+
+```text
+actions/             handler request dan mutasi data
+assets/              CSS, JavaScript, gambar, dan vendor frontend
+database/            schema serta migration manual
+includes/            layout bersama dan helper
+views/               halaman modul
+tcpdf/               library dan endpoint laporan PDF
+main.php             layout aplikasi setelah login
+index.php             entry point publik
+```
+
+### Known limitations
+
+- Migration custom tipe wallet harus dijalankan manual oleh administrator database.
+- Aplikasi belum menyediakan archive/reversal transaksi dan proses tutup buku.
+- Tidak ada background worker; recurring digenerate melalui flow aplikasi yang tersedia.
+- File foto profil tidak termasuk di dalam backup SQL.
+- Pengujian browser lintas perangkat tetap diperlukan setelah perubahan CSS/JavaScript.
+
+### Roadmap
+
+- Sprint 2: archive dan reversal yang aman.
+- Sprint 3: tutup buku serta rekonsiliasi periode.
+- Sprint 4: insight dashboard, kalender, dan health monitoring admin.
+
+---
+
 <div align="center">
 
 # 💸 CashFlow Control

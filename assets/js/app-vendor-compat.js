@@ -1,6 +1,11 @@
 (function () {
     'use strict';
 
+    if (window.__cashflowVendorCompatInitialized) {
+        return;
+    }
+    window.__cashflowVendorCompatInitialized = true;
+
     var NativePerfectScrollbar = window.PerfectScrollbar;
 
     if (typeof NativePerfectScrollbar !== 'function') {

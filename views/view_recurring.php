@@ -1,6 +1,7 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -13,6 +14,7 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 }
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $tanggalHariIni = date('Y-m-d');
 $periodeBulanIni = (int) date('n');
 $periodeTahunIni = (int) date('Y');
@@ -20,19 +22,6 @@ $periodeTahunIni = (int) date('Y');
 function recurring_rupiah($value)
 {
     return 'Rp. ' . number_format((float) $value);
-}
-
-function recurring_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'Cash',
-        'bank' => 'Bank',
-        'e_wallet' => 'E-Wallet',
-        'tabungan' => 'Tabungan',
-        'lainnya' => 'Lainnya',
-    ];
-
-    return $labels[$type] ?? 'Lainnya';
 }
 
 function recurring_type_label($type)
@@ -247,7 +236,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['tipe_wallet'] ? recurring_wallet_type_label($row['tipe_wallet']) : '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html(cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap)) ?></p>
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= recurring_rupiah($jumlah) ?></p>
@@ -370,7 +359,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                     <option value="">Pilih Wallet</option>
                                     <?php foreach ($walletAktif as $wallet) { ?>
                                         <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === (int) $defaultWalletId ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(recurring_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                            <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php } ?>
                                 </select>

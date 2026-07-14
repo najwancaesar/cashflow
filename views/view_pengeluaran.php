@@ -1,25 +1,19 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$walletCustomTypeMap = [];
+if ($userYangSedangLogin > 0) {
+    $loadedWalletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
+    $walletCustomTypeMap = is_array($loadedWalletCustomTypeMap) ? $loadedWalletCustomTypeMap : [];
+}
 
 if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     echo "<script>window.location.href='main.php?module=home';</script>";
     exit;
-}
-
-function pengeluaran_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'Cash',
-        'bank' => 'Bank',
-        'e_wallet' => 'E-Wallet',
-        'tabungan' => 'Tabungan',
-        'lainnya' => 'Lainnya',
-    ];
-
-    return $labels[$type] ?? 'Lainnya';
 }
 
 $kategoriPengeluaran = [];
@@ -89,12 +83,13 @@ while ($row = mysqli_fetch_assoc($transaksiResult)) {
 }
 mysqli_stmt_close($transaksiStmt);
 
-$renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId) {
+$renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
-    $walletDisplayType = $row['tipe_wallet'] ? pengeluaran_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+    $walletDisplayTypeMeta = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
+    $walletDisplayType = cashflow_wallet_type_text($walletDisplayTypeMeta);
     $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
         ? (int) $row['id_wallet']
         : $defaultWalletId;
@@ -112,7 +107,7 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
             </td>
         <?php } ?>
         <td class="align-middle text-center">
-            <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
+            <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars(cashflow_format_date($row['tanggal']), ENT_QUOTES, 'UTF-8') ?></span>
         </td>
         <td>
             <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
@@ -123,11 +118,11 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
             </p>
         </td>
         <td>
-            <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></p>
+            <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?></p>
         </td>
         <td>
             <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></p>
-            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletDisplayTypeMeta) ?></p>
         </td>
         <td class="align-middle text-center text-sm">
             <form action="actions/aksi_pengeluaran.php?act=l" method="post" class="d-inline">
@@ -176,12 +171,13 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
 <?php
 };
 
-$renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $defaultWalletId) {
+$renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
-    $walletDisplayType = $row['tipe_wallet'] ? pengeluaran_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+    $walletDisplayTypeMeta = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
+    $walletDisplayType = cashflow_wallet_type_text($walletDisplayTypeMeta);
     $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
         ? (int) $row['id_wallet']
         : $defaultWalletId;
@@ -190,7 +186,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         (string) ($row['catatan'] ?? ''),
         (string) ($row['nama_kategori'] ?? ''),
         (string) ($row['nama_wallet'] ?? ''),
-        (string) ($row['tipe_wallet'] ?? ''),
+        $walletDisplayType,
         (string) ($row['status'] ?? ''),
         (string) ($row['jumlah'] ?? ''),
     ])));
@@ -198,7 +194,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
     <article class="mobile-transaction-card" data-search="<?= htmlspecialchars($searchText, ENT_QUOTES, 'UTF-8') ?>">
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Tanggal</span>
-            <span class="mobile-transaction-value"><?= htmlspecialchars($row['tanggal']) ?></span>
+            <span class="mobile-transaction-value"><?= htmlspecialchars(cashflow_format_date($row['tanggal']), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Catatan</span>
@@ -210,13 +206,13 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         </div>
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Jumlah Pengeluaran</span>
-            <span class="mobile-transaction-value fw-bold">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></span>
+            <span class="mobile-transaction-value fw-bold"><?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Wallet</span>
             <span class="mobile-transaction-value">
                 <strong><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></strong><br>
-                <small><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></small>
+                <small><?= cashflow_wallet_type_inline_html($walletDisplayTypeMeta) ?></small>
             </span>
         </div>
         <div class="mobile-transaction-row">
@@ -347,14 +343,24 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                                 <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
                             </button>
                         </div>
-                        <div class="px-4 mx-2 mb-3">
-                            <label class="form-label fw-bold text-sm mb-2" for="mobilePengeluaranSearch">Search:</label>
-                            <input type="search" class="form-control mobile-transaction-search" id="mobilePengeluaranSearch" data-target="#mobilePengeluaranList" placeholder="Ketik untuk mencari data...">
-                        </div>
+                        <?php if (!empty($transaksiRows)) { ?>
+                            <div class="px-4 mx-2 mb-3">
+                                <label class="form-label fw-bold text-sm mb-2" for="mobilePengeluaranSearch">Search:</label>
+                                <input type="search" class="form-control mobile-transaction-search" id="mobilePengeluaranSearch" data-target="#mobilePengeluaranList" placeholder="Ketik untuk mencari data...">
+                            </div>
+                        <?php } ?>
                         <div class="mobile-transaction-list px-4 mx-2" id="mobilePengeluaranList">
-                            <?php foreach ($transaksiRows as $row) {
-                                $renderMobilePengeluaranCard($row);
-                            } ?>
+                            <?php if (empty($transaksiRows)) { ?>
+                                <div class="cashflow-empty-state">
+                                    <i class="fa fa-arrow-circle-up" aria-hidden="true"></i>
+                                    <p class="mb-1">Belum ada pengeluaran.</p>
+                                    <small>Gunakan tombol Tambah Transaksi untuk membuat pencatatan pertama.</small>
+                                </div>
+                            <?php } else { ?>
+                                <?php foreach ($transaksiRows as $row) {
+                                    $renderMobilePengeluaranCard($row);
+                                } ?>
+                            <?php } ?>
                         </div>
                     </div>
                 </div>
@@ -415,7 +421,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                                 <option value="">Pilih Wallet</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === (int) $defaultWalletId ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(pengeluaran_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -453,6 +459,8 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
     $(document).ready(function() {
         var defaultWalletId = "<?= htmlspecialchars((string) $defaultWalletId, ENT_QUOTES, 'UTF-8') ?>";
         var datatableLanguage = {
+            "emptyTable": "Belum ada pengeluaran.",
+            "zeroRecords": "Tidak ada pengeluaran yang cocok dengan pencarian.",
             "paginate": {
                 "first": "&laquo",
                 "last": "&raquo",

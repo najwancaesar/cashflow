@@ -87,6 +87,14 @@ function user_has_related_data($con, $userId)
     ];
 
     try {
+        $walletTypeTable = $con->query("SHOW TABLES LIKE 'wallet_type'");
+        if ($walletTypeTable && $walletTypeTable->num_rows > 0) {
+            $relations['wallet_type'] = 'user_id';
+        }
+        if ($walletTypeTable) {
+            $walletTypeTable->free();
+        }
+
         foreach ($relations as $table => $column) {
             $stmt = $con->prepare("SELECT 1 FROM `{$table}` WHERE `{$column}` = ? LIMIT 1");
             if (!$stmt) {

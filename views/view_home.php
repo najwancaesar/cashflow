@@ -2,6 +2,7 @@
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 function fetch_single_value($con, $sql, $types = '', $params = [])
 {
@@ -149,32 +150,6 @@ function format_rupiah($value)
     return 'Rp. ' . number_format((float) $value);
 }
 
-function dashboard_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'CASH',
-        'bank' => 'BANK',
-        'e_wallet' => 'E-WALLET',
-        'tabungan' => 'TABUNGAN',
-        'lainnya' => 'LAINNYA',
-    ];
-
-    return $labels[$type] ?? 'LAINNYA';
-}
-
-function dashboard_wallet_type_badge_class($type)
-{
-    $classes = [
-        'cash' => 'bg-gradient-success',
-        'bank' => 'bg-gradient-info',
-        'e_wallet' => 'bg-gradient-primary',
-        'tabungan' => 'bg-gradient-warning',
-        'lainnya' => 'bg-gradient-secondary',
-    ];
-
-    return $classes[$type] ?? 'bg-gradient-secondary';
-}
-
 function format_datetime_label($value)
 {
     if (empty($value) || $value === '0000-00-00 00:00:00') {
@@ -201,6 +176,8 @@ $isAdmin = strtolower((string) ($_SESSION['role'] ?? '')) === 'admin';
 if ($userYangSedangLogin <= 0) {
     die("User tidak terdeteksi dalam session.");
 }
+
+$walletCustomTypeMap = $isAdmin ? [] : cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 
 if ($isAdmin) {
     $totalUser = (int) fetch_single_value($con, "SELECT COUNT(*) FROM user WHERE role = 'user'");
@@ -704,9 +681,12 @@ foreach ($wallet_summary_rows as $walletRow) {
     }
 
     $wallet_total_saldo_aktif += $walletSaldoAkhir;
+    $walletTypeMeta = cashflow_wallet_type_meta_from_row($walletRow, $walletCustomTypeMap);
     $wallet_summary_items[] = [
+        'id_wallet' => (int) ($walletRow['id_wallet'] ?? 0),
         'nama_wallet' => (string) ($walletRow['nama_wallet'] ?? '-'),
         'tipe_wallet' => (string) ($walletRow['tipe_wallet'] ?? 'lainnya'),
+        'wallet_type_meta' => $walletTypeMeta,
         'saldo_awal' => $walletSaldoAwal,
         'total_pemasukan' => $walletTotalPemasukan,
         'total_pengeluaran' => $walletTotalPengeluaran,
@@ -1480,8 +1460,10 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge badge-sm <?= htmlspecialchars(dashboard_wallet_type_badge_class($walletRow['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>">
-                                                    <?= htmlspecialchars(dashboard_wallet_type_label($walletRow['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                                <span class="badge badge-sm text-white"
+                                                    style="background-color: <?= htmlspecialchars($walletRow['wallet_type_meta']['color'], ENT_QUOTES, 'UTF-8') ?>;">
+                                                    <i class="fa fa-<?= htmlspecialchars($walletRow['wallet_type_meta']['icon'], ENT_QUOTES, 'UTF-8') ?> me-1" aria-hidden="true"></i>
+                                                    <?= htmlspecialchars(cashflow_wallet_type_text($walletRow['wallet_type_meta']), ENT_QUOTES, 'UTF-8') ?>
                                                 </span>
                                             </td>
                                             <td class="align-middle text-end">
@@ -2200,7 +2182,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 </td>
                                 <td class="col-wallet">
                                     <p class="text-xs font-weight-bold mb-0 dashboard-wallet-name"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
-                                    <p class="text-xs text-secondary mb-0 dashboard-wallet-type"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-xs text-secondary mb-0 dashboard-wallet-type"><?= cashflow_wallet_type_inline_html(cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap)) ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -2216,7 +2198,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                         <?php foreach ($q_pemasukan_terbaru as $row) { ?>
                             <?php
                             $statusPemasukan = (string) ($row['status'] ?? '-');
-                            $walletTypePemasukan = !empty($row['tipe_wallet']) ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+                            $walletTypePemasukan = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
                             ?>
                             <article class="dashboard-transaction-card dashboard-transaction-income">
                                 <div class="dashboard-transaction-card-header">
@@ -2240,7 +2222,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                         <span class="dashboard-transaction-label">Wallet</span>
                                         <span class="dashboard-transaction-value">
                                             <span class="dashboard-transaction-wallet-name"><?= htmlspecialchars((string) ($row['nama_wallet'] ?? 'Dompet Utama'), ENT_QUOTES, 'UTF-8') ?></span>
-                                            <span class="dashboard-transaction-wallet-type"><?= htmlspecialchars($walletTypePemasukan, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="dashboard-transaction-wallet-type"><?= cashflow_wallet_type_inline_html($walletTypePemasukan) ?></span>
                                         </span>
                                     </div>
                                     <div class="dashboard-transaction-meta-row">
@@ -2324,7 +2306,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 </td>
                                 <td class="col-wallet">
                                     <p class="text-xs font-weight-bold mb-0 dashboard-wallet-name"><?= htmlspecialchars($row['nama_wallet'] ?? 'Dompet Utama', ENT_QUOTES, 'UTF-8') ?></p>
-                                    <p class="text-xs text-secondary mb-0 dashboard-wallet-type"><?= htmlspecialchars($row['tipe_wallet'] ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback', ENT_QUOTES, 'UTF-8') ?></p>
+                                    <p class="text-xs text-secondary mb-0 dashboard-wallet-type"><?= cashflow_wallet_type_inline_html(cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap)) ?></p>
                                 </td>
                             </tr>
                             <?php } ?>
@@ -2340,7 +2322,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                         <?php foreach ($q_pengeluaran_terbaru as $row) { ?>
                             <?php
                             $statusPengeluaran = (string) ($row['status'] ?? '-');
-                            $walletTypePengeluaran = !empty($row['tipe_wallet']) ? dashboard_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+                            $walletTypePengeluaran = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
                             ?>
                             <article class="dashboard-transaction-card dashboard-transaction-expense">
                                 <div class="dashboard-transaction-card-header">
@@ -2364,7 +2346,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                         <span class="dashboard-transaction-label">Wallet</span>
                                         <span class="dashboard-transaction-value">
                                             <span class="dashboard-transaction-wallet-name"><?= htmlspecialchars((string) ($row['nama_wallet'] ?? 'Dompet Utama'), ENT_QUOTES, 'UTF-8') ?></span>
-                                            <span class="dashboard-transaction-wallet-type"><?= htmlspecialchars($walletTypePengeluaran, ENT_QUOTES, 'UTF-8') ?></span>
+                                            <span class="dashboard-transaction-wallet-type"><?= cashflow_wallet_type_inline_html($walletTypePengeluaran) ?></span>
                                         </span>
                                     </div>
                                     <div class="dashboard-transaction-meta-row">
@@ -2425,7 +2407,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 <option value="">Pilih Wallet</option>
                                 <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -2497,7 +2479,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 <option value="">Pilih Wallet</option>
                                 <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -2555,7 +2537,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 <option value="">Pilih Wallet Asal</option>
                                 <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -2568,7 +2550,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 <option value="">Pilih Wallet Tujuan</option>
                                 <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_transfer_tujuan_default_id ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -2638,7 +2620,7 @@ $insight_rasio_sentence = $insight_rasio_pengeluaran !== null
                                 <option value="">Pilih Wallet</option>
                                 <?php foreach ($quick_add_wallet_rows as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $quick_add_default_wallet_id ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(dashboard_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>

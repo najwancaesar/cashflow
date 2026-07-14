@@ -135,6 +135,7 @@ function primary_key_column_backup($table)
         'user' => 'id_user',
         'kategori' => 'id_kategori',
         'budget_kategori' => 'id_budget',
+        'wallet_type' => 'id_wallet_type',
         'wallet' => 'id_wallet',
         'pemasukan' => 'id_pemasukan',
         'pengeluaran' => 'id_pengeluaran',
@@ -248,6 +249,7 @@ function render_cleanup_backup_sql($backupData)
         'pemasukan',
         'budget_kategori',
         'wallet',
+        'wallet_type',
         'kategori',
         'user',
     ];
@@ -367,6 +369,7 @@ $backupTables = [
     'user' => ['id_user'],
     'kategori' => ['user_id', 'user'],
     'budget_kategori' => ['user_id', 'user'],
+    'wallet_type' => ['user_id'],
     'wallet' => ['user_id', 'user'],
     'pemasukan' => ['user', 'user_id'],
     'pengeluaran' => ['user', 'user_id'],

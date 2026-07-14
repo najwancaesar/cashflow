@@ -1,6 +1,8 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -14,6 +16,7 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 $tanggalHariIni = date('Y-m-d');
+$walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 
 function transfer_wallet_rupiah($value)
 {
@@ -22,26 +25,7 @@ function transfer_wallet_rupiah($value)
 
 function transfer_wallet_status_badge($status)
 {
-    $classes = [
-        'selesai' => 'bg-gradient-success',
-        'pending' => 'bg-gradient-warning',
-        'batal' => 'bg-gradient-secondary',
-    ];
-
-    return $classes[$status] ?? 'bg-gradient-secondary';
-}
-
-function transfer_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'Cash',
-        'bank' => 'Bank',
-        'e_wallet' => 'E-Wallet',
-        'tabungan' => 'Tabungan',
-        'lainnya' => 'Lainnya',
-    ];
-
-    return $labels[$type] ?? 'Lainnya';
+    return cashflow_status_badge_class($status);
 }
 
 $walletAktif = [];
@@ -145,21 +129,23 @@ mysqli_stmt_close($transferStmt);
                                         <?php
                                         $statusTransfer = (string) ($row['status'] ?? 'selesai');
                                         $jumlahTransfer = (float) ($row['jumlah'] ?? 0);
+                                        $walletAsalTypeMeta = cashflow_wallet_type_meta_for_wallet($row['tipe_wallet_asal'], $row['wallet_asal_id'], $walletCustomTypeMap);
+                                        $walletTujuanTypeMeta = cashflow_wallet_type_meta_for_wallet($row['tipe_wallet_tujuan'], $row['wallet_tujuan_id'], $walletCustomTypeMap);
                                         ?>
                                         <tr>
                                             <td class="align-middle text-center">
-                                                <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?></span>
+                                                <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars(cashflow_format_date($row['tanggal']), ENT_QUOTES, 'UTF-8') ?></span>
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet_asal'], ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(transfer_wallet_type_label($row['tipe_wallet_asal']), ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletAsalTypeMeta) ?></p>
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet_tujuan'], ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(transfer_wallet_type_label($row['tipe_wallet_tujuan']), ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletTujuanTypeMeta) ?></p>
                                             </td>
                                             <td>
-                                                <p class="text-xs font-weight-bold mb-0"><?= transfer_wallet_rupiah($jumlahTransfer) ?></p>
+                                                <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($jumlahTransfer), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
                                                 <span class="badge badge-sm <?= htmlspecialchars(transfer_wallet_status_badge($statusTransfer), ENT_QUOTES, 'UTF-8') ?>">
@@ -253,7 +239,7 @@ mysqli_stmt_close($transferStmt);
                                 <option value="">Pilih Wallet Asal</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>">
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(transfer_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -266,7 +252,7 @@ mysqli_stmt_close($transferStmt);
                                 <option value="">Pilih Wallet Tujuan</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>">
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(transfer_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>

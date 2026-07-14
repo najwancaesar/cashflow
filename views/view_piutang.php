@@ -1,8 +1,10 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $today = date('Y-m-d');
 
 function format_piutang_due_date($value)
@@ -87,7 +89,7 @@ $sql = $stmtPiutang->get_result();
 				<div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
 					<div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3">
 						<h6 class="text-white text-capitalize ps-3">Piutang</h6>
-					</div>	
+					</div>
 				</div>
 				<div class="card-body px-0 pb-2">
 					<div class="text-end me-3">
@@ -155,9 +157,9 @@ $sql = $stmtPiutang->get_result();
 												<small class="d-block text-xs text-secondary mt-1">
 													Diterima ke
 													<strong><?= htmlspecialchars($row['wallet_penerimaan_nama'] ?? 'Wallet: -', ENT_QUOTES, 'UTF-8') ?></strong>
-													<?php if (!empty($row['wallet_penerimaan_tipe'])) { ?>
-														(<?= htmlspecialchars($row['wallet_penerimaan_tipe'], ENT_QUOTES, 'UTF-8') ?>)
-													<?php } ?>
+												<?php if (!empty($row['id_wallet_penerimaan'])) { ?>
+													(<?= cashflow_wallet_type_inline_html(cashflow_wallet_type_meta_for_wallet($row['wallet_penerimaan_tipe'], $row['id_wallet_penerimaan'], $walletCustomTypeMap)) ?>)
+												<?php } ?>
 													<?php if (!empty($row['tanggal_lunas'])) { ?>
 														pada <?= htmlspecialchars(format_piutang_due_date($row['tanggal_lunas']), ENT_QUOTES, 'UTF-8') ?>
 													<?php } ?>
@@ -304,7 +306,7 @@ $sql = $stmtPiutang->get_result();
 								<?php foreach ($activeWallets as $wallet) { ?>
 									<option value="<?= (int) $wallet['id_wallet'] ?>">
 										<?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>
-										(<?= htmlspecialchars($wallet['tipe_wallet'], ENT_QUOTES, 'UTF-8') ?>)
+										(<?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>)
 										<?= (int) ($wallet['is_default'] ?? 0) === 1 ? ' - Default' : '' ?>
 									</option>
 								<?php } ?>

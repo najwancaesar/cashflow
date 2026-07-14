@@ -15,6 +15,16 @@ include_once __DIR__ . "/csrf_helper.php";
         </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <ul class="navbar-nav ms-auto justify-content-end">
+                <?php if (strtolower((string) ($_SESSION['role'] ?? '')) !== 'admin') { ?>
+                    <li class="nav-item d-flex align-items-center me-2">
+                        <button type="button" class="btn btn-info btn-sm mb-0 cashflow-global-quick-add"
+                            data-bs-toggle="modal" data-bs-target="#globalQuickAddModal"
+                            aria-label="Tambah transaksi">
+                            <i class="fa fa-plus-circle" aria-hidden="true"></i>
+                            <span class="d-none d-md-inline ms-1">Tambah Transaksi</span>
+                        </button>
+                    </li>
+                <?php } ?>
                 <li class="nav-item d-flex align-items-center dropdown">
                     <a href="javascript:;" class="nav-link text-body font-weight-bold px-0 dropdown-toggle"
                         id="dropdownMenuButton" data-bs-toggle="dropdown">

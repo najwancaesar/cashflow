@@ -20,6 +20,7 @@ if(!isset($_SESSION['nama'])){
     <main class="main-content position-relative border-radius-lg app-main-content">
         <!-- Navbar -->
         <?php include "includes/navbar.php" ?>
+        <?php include "includes/quick_add.php" ?>
 
         <!-- End Navbar -->
         <script src="assets/js/jquery.js"></script>
@@ -72,6 +73,7 @@ if(!isset($_SESSION['nama'])){
     <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
     <script src="assets/js/material-dashboard.min.js?v=3.0.0"></script>
     <script src="assets/js/app-ui-fixes.js"></script>
+    <script src="assets/js/quick-add.js"></script>
     <?php
     include_once "includes/sweetalert_helper.php";
     render_sweetalert_flash_script();

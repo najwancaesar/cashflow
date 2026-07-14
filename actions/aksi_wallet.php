@@ -5,6 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 function clean_wallet_text($value)
 {
@@ -13,7 +14,7 @@ function clean_wallet_text($value)
 
 function is_valid_wallet_type($type)
 {
-    return in_array($type, ['cash', 'bank', 'e_wallet', 'tabungan', 'lainnya'], true);
+    return array_key_exists($type, cashflow_legacy_wallet_types());
 }
 
 function require_wallet_post_csrf()
@@ -84,16 +85,32 @@ if ($act === 't') {
         ? (int) $_POST['id_wallet']
         : null;
     $namaWallet = clean_wallet_text($_POST['nama_wallet'] ?? '');
-    $tipeWallet = clean_wallet_text($_POST['tipe_wallet'] ?? '');
+    $tipeWalletSelection = clean_wallet_text($_POST['tipe_wallet'] ?? '');
     $saldoAwalRaw = (string) ($_POST['saldo_awal'] ?? '');
 
-    if ($namaWallet === '' || $tipeWallet === '') {
+    if ($namaWallet === '' || $tipeWalletSelection === '') {
         show_sweetalert_and_redirect('Data belum lengkap', 'Nama wallet dan tipe wallet wajib diisi.', 'warning', 'main.php?module=wallet');
     }
 
-    if (!is_valid_wallet_type($tipeWallet)) {
+    $existingWallet = null;
+    if ($walletId !== null) {
+        if ($walletId <= 0) {
+            show_sweetalert_and_redirect('Data tidak valid', 'ID wallet tidak valid.', 'error', 'main.php?module=wallet');
+        }
+
+        $existingWallet = fetch_wallet_by_id($con, $walletId, $userId);
+        if (!$existingWallet) {
+            show_sweetalert_and_redirect('Akses ditolak', 'Wallet yang ingin diubah tidak ditemukan.', 'warning', 'main.php?module=wallet');
+        }
+    }
+
+    $resolvedWalletType = cashflow_resolve_wallet_type_selection($con, $userId, $tipeWalletSelection, $walletId);
+    if (!$resolvedWalletType) {
         show_sweetalert_and_redirect('Data tidak valid', 'Tipe wallet tidak valid.', 'error', 'main.php?module=wallet');
     }
+    $tipeWallet = $resolvedWalletType['legacy_type'];
+    $customWalletTypeId = $resolvedWalletType['custom_type_id'];
+    $walletTypeSchemaReady = cashflow_wallet_type_schema_ready($con);
 
     if (strpos($saldoAwalRaw, '-') !== false) {
         show_sweetalert_and_redirect('Data tidak valid', 'Saldo awal tidak boleh bernilai negatif.', 'error', 'main.php?module=wallet');
@@ -108,9 +125,15 @@ if ($act === 't') {
         $isDefault = user_has_default_wallet($con, $userId) ? 0 : 1;
         $isActive = 1;
 
-        $stmt = $con->prepare("INSERT INTO wallet (user_id, nama_wallet, tipe_wallet, saldo_awal, is_default, is_active, created_at, updated_at)
-                               VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
-        $stmt->bind_param("issdii", $userId, $namaWallet, $tipeWallet, $saldoAwal, $isDefault, $isActive);
+        if ($walletTypeSchemaReady) {
+            $stmt = $con->prepare("INSERT INTO wallet (user_id, nama_wallet, tipe_wallet, id_wallet_type, saldo_awal, is_default, is_active, created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            $stmt->bind_param("issidii", $userId, $namaWallet, $tipeWallet, $customWalletTypeId, $saldoAwal, $isDefault, $isActive);
+        } else {
+            $stmt = $con->prepare("INSERT INTO wallet (user_id, nama_wallet, tipe_wallet, saldo_awal, is_default, is_active, created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            $stmt->bind_param("issdii", $userId, $namaWallet, $tipeWallet, $saldoAwal, $isDefault, $isActive);
+        }
         $result = $stmt->execute();
         $newWalletId = (int) $stmt->insert_id;
         $stmt->close();
@@ -123,14 +146,17 @@ if ($act === 't') {
         show_sweetalert_and_redirect('Gagal', 'Wallet gagal ditambahkan.', 'error', 'main.php?module=wallet');
     }
 
-    if ($walletId <= 0 || !fetch_wallet_by_id($con, $walletId, $userId)) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Wallet yang ingin diubah tidak ditemukan.', 'warning', 'main.php?module=wallet');
+    if ($walletTypeSchemaReady) {
+        $stmt = $con->prepare("UPDATE wallet
+                               SET nama_wallet = ?, tipe_wallet = ?, id_wallet_type = ?, saldo_awal = ?, updated_at = NOW()
+                               WHERE id_wallet = ? AND user_id = ?");
+        $stmt->bind_param("ssidii", $namaWallet, $tipeWallet, $customWalletTypeId, $saldoAwal, $walletId, $userId);
+    } else {
+        $stmt = $con->prepare("UPDATE wallet
+                               SET nama_wallet = ?, tipe_wallet = ?, saldo_awal = ?, updated_at = NOW()
+                               WHERE id_wallet = ? AND user_id = ?");
+        $stmt->bind_param("ssdii", $namaWallet, $tipeWallet, $saldoAwal, $walletId, $userId);
     }
-
-    $stmt = $con->prepare("UPDATE wallet
-                           SET nama_wallet = ?, tipe_wallet = ?, saldo_awal = ?, updated_at = NOW()
-                           WHERE id_wallet = ? AND user_id = ?");
-    $stmt->bind_param("ssdii", $namaWallet, $tipeWallet, $saldoAwal, $walletId, $userId);
     $result = $stmt->execute();
     $affectedRows = $stmt->affected_rows;
     $stmt->close();
