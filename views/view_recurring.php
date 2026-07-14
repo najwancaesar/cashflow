@@ -191,7 +191,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                             <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-xl" id="datatableRecurring">
                                 <thead>
                                     <tr>
-                                        <th>Template</th>
+                                        <th class="cashflow-long-text-col">Template</th>
                                         <th>Tipe</th>
                                         <th>Kategori</th>
                                         <th>Wallet</th>
@@ -222,9 +222,9 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                         $toggleTextClass = $isActive === 1 ? 'text-danger' : 'text-success';
                                         ?>
                                         <tr>
-                                            <td>
+                                            <td class="cashflow-long-text-col">
                                                 <p class="text-xs font-weight-bold mb-1"><?= htmlspecialchars($row['nama_recurring'], ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
                                                 <span class="badge badge-sm <?= $row['tipe_transaksi'] === 'pengeluaran' ? 'bg-gradient-warning' : 'bg-gradient-info' ?>">

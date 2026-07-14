@@ -154,7 +154,7 @@ sort($calendarYears);
                                         <span class="text-xs text-secondary">Tanggal</span>
                                         <strong><?= htmlspecialchars(cashflow_format_date($event['due_date']), ENT_QUOTES, 'UTF-8') ?></strong>
                                     </div>
-                                    <div class="calendar-event-main">
+                                    <div class="calendar-event-main cashflow-long-text">
                                         <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                                             <h6 class="mb-0"><?= htmlspecialchars($event['title'], ENT_QUOTES, 'UTF-8') ?></h6>
                                             <span class="badge badge-sm <?= htmlspecialchars($event['badge_class'], ENT_QUOTES, 'UTF-8') ?>">

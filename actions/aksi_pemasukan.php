@@ -318,60 +318,12 @@ if ($act == 'bulk_delete') {
         show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pemasukan');
     }
 
-    $ids = normalize_pemasukan_ids($_POST['id_pemasukan'] ?? []);
-
-    if (empty($ids)) {
-        show_sweetalert_and_redirect('Tidak ada data dipilih', 'Pilih minimal satu pemasukan untuk dihapus.', 'warning', 'main.php?module=pemasukan');
-    }
-
-    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $bulkArchiveClause = cashflow_archive_ready($con, 'pemasukan') ? ' AND pemasukan.archived_at IS NULL' : '';
-    $countQuery = "SELECT COUNT(*) AS total
-                   FROM pemasukan
-                   WHERE user = ? AND status = 'pending' AND id_pemasukan IN ({$placeholders})
-                     AND NOT EXISTS (
-                        SELECT 1 FROM recurring_generation_log
-                        WHERE recurring_generation_log.user_id = pemasukan.user
-                          AND recurring_generation_log.tipe_transaksi = 'pemasukan'
-                          AND recurring_generation_log.id_transaksi = pemasukan.id_pemasukan
-                     ){$bulkArchiveClause}";
-    $countStmt = mysqli_prepare($con, $countQuery);
-    $countTypes = 'i' . str_repeat('i', count($ids));
-    $countParams = array_merge([$user], $ids);
-    mysqli_stmt_bind_param($countStmt, $countTypes, ...$countParams);
-    mysqli_stmt_execute($countStmt);
-    $countResult = mysqli_stmt_get_result($countStmt);
-    $countRow = mysqli_fetch_assoc($countResult);
-    mysqli_stmt_close($countStmt);
-
-    if ((int) ($countRow['total'] ?? 0) !== count($ids)) {
-        show_sweetalert_and_redirect('Aksi ditolak', 'Hapus massal hanya dapat dilakukan pada pemasukan pending milik Anda.', 'warning', 'main.php?module=pemasukan');
-    }
-
-    $deleteQuery = "DELETE FROM pemasukan
-                    WHERE user = ? AND status = 'pending' AND id_pemasukan IN ({$placeholders})
-                      AND NOT EXISTS (
-                        SELECT 1 FROM recurring_generation_log
-                        WHERE recurring_generation_log.user_id = pemasukan.user
-                          AND recurring_generation_log.tipe_transaksi = 'pemasukan'
-                          AND recurring_generation_log.id_transaksi = pemasukan.id_pemasukan
-                      ){$bulkArchiveClause}";
-    $deleteStmt = mysqli_prepare($con, $deleteQuery);
-    $deleteTypes = 'i' . str_repeat('i', count($ids));
-    $deleteParams = array_merge([$user], $ids);
-    mysqli_stmt_bind_param($deleteStmt, $deleteTypes, ...$deleteParams);
-    $hasil = mysqli_stmt_execute($deleteStmt);
-    $affectedRows = mysqli_stmt_affected_rows($deleteStmt);
-    mysqli_stmt_close($deleteStmt);
-
-    if ($hasil && $affectedRows > 0) {
-        if (function_exists('record_activity')) {
-            record_activity($con, 'pemasukan', 'hapus_massal', "Menghapus massal pemasukan sebanyak {$affectedRows} data.");
-        }
-        show_sweetalert_and_redirect('Berhasil!', "Berhasil menghapus {$affectedRows} data pemasukan.", 'success', 'main.php?module=pemasukan');
-    }
-
-    show_sweetalert_and_redirect('Gagal!', 'Data pemasukan terpilih gagal dihapus.', 'error', 'main.php?module=pemasukan');
+    show_sweetalert_and_redirect(
+        'Form perlu dimuat ulang',
+        'Endpoint bulk lama sudah dinonaktifkan. Muat ulang halaman untuk menggunakan bulk action yang aman.',
+        'warning',
+        'main.php?module=pemasukan'
+    );
 }
 
 show_sweetalert_and_redirect('Gagal!', 'Aksi pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');

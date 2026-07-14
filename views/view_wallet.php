@@ -23,7 +23,8 @@ function format_wallet_rupiah($value)
 
 $walletRows = cashflow_get_user_wallet_balances($con, $userYangSedangLogin);
 $walletTypeFeatureReady = cashflow_wallet_type_schema_ready($con);
-$legacyWalletTypes = cashflow_legacy_wallet_types();
+$legacyWalletTypes = cashflow_selectable_legacy_wallet_types($con);
+$walletCardTypeReady = cashflow_wallet_legacy_type_supported($con, 'kartu');
 $customWalletTypes = cashflow_get_custom_wallet_types($con, $userYangSedangLogin, false);
 $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 ?>
@@ -110,7 +111,7 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                             </td>
                                             <td>
                                                 <span class="badge badge-sm <?= $isActive ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
-                                                    <?= $isActive ? 'Aktif' : 'Nonaktif' ?>
+                                                    <?= $isActive ? 'AKTIF' : 'NONAKTIF' ?>
                                                 </span>
                                             </td>
                                             <td>
@@ -140,6 +141,7 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                         data-confirm-cancel-text="Batal"
                                                         class="text-secondary <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2 border-0 bg-transparent p-0">
                                                         <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
+                                                        <?= $isActive ? 'NONAKTIFKAN' : 'AKTIFKAN' ?>
                                                     </button>
                                                 </form>
 
@@ -154,6 +156,20 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                         data-confirm-cancel-text="Batal"
                                                         class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0">
                                                         <i class="fa fa-star<?= $isDefault ? '' : '-o' ?>" aria-hidden="true"></i>
+                                                    </button>
+                                                </form>
+
+                                                <form action="actions/aksi_wallet.php?act=h" method="post" class="d-inline">
+                                                    <?= csrf_input() ?>
+                                                    <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
+                                                    <button type="submit"
+                                                        data-confirm="true"
+                                                        data-confirm-title="Hapus wallet ini?"
+                                                        data-confirm-text="Hanya wallet tanpa histori atau relasi finansial yang dapat dihapus permanen. Wallet yang sudah digunakan harus dinonaktifkan."
+                                                        data-confirm-confirm-text="Ya, hapus"
+                                                        data-confirm-cancel-text="Batal"
+                                                        class="text-secondary text-danger font-weight-bold text-xs ms-2 border-0 bg-transparent p-0">
+                                                        <i class="fa fa-trash" aria-hidden="true"></i> HAPUS
                                                     </button>
                                                 </form>
                                             </td>
@@ -203,6 +219,9 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                         </option>
                                     <?php } ?>
                                 </optgroup>
+                                <?php if (!$walletCardTypeReady) { ?>
+                                    <option value="" disabled>Kartu (jalankan migration tipe Kartu)</option>
+                                <?php } ?>
                                 <?php if (!empty($customWalletTypes)) { ?>
                                     <optgroup label="Tipe Kustom Saya">
                                         <?php foreach ($customWalletTypes as $customType) { ?>

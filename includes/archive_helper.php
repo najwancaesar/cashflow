@@ -115,14 +115,18 @@ if (!function_exists('cashflow_render_archive_filter')) {
                     Fitur arsip belum aktif. Jalankan migration Sprint 3A secara manual setelah backup database.
                 </div>
             <?php } ?>
-            <form method="get" action="main.php" class="archive-filter-form">
+            <form method="get" action="main.php" class="archive-filter-form cashflow-filter-form">
                 <input type="hidden" name="module" value="<?= $moduleEsc ?>">
-                <label for="archiveFilter<?= $moduleEsc ?>" class="form-label mb-0">Tampilkan</label>
-                <select id="archiveFilter<?= $moduleEsc ?>" name="arsip" class="form-control" <?= $schemaReady ? '' : 'disabled' ?>>
-                    <option value="aktif" <?= $filter === 'aktif' ? 'selected' : '' ?>>Aktif</option>
-                    <option value="diarsipkan" <?= $filter === 'diarsipkan' ? 'selected' : '' ?>>Diarsipkan</option>
-                    <option value="semua" <?= $filter === 'semua' ? 'selected' : '' ?>>Semua</option>
-                </select>
+                <div class="cashflow-filter-field">
+                    <label for="archiveFilter<?= $moduleEsc ?>" class="cashflow-filter-label">Tampilkan</label>
+                    <div class="cashflow-control-wrap cashflow-select-wrap">
+                        <select id="archiveFilter<?= $moduleEsc ?>" name="arsip" class="cashflow-form-control cashflow-select-control" <?= $schemaReady ? '' : 'disabled' ?>>
+                            <option value="aktif" <?= $filter === 'aktif' ? 'selected' : '' ?>>Aktif</option>
+                            <option value="diarsipkan" <?= $filter === 'diarsipkan' ? 'selected' : '' ?>>Diarsipkan</option>
+                            <option value="semua" <?= $filter === 'semua' ? 'selected' : '' ?>>Semua</option>
+                        </select>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-info mb-0" <?= $schemaReady ? '' : 'disabled' ?>>Terapkan</button>
             </form>
         </div>

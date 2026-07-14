@@ -41,7 +41,7 @@ $namaBulanBudget = [
     12 => 'Desember',
 ];
 $periodeBudgetLabel = $namaBulanBudget[$budgetBulan] . ' ' . $budgetTahun;
-$isPeriodeBudgetBerjalan = $budgetBulan === $budgetBulanSekarang && $budgetTahun === $budgetTahunSekarang;
+$isPeriodeBudgetBerjalan = cashflow_budget_is_current_period($budgetBulan, $budgetTahun);
 
 function format_kategori_rupiah($value)
 {
@@ -152,22 +152,24 @@ mysqli_stmt_close($budgetHistoryStmt);
                     <div class="px-4 pt-3">
                         <form method="get" action="main.php" class="row g-3 align-items-end category-budget-filter">
                             <input type="hidden" name="module" value="kategori">
-                            <div class="col-md-4 col-sm-6">
-                                <label for="filterBudgetBulan" class="form-label">Bulan Budget</label>
-                                <select id="filterBudgetBulan" name="bulan" class="form-control">
-                                    <?php foreach ($namaBulanBudget as $nomorBulan => $namaBulan) { ?>
-                                        <option value="<?= (int) $nomorBulan ?>" <?= $nomorBulan === $budgetBulan ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($namaBulan, ENT_QUOTES, 'UTF-8') ?>
-                                        </option>
-                                    <?php } ?>
-                                </select>
+                            <div class="col-md-4 col-sm-6 cashflow-filter-field">
+                                <label for="filterBudgetBulan" class="cashflow-filter-label">Bulan Budget</label>
+                                <div class="cashflow-control-wrap cashflow-select-wrap">
+                                    <select id="filterBudgetBulan" name="bulan" class="cashflow-form-control cashflow-select-control">
+                                        <?php foreach ($namaBulanBudget as $nomorBulan => $namaBulan) { ?>
+                                            <option value="<?= (int) $nomorBulan ?>" <?= $nomorBulan === $budgetBulan ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($namaBulan, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-3 col-sm-6">
-                                <label for="filterBudgetTahun" class="form-label">Tahun</label>
-                                <input id="filterBudgetTahun" type="number" name="tahun" class="form-control"
+                            <div class="col-md-3 col-sm-6 cashflow-filter-field">
+                                <label for="filterBudgetTahun" class="cashflow-filter-label">Tahun</label>
+                                <input id="filterBudgetTahun" type="number" name="tahun" class="cashflow-form-control"
                                     min="2000" max="2100" value="<?= (int) $budgetTahun ?>">
                             </div>
-                            <div class="col-md-5 d-flex flex-wrap gap-2">
+                            <div class="col-md-5 d-flex flex-wrap gap-2 cashflow-filter-actions">
                                 <button type="submit" class="btn btn-info mb-0 flex-grow-1">Tampilkan</button>
                                 <a href="main.php?module=kategori" class="btn btn-outline-secondary mb-0 flex-grow-1">Bulan Berjalan</a>
                             </div>

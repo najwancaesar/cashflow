@@ -267,7 +267,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                             <th>Tipe</th>
                                             <th>Wallet</th>
                                             <th>Jumlah</th>
-                                            <th>Catatan</th>
+                                            <th class="cashflow-long-text-col">Catatan</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -289,7 +289,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                                     </p>
                                                 </td>
                                                 <td><p class="text-xs font-weight-bold mb-0"><?= saving_goal_rupiah($mutasi['jumlah']) ?></p></td>
-                                                <td><p class="text-xs text-secondary mb-0"><?= htmlspecialchars($mutasi['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p></td>
+                                                <td class="cashflow-long-text-col"><p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($mutasi['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p></td>
                                             </tr>
                                         <?php } ?>
                                     </tbody>

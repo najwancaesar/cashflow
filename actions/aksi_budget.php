@@ -3,6 +3,7 @@ session_start();
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/sweetalert_helper.php";
+include_once __DIR__ . "/../includes/budget_helper.php";
 
 $redirectKategori = 'main.php?module=kategori';
 
@@ -63,7 +64,7 @@ if ($tahun < 2000 || $tahun > 2100) {
     redirect_budget('Gagal!', 'Tahun budget tidak valid.', 'error');
 }
 
-if ($bulan !== (int) date('n') || $tahun !== (int) date('Y')) {
+if (!cashflow_budget_is_current_period($bulan, $tahun)) {
     redirect_budget('Periode hanya baca', 'Budget histori tidak dapat diubah. Atur budget pada bulan berjalan.', 'warning');
 }
 

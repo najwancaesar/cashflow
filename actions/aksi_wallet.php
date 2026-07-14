@@ -67,6 +67,46 @@ function user_has_default_wallet($con, $userId)
     return $hasDefault;
 }
 
+function count_wallet_financial_relations($con, $walletId)
+{
+    $sql = "SELECT
+                (SELECT COUNT(*) FROM pemasukan WHERE id_wallet = ?)
+              + (SELECT COUNT(*) FROM pengeluaran WHERE id_wallet = ?)
+              + (SELECT COUNT(*) FROM transfer_wallet WHERE wallet_asal_id = ?)
+              + (SELECT COUNT(*) FROM transfer_wallet WHERE wallet_tujuan_id = ?)
+              + (SELECT COUNT(*) FROM saving_goal_mutasi WHERE id_wallet = ?)
+              + (SELECT COUNT(*) FROM recurring_transaction WHERE id_wallet = ?)
+              + (SELECT COUNT(*) FROM hutang WHERE id_wallet_pembayaran = ?)
+              + (SELECT COUNT(*) FROM piutang WHERE id_wallet_penerimaan = ?)
+              AS total";
+    $stmt = $con->prepare($sql);
+    if (!$stmt) {
+        error_log('CashFlow wallet relation check could not be prepared.');
+        return null;
+    }
+
+    $stmt->bind_param(
+        'iiiiiiii',
+        $walletId,
+        $walletId,
+        $walletId,
+        $walletId,
+        $walletId,
+        $walletId,
+        $walletId,
+        $walletId
+    );
+    if (!$stmt->execute()) {
+        $stmt->close();
+        error_log('CashFlow wallet relation check failed.');
+        return null;
+    }
+
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return (int) ($row['total'] ?? 0);
+}
+
 if (!isset($_SESSION['id_user'])) {
     show_sweetalert_and_redirect('Login diperlukan', 'Silakan login terlebih dahulu.', 'warning', 'login.php');
 }
@@ -179,35 +219,72 @@ if ($act === 's') {
         show_sweetalert_and_redirect('Data tidak valid', 'Permintaan status wallet tidak valid.', 'error', 'main.php?module=wallet');
     }
 
-    $wallet = fetch_wallet_by_id($con, $walletId, $userId);
-    if (!$wallet) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Wallet yang ingin diubah tidak ditemukan.', 'warning', 'main.php?module=wallet');
-    }
-
-    if ($targetStatus === '0') {
-        if ((string) ($wallet['is_default'] ?? '0') === '1') {
-            show_sweetalert_and_redirect('Aksi dibatasi', 'Wallet default tidak boleh dinonaktifkan.', 'warning', 'main.php?module=wallet');
-        }
-
-        if (count_active_wallets($con, $userId) <= 1) {
-            show_sweetalert_and_redirect('Aksi dibatasi', 'Minimal harus ada satu wallet aktif.', 'warning', 'main.php?module=wallet');
-        }
-    }
-
     $targetStatusInt = (int) $targetStatus;
-    $stmt = $con->prepare("UPDATE wallet SET is_active = ?, updated_at = NOW() WHERE id_wallet = ? AND user_id = ?");
-    $stmt->bind_param("iii", $targetStatusInt, $walletId, $userId);
-    $result = $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
+    try {
+        $con->begin_transaction();
+        $lockStmt = $con->prepare("SELECT id_wallet, is_default, is_active
+                                   FROM wallet
+                                   WHERE user_id = ?
+                                   ORDER BY id_wallet ASC
+                                   FOR UPDATE");
+        if (!$lockStmt) {
+            throw new RuntimeException('Gagal mengunci daftar wallet.');
+        }
+        $lockStmt->bind_param('i', $userId);
+        $lockStmt->execute();
+        $result = $lockStmt->get_result();
+        $wallet = null;
+        $activeWalletCount = 0;
+        while ($row = $result->fetch_assoc()) {
+            if ((string) ($row['is_active'] ?? '0') === '1') {
+                $activeWalletCount++;
+            }
+            if ((int) $row['id_wallet'] === $walletId) {
+                $wallet = $row;
+            }
+        }
+        $lockStmt->close();
 
-    if ($result && $affectedRows >= 0) {
-        $statusLabel = $targetStatusInt === 1 ? 'aktif' : 'nonaktif';
-        record_activity($con, 'wallet', 'ubah_status', "Mengubah wallet ID {$walletId} menjadi {$statusLabel}.");
-        show_sweetalert_and_redirect('Berhasil', 'Status wallet berhasil diperbarui.', 'success', 'main.php?module=wallet');
+        if (!$wallet) {
+            throw new DomainException('Wallet yang ingin diubah tidak ditemukan atau bukan milik Anda.');
+        }
+        if ((string) ($wallet['is_active'] ?? '0') === $targetStatus) {
+            $con->commit();
+            $statusLabel = $targetStatus === '1' ? 'aktif' : 'nonaktif';
+            show_sweetalert_and_redirect('Tidak ada perubahan', "Wallet sudah berstatus {$statusLabel}.", 'info', 'main.php?module=wallet');
+        }
+        if ($targetStatus === '0' && (string) ($wallet['is_default'] ?? '0') === '1') {
+            throw new DomainException('Wallet default tidak boleh dinonaktifkan.');
+        }
+        if ($targetStatus === '0' && $activeWalletCount <= 1) {
+            throw new DomainException('Minimal harus ada satu wallet aktif.');
+        }
+
+        $stmt = $con->prepare("UPDATE wallet SET is_active = ?, updated_at = NOW()
+                               WHERE id_wallet = ? AND user_id = ? AND is_active <> ?");
+        if (!$stmt) {
+            throw new RuntimeException('Gagal menyiapkan perubahan status wallet.');
+        }
+        $stmt->bind_param('iiii', $targetStatusInt, $walletId, $userId, $targetStatusInt);
+        $stmt->execute();
+        $affectedRows = $stmt->affected_rows;
+        $stmt->close();
+        if ($affectedRows !== 1) {
+            throw new RuntimeException('Status wallet berubah saat diproses.');
+        }
+        $con->commit();
+    } catch (DomainException $exception) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Aksi dibatasi', $exception->getMessage(), 'warning', 'main.php?module=wallet');
+    } catch (Throwable $exception) {
+        $con->rollback();
+        error_log('CashFlow wallet status update failed: ' . $exception->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Status wallet gagal diperbarui.', 'error', 'main.php?module=wallet');
     }
 
-    show_sweetalert_and_redirect('Gagal', 'Status wallet gagal diperbarui.', 'error', 'main.php?module=wallet');
+    $statusLabel = $targetStatusInt === 1 ? 'aktif' : 'nonaktif';
+    record_activity($con, 'wallet', 'ubah_status', "Mengubah wallet ID {$walletId} menjadi {$statusLabel}.");
+    show_sweetalert_and_redirect('Berhasil', 'Status wallet berhasil diperbarui.', 'success', 'main.php?module=wallet');
 }
 
 if ($act === 'd') {
@@ -225,6 +302,11 @@ if ($act === 'd') {
 
     if ((string) ($wallet['is_active'] ?? '0') !== '1') {
         show_sweetalert_and_redirect('Aksi dibatasi', 'Wallet nonaktif tidak bisa dijadikan default.', 'warning', 'main.php?module=wallet');
+    }
+
+
+    if ((string) ($wallet['is_default'] ?? '0') === '1') {
+        show_sweetalert_and_redirect('Tidak ada perubahan', 'Wallet ini sudah menjadi wallet default.', 'info', 'main.php?module=wallet');
     }
 
     mysqli_begin_transaction($con);
@@ -253,6 +335,97 @@ if ($act === 'd') {
         mysqli_rollback($con);
         show_sweetalert_and_redirect('Gagal', 'Wallet default gagal diperbarui.', 'error', 'main.php?module=wallet');
     }
+}
+
+if ($act === 'h') {
+    require_wallet_post_csrf();
+
+    $walletId = (int) ($_POST['id_wallet'] ?? 0);
+    if ($walletId <= 0) {
+        show_sweetalert_and_redirect('Data tidak valid', 'ID wallet tidak valid.', 'error', 'main.php?module=wallet');
+    }
+
+    try {
+        $con->begin_transaction();
+
+        $lockStmt = $con->prepare("SELECT id_wallet, is_default
+                                   FROM wallet
+                                   WHERE id_wallet = ? AND user_id = ?
+                                   LIMIT 1 FOR UPDATE");
+        if (!$lockStmt) {
+            throw new RuntimeException('Gagal mengunci wallet.');
+        }
+        $lockStmt->bind_param('ii', $walletId, $userId);
+        $lockStmt->execute();
+        $wallet = $lockStmt->get_result()->fetch_assoc();
+        $lockStmt->close();
+
+        if (!$wallet) {
+            throw new DomainException('Wallet tidak ditemukan atau bukan milik Anda.');
+        }
+
+        $relationCount = count_wallet_financial_relations($con, $walletId);
+        if ($relationCount === null) {
+            throw new RuntimeException('Relasi wallet tidak dapat diverifikasi.');
+        }
+        if ($relationCount > 0) {
+            throw new DomainException('Wallet memiliki histori atau relasi finansial dan tidak dapat dihapus permanen. Gunakan Nonaktifkan.');
+        }
+
+        $deleteStmt = $con->prepare('DELETE FROM wallet WHERE id_wallet = ? AND user_id = ?');
+        if (!$deleteStmt) {
+            throw new RuntimeException('Gagal menyiapkan penghapusan wallet.');
+        }
+        $deleteStmt->bind_param('ii', $walletId, $userId);
+        $deleteStmt->execute();
+        $affectedRows = $deleteStmt->affected_rows;
+        $deleteStmt->close();
+        if ($affectedRows !== 1) {
+            throw new RuntimeException('Wallet gagal dihapus.');
+        }
+
+        if ((string) ($wallet['is_default'] ?? '0') === '1') {
+            $replacementStmt = $con->prepare("SELECT id_wallet
+                                              FROM wallet
+                                              WHERE user_id = ?
+                                              ORDER BY is_active DESC, id_wallet ASC
+                                              LIMIT 1 FOR UPDATE");
+            if (!$replacementStmt) {
+                throw new RuntimeException('Gagal memilih wallet default pengganti.');
+            }
+            $replacementStmt->bind_param('i', $userId);
+            $replacementStmt->execute();
+            $replacement = $replacementStmt->get_result()->fetch_assoc();
+            $replacementStmt->close();
+
+            if ($replacement) {
+                $replacementId = (int) $replacement['id_wallet'];
+                $defaultStmt = $con->prepare('UPDATE wallet SET is_default = 1, updated_at = NOW() WHERE id_wallet = ? AND user_id = ?');
+                if (!$defaultStmt) {
+                    throw new RuntimeException('Gagal menyiapkan wallet default pengganti.');
+                }
+                $defaultStmt->bind_param('ii', $replacementId, $userId);
+                $defaultStmt->execute();
+                if ($defaultStmt->affected_rows !== 1) {
+                    $defaultStmt->close();
+                    throw new RuntimeException('Wallet default pengganti gagal diperbarui.');
+                }
+                $defaultStmt->close();
+            }
+        }
+
+        $con->commit();
+    } catch (DomainException $exception) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Wallet tidak dapat dihapus', $exception->getMessage(), 'warning', 'main.php?module=wallet');
+    } catch (Throwable $exception) {
+        $con->rollback();
+        error_log('CashFlow wallet hard delete failed: ' . $exception->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Wallet gagal dihapus karena relasinya tidak dapat diverifikasi.', 'error', 'main.php?module=wallet');
+    }
+
+    record_activity($con, 'wallet', 'hapus', "Menghapus wallet ID {$walletId} yang tidak memiliki relasi finansial.");
+    show_sweetalert_and_redirect('Berhasil', 'Wallet tanpa histori berhasil dihapus permanen.', 'success', 'main.php?module=wallet');
 }
 
 show_sweetalert_and_redirect('Aksi tidak valid', 'Permintaan wallet tidak dikenali.', 'error', 'main.php?module=wallet');

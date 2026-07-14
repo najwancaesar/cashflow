@@ -8,8 +8,68 @@ if (!function_exists('cashflow_legacy_wallet_types')) {
             'bank' => ['label' => 'Bank', 'icon' => 'university', 'color' => '#0ea5e9'],
             'e_wallet' => ['label' => 'E-Wallet', 'icon' => 'mobile', 'color' => '#f59e0b'],
             'tabungan' => ['label' => 'Tabungan', 'icon' => 'credit-card', 'color' => '#6366f1'],
+            'kartu' => ['label' => 'Kartu', 'icon' => 'credit-card', 'color' => '#8b5cf6'],
             'lainnya' => ['label' => 'Lainnya', 'icon' => 'briefcase', 'color' => '#64748b'],
         ];
+    }
+}
+
+if (!function_exists('cashflow_wallet_legacy_type_supported')) {
+    function cashflow_wallet_legacy_type_supported($con, $type)
+    {
+        $type = trim((string) $type);
+        if (!array_key_exists($type, cashflow_legacy_wallet_types())) {
+            return false;
+        }
+
+        static $supportedByConnection = [];
+        $connectionKey = function_exists('spl_object_id') ? spl_object_id($con) : 0;
+        if (!isset($supportedByConnection[$connectionKey])) {
+            $supported = array_fill_keys(array_keys(cashflow_legacy_wallet_types()), true);
+            $supported['kartu'] = false;
+
+            try {
+                $result = $con->query("SHOW COLUMNS FROM `wallet` LIKE 'tipe_wallet'");
+                $column = $result ? $result->fetch_assoc() : null;
+                if ($result) {
+                    $result->free();
+                }
+
+                $columnType = strtolower((string) ($column['Type'] ?? ''));
+                if (strpos($columnType, 'enum(') === 0) {
+                    preg_match_all("/'((?:[^'\\\\]|\\\\.)*)'/", $columnType, $matches);
+                    $enumValues = array_map('stripslashes', $matches[1] ?? []);
+                    foreach (array_keys($supported) as $legacyType) {
+                        $supported[$legacyType] = in_array($legacyType, $enumValues, true);
+                    }
+                } elseif ($columnType !== '') {
+                    // VARCHAR-compatible schemas can store the registry value without an enum migration.
+                    $supported['kartu'] = true;
+                }
+            } catch (Throwable $error) {
+                error_log('CashFlow wallet legacy type schema check failed.');
+                // Existing legacy types remain usable; the new enum value stays hidden until migration is verified.
+                $supported['kartu'] = false;
+            }
+
+            $supportedByConnection[$connectionKey] = $supported;
+        }
+
+        return !empty($supportedByConnection[$connectionKey][$type]);
+    }
+}
+
+if (!function_exists('cashflow_selectable_legacy_wallet_types')) {
+    function cashflow_selectable_legacy_wallet_types($con)
+    {
+        $types = [];
+        foreach (cashflow_legacy_wallet_types() as $key => $meta) {
+            if (cashflow_wallet_legacy_type_supported($con, $key)) {
+                $types[$key] = $meta;
+            }
+        }
+
+        return $types;
     }
 }
 
@@ -171,7 +231,7 @@ if (!function_exists('cashflow_resolve_wallet_type_selection')) {
         $legacyTypes = cashflow_legacy_wallet_types();
         $legacyKey = strpos($selection, 'legacy:') === 0 ? substr($selection, 7) : $selection;
 
-        if (isset($legacyTypes[$legacyKey])) {
+        if (isset($legacyTypes[$legacyKey]) && cashflow_wallet_legacy_type_supported($con, $legacyKey)) {
             return ['legacy_type' => $legacyKey, 'custom_type_id' => null];
         }
 

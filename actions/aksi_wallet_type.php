@@ -64,6 +64,21 @@ function wallet_type_is_owned_by_user($con, $typeId, $userId)
     return $owned;
 }
 
+function wallet_type_fetch_owned($con, $typeId, $userId)
+{
+    $stmt = $con->prepare("SELECT id_wallet_type, is_active FROM wallet_type
+                           WHERE id_wallet_type = ? AND user_id = ? LIMIT 1");
+    if (!$stmt) {
+        return null;
+    }
+    $stmt->bind_param('ii', $typeId, $userId);
+    $errorCode = 0;
+    $success = wallet_type_execute_statement($stmt, $errorCode);
+    $row = $success ? $stmt->get_result()->fetch_assoc() : null;
+    $stmt->close();
+    return $row ?: null;
+}
+
 if (!isset($_SESSION['id_user'])) {
     wallet_type_redirect('Login diperlukan', 'Silakan login terlebih dahulu.');
 }
@@ -167,13 +182,22 @@ if ($act === 'status') {
         wallet_type_redirect('Data tidak valid', 'Permintaan status tipe wallet tidak valid.', 'error');
     }
 
+    $ownedType = wallet_type_fetch_owned($con, $typeId, $userId);
+    if (!$ownedType) {
+        wallet_type_redirect('Data tidak ditemukan', 'Tipe wallet tidak ditemukan.', 'warning');
+    }
+    if ((string) ($ownedType['is_active'] ?? '') === $isActive) {
+        $label = $isActive === '1' ? 'aktif' : 'nonaktif';
+        wallet_type_redirect('Tidak ada perubahan', "Tipe wallet sudah berstatus {$label}.", 'info');
+    }
+
     $isActiveInt = (int) $isActive;
     $stmt = $con->prepare("UPDATE wallet_type SET is_active = ?, updated_at = NOW()
-                           WHERE id_wallet_type = ? AND user_id = ?");
+                           WHERE id_wallet_type = ? AND user_id = ? AND is_active <> ?");
     if (!$stmt) {
         wallet_type_redirect('Gagal', 'Status tipe wallet gagal diperbarui.', 'error');
     }
-    $stmt->bind_param('iii', $isActiveInt, $typeId, $userId);
+    $stmt->bind_param('iiii', $isActiveInt, $typeId, $userId, $isActiveInt);
     $errorCode = 0;
     $success = wallet_type_execute_statement($stmt, $errorCode);
     $affected = $stmt->affected_rows;
@@ -194,38 +218,59 @@ if ($act === 'delete') {
         wallet_type_redirect('Data tidak valid', 'ID tipe wallet tidak valid.', 'error');
     }
 
-    $usageStmt = $con->prepare("SELECT COUNT(*) AS total
-                                FROM wallet
-                                WHERE user_id = ? AND id_wallet_type = ?");
-    if (!$usageStmt) {
-        wallet_type_redirect('Gagal', 'Pemakaian tipe wallet gagal diperiksa.', 'error');
-    }
-    $usageStmt->bind_param('ii', $userId, $typeId);
-    $usageErrorCode = 0;
-    if (!wallet_type_execute_statement($usageStmt, $usageErrorCode)) {
+    try {
+        $con->begin_transaction();
+
+        $typeStmt = $con->prepare("SELECT id_wallet_type FROM wallet_type
+                                   WHERE id_wallet_type = ? AND user_id = ? LIMIT 1 FOR UPDATE");
+        if (!$typeStmt) {
+            throw new RuntimeException('Tipe wallet gagal dikunci.');
+        }
+        $typeStmt->bind_param('ii', $typeId, $userId);
+        if (!$typeStmt->execute()) {
+            $typeStmt->close();
+            throw new RuntimeException('Tipe wallet gagal diperiksa.');
+        }
+        $ownedType = $typeStmt->get_result()->fetch_assoc();
+        $typeStmt->close();
+        if (!$ownedType) {
+            throw new DomainException('Tipe wallet tidak ditemukan.');
+        }
+
+        $usageStmt = $con->prepare("SELECT id_wallet FROM wallet
+                                    WHERE user_id = ? AND id_wallet_type = ? LIMIT 1 FOR UPDATE");
+        if (!$usageStmt) {
+            throw new RuntimeException('Pemakaian tipe wallet gagal diperiksa.');
+        }
+        $usageStmt->bind_param('ii', $userId, $typeId);
+        if (!$usageStmt->execute()) {
+            $usageStmt->close();
+            throw new RuntimeException('Pemakaian tipe wallet gagal diperiksa.');
+        }
+        $isUsed = (bool) $usageStmt->get_result()->fetch_assoc();
         $usageStmt->close();
-        wallet_type_redirect('Gagal', 'Pemakaian tipe wallet gagal diperiksa.', 'error');
-    }
-    $usageResult = $usageStmt->get_result();
-    $usageRow = $usageResult ? $usageResult->fetch_assoc() : ['total' => 0];
-    $usageStmt->close();
+        if ($isUsed) {
+            throw new DomainException('Tipe masih digunakan. Nonaktifkan tipe atau ubah tipe pada wallet terkait sebelum menghapusnya.');
+        }
 
-    if ((int) ($usageRow['total'] ?? 0) > 0) {
-        wallet_type_redirect('Tipe masih digunakan', 'Nonaktifkan tipe atau ubah tipe pada wallet terkait sebelum menghapusnya.', 'warning');
-    }
-
-    $stmt = $con->prepare("DELETE FROM wallet_type WHERE id_wallet_type = ? AND user_id = ?");
-    if (!$stmt) {
+        $stmt = $con->prepare("DELETE FROM wallet_type WHERE id_wallet_type = ? AND user_id = ?");
+        if (!$stmt) {
+            throw new RuntimeException('Tipe wallet gagal dihapus.');
+        }
+        $stmt->bind_param('ii', $typeId, $userId);
+        if (!$stmt->execute() || $stmt->affected_rows !== 1) {
+            $stmt->close();
+            throw new RuntimeException('Tipe wallet gagal dihapus.');
+        }
+        $stmt->close();
+        $con->commit();
+    } catch (DomainException $exception) {
+        $con->rollback();
+        wallet_type_redirect('Tipe tidak dapat dihapus', $exception->getMessage(), 'warning');
+    } catch (Throwable $exception) {
+        $con->rollback();
+        error_log('CashFlow wallet type delete failed: ' . $exception->getMessage());
         wallet_type_redirect('Gagal', 'Tipe wallet gagal dihapus.', 'error');
-    }
-    $stmt->bind_param('ii', $typeId, $userId);
-    $errorCode = 0;
-    $success = wallet_type_execute_statement($stmt, $errorCode);
-    $affected = $stmt->affected_rows;
-    $stmt->close();
-
-    if (!$success || $affected < 1) {
-        wallet_type_redirect('Data tidak ditemukan', 'Tipe wallet tidak ditemukan.', 'warning');
     }
 
     record_activity($con, 'wallet_type', 'hapus', "Menghapus tipe wallet ID {$typeId} yang belum digunakan.");

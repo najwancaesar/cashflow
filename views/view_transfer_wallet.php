@@ -110,7 +110,7 @@ mysqli_stmt_close($transferStmt);
                             <i class="fa fa-exchange" aria-hidden="true"></i> Tambah Transfer
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <?php if (empty($transferRows)) { ?>
                             <div class="border border-radius-lg p-4 text-center">
                                 <i class="fa fa-exchange text-secondary mb-2" aria-hidden="true"></i>
@@ -126,7 +126,7 @@ mysqli_stmt_close($transferStmt);
                                         <th>Wallet Tujuan</th>
                                         <th>Jumlah</th>
                                         <th>Status</th>
-                                        <th>Catatan</th>
+                                        <th class="cashflow-long-text-col">Catatan</th>
                                         <th></th>
                                     </tr>
                                 </thead>
@@ -162,8 +162,8 @@ mysqli_stmt_close($transferStmt);
                                                     <?= htmlspecialchars(ucfirst($statusTransfer), ENT_QUOTES, 'UTF-8') ?>
                                                 </span>
                                             </td>
-                                            <td>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                            <td class="cashflow-long-text-col">
+                                                <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td class="align-middle">
                                                 <?php if ($isArchived) { ?>

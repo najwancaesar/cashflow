@@ -104,7 +104,7 @@ $sql = $stmtPiutang->get_result();
 							<i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
 						</button>
 					</div>
-					<div class="table-responsive p-4 mx-2">
+					<div class="table-responsive cashflow-table-scroll p-4 mx-2">
 						<table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatable">
 							<thead>
 								<tr>
@@ -114,7 +114,7 @@ $sql = $stmtPiutang->get_result();
 										Debitur
 									</th>
 									<th>Jumlah Piutang</th>
-									<th>
+									<th class="cashflow-long-text-col">
 										Catatan
 									</th>
 									<th>Jatuh Tempo</th>
@@ -143,8 +143,8 @@ $sql = $stmtPiutang->get_result();
 										<p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
 										</p>
 									</td>
-									<td>
-										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?></p>
+									<td class="cashflow-long-text-col">
+										<p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
 									<td>
 										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_piutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>

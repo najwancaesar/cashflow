@@ -351,7 +351,7 @@ if ($tableExists) {
                                         <th>Role</th>
                                         <th>Module</th>
                                         <th>Aksi</th>
-                                        <th>Deskripsi</th>
+                                        <th class="cashflow-long-text-col">Deskripsi</th>
                                         <th>IP Address</th>
                                     </tr>
                                 </thead>
@@ -383,8 +383,8 @@ if ($tableExists) {
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['aksi'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
-                                            <td>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['deskripsi'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                            <td class="cashflow-long-text-col">
+                                                <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['deskripsi'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
                                                 <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['ip_address'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>

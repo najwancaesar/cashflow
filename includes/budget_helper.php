@@ -58,6 +58,15 @@ if (!function_exists('cashflow_budget_period_key')) {
     }
 }
 
+if (!function_exists('cashflow_budget_is_current_period')) {
+    function cashflow_budget_is_current_period($month, $year, $referenceTimestamp = null)
+    {
+        $referenceTimestamp = $referenceTimestamp === null ? time() : (int) $referenceTimestamp;
+        return (int) $month === (int) date('n', $referenceTimestamp)
+            && (int) $year === (int) date('Y', $referenceTimestamp);
+    }
+}
+
 if (!function_exists('cashflow_get_user_budget_usage_map')) {
     function cashflow_get_user_budget_usage_map($con, $userId)
     {

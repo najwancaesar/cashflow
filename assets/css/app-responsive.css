@@ -437,6 +437,16 @@ body.g-sidenav-show {
     }
 }
 
+/* Final specificity guard for long table text after legacy nowrap rules. */
+body .app-main-content .table-responsive .table th.cashflow-long-text-col,
+body .app-main-content .table-responsive .table td.cashflow-long-text-col,
+body .app-main-content .table-responsive .table .cashflow-long-text,
+body .app-main-content .table-responsive .table .cashflow-long-text * {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 @media (max-width: 380px) {
     .cashflow-quick-add-grid {
         grid-template-columns: 1fr;
@@ -810,6 +820,208 @@ body.g-sidenav-show {
     width: 100%;
     min-width: 980px;
     table-layout: fixed;
+}
+
+/* Stabilization B: reusable filters, table wrapping, and DataTables placement */
+.cashflow-filter-field {
+    min-width: 0;
+}
+
+.cashflow-filter-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.cashflow-control-wrap {
+    position: relative;
+    min-width: 0;
+}
+
+.cashflow-form-control {
+    display: block;
+    width: 100%;
+    min-height: 46px;
+    padding: 0.65rem 2.5rem 0.65rem 0.85rem;
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
+    background-color: #fff;
+    color: #344767;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cashflow-form-control:focus {
+    border-color: #2688eb;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(38, 136, 235, 0.14);
+}
+
+.cashflow-form-control:disabled {
+    cursor: not-allowed;
+    background-color: #f1f5f9;
+    color: #94a3b8;
+}
+
+.cashflow-select-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+}
+
+.cashflow-select-wrap::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0.95rem;
+    width: 0.48rem;
+    height: 0.48rem;
+    border-right: 2px solid #64748b;
+    border-bottom: 2px solid #64748b;
+    pointer-events: none;
+    transform: translateY(-68%) rotate(45deg);
+}
+
+.archive-filter-form.cashflow-filter-form {
+    align-items: flex-end;
+}
+
+.archive-filter-form .cashflow-filter-field {
+    width: min(100%, 190px);
+}
+
+.archive-filter-form .cashflow-form-control {
+    min-width: 170px;
+}
+
+.archive-filter-form .btn,
+.category-budget-filter .btn {
+    min-height: 46px;
+}
+
+.cashflow-table-scroll {
+    width: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+}
+
+.cashflow-long-text-col {
+    width: 24%;
+    min-width: 170px;
+    max-width: 340px;
+    white-space: normal !important;
+}
+
+.cashflow-long-text,
+.cashflow-long-text * {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.cashflow-datatable-top,
+.cashflow-datatable-bottom {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.cashflow-datatable-top {
+    margin-bottom: 1rem;
+}
+
+.cashflow-datatable-bottom {
+    margin-top: 1rem;
+}
+
+.cashflow-datatable-top .dataTables_length,
+.cashflow-datatable-top .dataTables_filter,
+.cashflow-datatable-bottom .dataTables_info,
+.cashflow-datatable-bottom .dataTables_paginate {
+    margin: 0 !important;
+}
+
+.cashflow-datatable-top .input-group {
+    width: min(100%, 420px);
+    margin-left: auto;
+}
+
+.cashflow-datatable-top .dataTables_filter,
+.cashflow-datatable-top .dataTables_filter label {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.cashflow-datatable-top .dataTables_filter label {
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.cashflow-datatable-top .dataTables_filter input {
+    width: 100% !important;
+    min-width: 0;
+    min-height: 42px;
+    margin-left: 0 !important;
+}
+
+.cashflow-datatable-bottom .dataTables_paginate .pagination {
+    margin-bottom: 0;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 575.98px) {
+    .archive-filter-form .cashflow-filter-field,
+    .archive-filter-form .cashflow-form-control,
+    .archive-filter-form .btn,
+    .category-budget-filter .cashflow-filter-actions,
+    .category-budget-filter .cashflow-filter-actions .btn,
+    .category-budget-filter .cashflow-filter-actions a {
+        width: 100%;
+    }
+
+    .cashflow-long-text-col {
+        width: auto;
+        min-width: 150px;
+        max-width: none;
+    }
+
+    .cashflow-datatable-top,
+    .cashflow-datatable-bottom {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .cashflow-datatable-top .dataTables_length,
+    .cashflow-datatable-top .input-group,
+    .cashflow-datatable-bottom .dataTables_info,
+    .cashflow-datatable-bottom .dataTables_paginate {
+        width: 100%;
+        max-width: none;
+    }
+
+    .cashflow-datatable-top .dataTables_filter label {
+        grid-template-columns: 1fr;
+        gap: 0.4rem;
+    }
+
+    .cashflow-datatable-bottom .dataTables_paginate .pagination {
+        justify-content: center;
+    }
 }
 
 .app-main-content .dashboard-latest-scroll {
