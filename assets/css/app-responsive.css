@@ -636,6 +636,10 @@ body.g-sidenav-show {
     font-size: 16px;
 }
 
+.cashflow-sidenav-backdrop {
+    display: none;
+}
+
 @media (max-width: 1199.98px) {
     body.g-sidenav-show .app-main-content {
         width: 100%;
@@ -645,38 +649,112 @@ body.g-sidenav-show {
     }
 
     body.g-sidenav-show::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        z-index: 1040;
-        background: rgba(15, 23, 42, 0);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.22s ease, background 0.22s ease;
+        display: none !important;
+        content: none !important;
     }
 
-    body.g-sidenav-show.g-sidenav-pinned::before {
-        background: rgba(15, 23, 42, 0.34);
+    .cashflow-sidenav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 1070;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        border: 0;
+        background: rgba(15, 23, 42, 0.52);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        cursor: pointer;
+        transition: opacity 0.22s ease, visibility 0s linear 0.22s;
+    }
+
+    body.g-sidenav-show.g-sidenav-pinned .cashflow-sidenav-backdrop,
+    body.cashflow-sidenav-open .cashflow-sidenav-backdrop {
         opacity: 1;
+        visibility: visible;
         pointer-events: auto;
+        transition: opacity 0.22s ease;
+    }
+
+    body.cashflow-sidenav-open {
+        overflow: hidden !important;
+        overscroll-behavior: none;
     }
 
     .sidenav.fixed-start {
         width: min(17.125rem, calc(100vw - 1.5rem));
-        max-height: calc(100vh - 1.5rem);
-        z-index: 1050;
-        margin: 0.75rem !important;
-        border-radius: 1rem !important;
-        overflow-y: auto;
+        height: 100vh;
+        height: 100dvh;
+        max-height: none;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        z-index: 1080;
+        margin: 0 !important;
+        border-radius: 0 1rem 1rem 0 !important;
+        overflow: hidden;
         -webkit-overflow-scrolling: touch;
         box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
         transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
     }
 
     .sidenav .sidenav-header {
+        position: relative;
+        flex: 0 0 auto;
         min-height: auto;
         height: auto;
         padding-bottom: 0.5rem;
+    }
+
+    .sidenav .sidenav-header .navbar-brand {
+        min-height: 4.875rem;
+        display: flex;
+        align-items: center;
+        padding-right: 3.75rem;
+    }
+
+    .sidenav #sidenav-collapse-main {
+        display: block !important;
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 1rem;
+    }
+
+    .cashflow-sidenav-close {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        z-index: 2;
+        width: 44px;
+        height: 44px;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 0;
+        border-radius: 0.85rem;
+        background: rgba(255, 255, 255, 0.14);
+        font-size: 1.1rem;
+        opacity: 0.9;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .cashflow-sidenav-close:hover,
+    .cashflow-sidenav-close:focus-visible {
+        background: rgba(255, 255, 255, 0.24);
+        outline: 2px solid rgba(255, 255, 255, 0.72);
+        outline-offset: 2px;
     }
 
     .sidenav .navbar-nav .nav-link {

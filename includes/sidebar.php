@@ -6,8 +6,12 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
     class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3 bg-gradient-faded-info"
     id="sidenav-main">
     <div class="sidenav-header">
-        <i class="fa fa-times p-3 cursor-pointer text-white opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
-            aria-hidden="true" id="iconSidenav"></i>
+        <button type="button"
+            class="cashflow-sidenav-close cursor-pointer text-white d-xl-none"
+            id="iconSidenav"
+            aria-label="Tutup menu navigasi">
+            <i class="fa fa-times" aria-hidden="true"></i>
+        </button>
         <a class="navbar-brand m-0" href="home">
             <img src="assets/img/logocv.jpg" class="navbar-brand-img h-100" alt="main_logo">
             <span class="ms-1 font-weight-bold text-white" translate="no" style="font-size: 12px;">CashFlow
@@ -166,3 +170,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
         </ul>
     </div>
 </aside>
+<button type="button"
+    class="cashflow-sidenav-backdrop"
+    data-cashflow-sidenav-backdrop
+    aria-label="Tutup menu navigasi"
+    tabindex="-1"></button>

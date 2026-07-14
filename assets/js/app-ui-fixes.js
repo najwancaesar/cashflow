@@ -143,7 +143,6 @@
             '#iconNavbarSidenav',
             '#iconSidenav'
         ].join(',');
-        var sidebarToggle = document.getElementById('iconNavbarSidenav');
 
         function clearTapState(element) {
             if (!element) {
@@ -153,17 +152,6 @@
             window.setTimeout(function () {
                 element.classList.remove('cashflow-tap-active');
             }, 140);
-        }
-
-        function syncSidebarState() {
-            if (!sidebarToggle) {
-                return;
-            }
-
-            sidebarToggle.classList.toggle(
-                'cashflow-sidebar-open',
-                document.body.classList.contains('g-sidenav-pinned')
-            );
         }
 
         document.addEventListener('pointerdown', function (event) {
@@ -184,13 +172,77 @@
             clearTapState(event.target.closest(tapSelector));
         }, true);
 
-        document.addEventListener('click', function (event) {
-            if (event.target.closest('#iconNavbarSidenav, #iconSidenav')) {
-                window.setTimeout(syncSidebarState, 40);
-            }
-        }, true);
+    }
 
-        window.addEventListener('resize', syncSidebarState);
+    function setupMobileSidebar() {
+        var body = document.body;
+        var sidenav = document.getElementById('sidenav-main');
+        var sidebarToggle = document.getElementById('iconNavbarSidenav');
+        var sidebarClose = document.getElementById('iconSidenav');
+        var backdrop = document.querySelector('[data-cashflow-sidenav-backdrop]');
+
+        if (!body || !sidenav || !sidebarToggle || !backdrop) {
+            return;
+        }
+
+        function isMobileSidebar() {
+            return window.innerWidth < 1200;
+        }
+
+        function syncSidebarState() {
+            var isOpen = isMobileSidebar() && body.classList.contains('g-sidenav-pinned');
+
+            if (body.classList.contains('cashflow-sidenav-open') !== isOpen) {
+                body.classList.toggle('cashflow-sidenav-open', isOpen);
+            }
+            sidebarToggle.classList.toggle('cashflow-sidebar-open', isOpen);
+            sidebarToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            sidebarToggle.setAttribute('aria-label', isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi');
+            backdrop.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+        }
+
+        function closeSidebar(restoreFocus) {
+            body.classList.remove('g-sidenav-pinned', 'cashflow-sidenav-open');
+            syncSidebarState();
+
+            if (restoreFocus) {
+                safeFocus(sidebarToggle);
+            }
+        }
+
+        sidebarToggle.addEventListener('click', function () {
+            window.setTimeout(syncSidebarState, 0);
+        });
+
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', function () {
+                window.setTimeout(function () {
+                    closeSidebar(true);
+                }, 0);
+            });
+        }
+
+        backdrop.addEventListener('click', function () {
+            closeSidebar(true);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && body.classList.contains('cashflow-sidenav-open')) {
+                event.preventDefault();
+                closeSidebar(true);
+            }
+        });
+
+        var classObserver = new MutationObserver(syncSidebarState);
+        classObserver.observe(body, { attributes: true, attributeFilter: ['class'] });
+
+        window.addEventListener('resize', function () {
+            if (!isMobileSidebar()) {
+                body.classList.remove('g-sidenav-pinned', 'cashflow-sidenav-open');
+            }
+            syncSidebarState();
+        });
+
         syncSidebarState();
     }
 
@@ -261,4 +313,5 @@
     setupDataTableToolbars();
     setupResponsiveTables();
     setupMobileMicroInteractions();
+    setupMobileSidebar();
 })();
