@@ -310,7 +310,7 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
                                         <th>Jumlah Pemasukan</th>
                                         <th>Wallet</th>
                                         <th>Status</th>
-                                        <th class="cashflow-action-col">Aksi</th>
+                                        <th class="cashflow-action-col" style="width: 1%; white-space: nowrap;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>

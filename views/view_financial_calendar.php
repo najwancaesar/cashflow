@@ -97,42 +97,50 @@ sort($calendarYears);
                         <input type="hidden" name="module" value="kalender_keuangan">
                         <div>
                             <label for="calendarMonth" class="form-label">Bulan</label>
-                            <select id="calendarMonth" name="bulan" class="form-control">
-                                <?php foreach ($calendarMonths as $monthNumber => $monthName) { ?>
-                                    <option value="<?= (int) $monthNumber ?>" <?= $selectedMonth === $monthNumber ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($monthName, ENT_QUOTES, 'UTF-8') ?>
-                                    </option>
-                                <?php } ?>
-                            </select>
+                            <div class="input-group input-group-outline">
+                                <select id="calendarMonth" name="bulan" class="form-control">
+                                    <?php foreach ($calendarMonths as $monthNumber => $monthName) { ?>
+                                        <option value="<?= (int) $monthNumber ?>" <?= $selectedMonth === $monthNumber ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($monthName, ENT_QUOTES, 'UTF-8') ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label for="calendarYear" class="form-label">Tahun</label>
-                            <select id="calendarYear" name="tahun" class="form-control">
-                                <?php foreach ($calendarYears as $year) { ?>
-                                    <option value="<?= (int) $year ?>" <?= $selectedYear === $year ? 'selected' : '' ?>><?= (int) $year ?></option>
-                                <?php } ?>
-                            </select>
+                            <div class="input-group input-group-outline">
+                                <select id="calendarYear" name="tahun" class="form-control">
+                                    <?php foreach ($calendarYears as $year) { ?>
+                                        <option value="<?= (int) $year ?>" <?= $selectedYear === $year ? 'selected' : '' ?>><?= (int) $year ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label for="calendarType" class="form-label">Jenis</label>
-                            <select id="calendarType" name="jenis" class="form-control">
-                                <option value="all" <?= $selectedType === 'all' ? 'selected' : '' ?>>Semua Jenis</option>
-                                <option value="hutang" <?= $selectedType === 'hutang' ? 'selected' : '' ?>>Utang</option>
-                                <option value="piutang" <?= $selectedType === 'piutang' ? 'selected' : '' ?>>Piutang</option>
-                                <option value="recurring" <?= $selectedType === 'recurring' ? 'selected' : '' ?>>Recurring</option>
-                                <option value="saving_goal" <?= $selectedType === 'saving_goal' ? 'selected' : '' ?>>Celengan</option>
-                            </select>
+                            <div class="input-group input-group-outline">
+                                <select id="calendarType" name="jenis" class="form-control">
+                                    <option value="all" <?= $selectedType === 'all' ? 'selected' : '' ?>>Semua Jenis</option>
+                                    <option value="hutang" <?= $selectedType === 'hutang' ? 'selected' : '' ?>>Utang</option>
+                                    <option value="piutang" <?= $selectedType === 'piutang' ? 'selected' : '' ?>>Piutang</option>
+                                    <option value="recurring" <?= $selectedType === 'recurring' ? 'selected' : '' ?>>Recurring</option>
+                                    <option value="saving_goal" <?= $selectedType === 'saving_goal' ? 'selected' : '' ?>>Celengan</option>
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label for="calendarStatus" class="form-label">Status</label>
-                            <select id="calendarStatus" name="status" class="form-control">
-                                <option value="all" <?= $selectedStatus === 'all' ? 'selected' : '' ?>>Semua Status</option>
-                                <option value="overdue" <?= $selectedStatus === 'overdue' ? 'selected' : '' ?>>Terlambat</option>
-                                <option value="today" <?= $selectedStatus === 'today' ? 'selected' : '' ?>>Hari Ini</option>
-                                <option value="next7" <?= $selectedStatus === 'next7' ? 'selected' : '' ?>>7 Hari ke Depan</option>
-                                <option value="upcoming" <?= $selectedStatus === 'upcoming' ? 'selected' : '' ?>>Mendatang</option>
-                                <option value="no_due" <?= $selectedStatus === 'no_due' ? 'selected' : '' ?>>Tanpa Jatuh Tempo</option>
-                            </select>
+                            <div class="input-group input-group-outline">
+                                <select id="calendarStatus" name="status" class="form-control">
+                                    <option value="all" <?= $selectedStatus === 'all' ? 'selected' : '' ?>>Semua Status</option>
+                                    <option value="overdue" <?= $selectedStatus === 'overdue' ? 'selected' : '' ?>>Terlambat</option>
+                                    <option value="today" <?= $selectedStatus === 'today' ? 'selected' : '' ?>>Hari Ini</option>
+                                    <option value="next7" <?= $selectedStatus === 'next7' ? 'selected' : '' ?>>7 Hari ke Depan</option>
+                                    <option value="upcoming" <?= $selectedStatus === 'upcoming' ? 'selected' : '' ?>>Mendatang</option>
+                                    <option value="no_due" <?= $selectedStatus === 'no_due' ? 'selected' : '' ?>>Tanpa Jatuh Tempo</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="calendar-filter-actions">
                             <button type="submit" class="btn btn-info mb-0">Tampilkan</button>

@@ -114,10 +114,9 @@ $sql = $stmtPiutang->get_result();
 										Catatan
 									</th>
 									<th>Jatuh Tempo</th>
-									<th>Status Jatuh Tempo</th>
 									<th>User</th>
 									<th>Status</th>
-									<th class="cashflow-action-col">Aksi</th>
+									<th class="cashflow-action-col" style="width: 1%; white-space: nowrap;">Aksi</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -144,11 +143,6 @@ $sql = $stmtPiutang->get_result();
 								<td data-order="<?= htmlspecialchars((string) ($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
 									<p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_piutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
-									<td class="align-middle text-center text-sm">
-										<span class="badge badge-sm <?= htmlspecialchars($dueBadge['class'], ENT_QUOTES, 'UTF-8') ?>">
-											<?= htmlspecialchars($dueBadge['label'], ENT_QUOTES, 'UTF-8') ?>
-										</span>
-									</td>
 									<td>
 										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
@@ -169,14 +163,14 @@ $sql = $stmtPiutang->get_result();
 											<?php } ?>
 										<?php } else { ?>
 											<button type="button"
-												class="badge badge-sm bg-gradient-warning border-0 text-white btnlunaspiutang"
+												class="badge badge-sm <?= htmlspecialchars($dueBadge['class'], ENT_QUOTES, 'UTF-8') ?> border-0 text-white btnlunaspiutang"
 												data-bs-toggle="modal"
 												data-bs-target="#modalLunasPiutang"
 												data-id="<?= (int) $row['id_piutang'] ?>"
 												data-debitur="<?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?>"
 											data-jumlah="<?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>"
 												<?= !$hasActiveWallet ? 'disabled' : '' ?>>
-												Pending
+												<?= htmlspecialchars($dueBadge['label'], ENT_QUOTES, 'UTF-8') ?>
 											</button>
 											<?php if (!$hasActiveWallet) { ?>
 												<small class="d-block text-xs text-danger mt-1">Buat/aktifkan wallet terlebih dahulu.</small>
