@@ -219,7 +219,8 @@ $userYangSedangLogin = (int) ($_SESSION["id_user"] ?? 0);
 $isAdmin = strtolower((string) ($_SESSION['role'] ?? '')) === 'admin';
 
 if ($userYangSedangLogin <= 0) {
-    die("User tidak terdeteksi dalam session.");
+    header('Location: login.php');
+    exit;
 }
 
 $walletCustomTypeMap = $isAdmin ? [] : cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);

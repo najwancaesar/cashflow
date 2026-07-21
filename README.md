@@ -64,19 +64,11 @@ saldo awal
 6. Pastikan extension PHP `mysqli`, `mbstring`, dan `fileinfo` aktif.
 7. Buka aplikasi dari URL lokal yang dipetakan ke folder project.
 
-Custom tipe wallet membutuhkan migration manual berikut setelah backup database dibuat:
+Schema default sudah mencakup hasil seluruh migration yang pernah dijalankan (custom tipe wallet, kolom archive, dan ENUM `kartu`). Fresh install cukup satu langkah import tanpa migration manual tambahan.
 
-```text
-database/migrations/20260714_sprint1_wallet_type_up.sql
-```
+File migration di `database/migrations/` tetap dipertahankan di repo sebagai riwayat perubahan schema dan opsi rollback jika diperlukan.
 
-Rollback tersedia di:
-
-```text
-database/migrations/20260714_sprint1_wallet_type_down.sql
-```
-
-Migration tidak dijalankan otomatis oleh aplikasi. Wallet legacy tetap valid karena relasi tipe kustom bersifat nullable dan kolom `tipe_wallet` lama tetap dipertahankan.
+Clean URL via `.htaccess` bersifat opsional — navigasi utama sidebar berfungsi langsung melalui `main.php?module=xxx` tanpa ketergantungan pada `mod_rewrite`.
 
 ### Struktur folder
 
@@ -93,22 +85,22 @@ index.php             entry point publik
 
 ### Known limitations
 
-- Migration custom tipe wallet harus dijalankan manual oleh administrator database.
-- Aplikasi belum menyediakan archive/reversal transaksi dan proses tutup buku.
+- Custom tipe wallet yang sudah dibuat user tidak diikutkan dalam backup SQL per user (hanya schema-level).
+- Backend archive transaksi (`aksi_archive.php`, `archive_helper.php`) sudah tersedia di server, namun UI untuk mengarsipkan transaksi belum diekspos ke user — transaksi tidak dapat diarsipkan dari antarmuka saat ini.
 - Tidak ada background worker; recurring digenerate melalui flow aplikasi yang tersedia.
 - File foto profil tidak termasuk di dalam backup SQL.
 - Pengujian browser lintas perangkat tetap diperlukan setelah perubahan CSS/JavaScript.
 
 ### Roadmap
 
-- Sprint 2: archive dan reversal yang aman.
+- Sprint 2: archive dan reversal yang aman (backend siap, UI belum diekspos).
 - Sprint 3: tutup buku serta rekonsiliasi periode.
-- Sprint 4: insight dashboard, kalender, dan health monitoring admin.
+- Sprint 4: insight dashboard yang lebih detail dan health monitoring admin.
+- Kalender Keuangan: ✅ selesai — tersedia di sidebar menu `Kalender Keuangan`.
 
 ---
 
 <div align="center">
-
 # 💸 CashFlow Control
 
 ### Personal finance dashboard built with PHP Native, MySQL/MariaDB, DataTables, SweetAlert, and TCPDF.
@@ -210,6 +202,7 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
 | 🔁 **Transfer Wallet** | Transfer saldo antar wallet dengan validasi saldo, status, dan riwayat transfer. |
 | 🐷 **Celengan Virtual** | Target tabungan, setor/tarik via wallet, progress, arsip, dan riwayat mutasi. |
 | 🔄 **Recurring Transaction** | Kelola transaksi berulang untuk pemasukan/pengeluaran rutin. |
+| 📅 **Kalender Keuangan** | Tampilan kalender bulanan transaksi pemasukan dan pengeluaran per hari. |
 | 🤝 **Hutang & Piutang** | Pencatatan hutang/piutang, jatuh tempo, nominal, dan status pelunasan. |
 | 📄 **Laporan** | Laporan pemasukan, pengeluaran, hutang, piutang, transfer, dan celengan dengan preview/PDF/CSV. |
 | 💾 **Backup Data** | Backup data per user dalam format SQL restore-ready untuk dipindahkan ke device lain. |
@@ -625,7 +618,7 @@ Gunakan checklist ini setelah setup:
 | Foto profil tidak tampil setelah restore | Copy file gambar dari `assets/img/profil/` secara manual ke device tujuan. |
 | Export PDF error | Pastikan folder `tcpdf/` tersedia dan path laporan tidak berubah. |
 | Tampilan CSS/JS belum berubah | Hard refresh browser atau aktifkan Disable Cache di DevTools. |
-| Clean URL tidak jalan | Pastikan `.htaccess` tersedia dan Apache `mod_rewrite` aktif. |
+| Clean URL tidak jalan | Navigasi sidebar utama tidak bergantung pada clean URL dan berfungsi langsung via `main.php?module=xxx`. Jika ingin clean URL, pastikan `.htaccess` tersedia dan Apache `mod_rewrite` aktif. |
 | Upload foto gagal | Pastikan ukuran file sesuai limit dan folder upload bisa ditulis. |
 
 ---

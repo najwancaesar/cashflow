@@ -45,10 +45,13 @@ CREATE TABLE
     `id_wallet_pembayaran` int (11) DEFAULT NULL,
     `id_pengeluaran` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
+    `archived_at` datetime DEFAULT NULL,
+    `archived_by` int (11) DEFAULT NULL,
     PRIMARY KEY (`id_hutang`),
     KEY `idx_hutang_wallet_pembayaran` (`id_wallet_pembayaran`),
     UNIQUE KEY `uniq_hutang_pengeluaran` (`id_pengeluaran`),
-    KEY `idx_hutang_user_status` (`user`, `status`)
+    KEY `idx_hutang_user_status` (`user`, `status`),
+    KEY `idx_hutang_user_archive` (`user`, `archived_at`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 16 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -661,10 +664,13 @@ CREATE TABLE
     `id_kategori` int (11) DEFAULT NULL,
     `id_wallet` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
+    `archived_at` datetime DEFAULT NULL,
+    `archived_by` int (11) DEFAULT NULL,
     PRIMARY KEY (`id_pemasukan`),
     KEY `idx_pemasukan_user` (`user`),
     KEY `idx_pemasukan_kategori` (`id_kategori`),
-    KEY `idx_pemasukan_wallet` (`id_wallet`)
+    KEY `idx_pemasukan_wallet` (`id_wallet`),
+    KEY `idx_pemasukan_user_archive` (`user`, `archived_at`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 44 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -826,10 +832,13 @@ CREATE TABLE
     `id_kategori` int (11) DEFAULT NULL,
     `id_wallet` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
+    `archived_at` datetime DEFAULT NULL,
+    `archived_by` int (11) DEFAULT NULL,
     PRIMARY KEY (`id_pengeluaran`),
     KEY `idx_pengeluaran_user` (`user`),
     KEY `idx_pengeluaran_kategori` (`id_kategori`),
-    KEY `idx_pengeluaran_wallet` (`id_wallet`)
+    KEY `idx_pengeluaran_wallet` (`id_wallet`),
+    KEY `idx_pengeluaran_user_archive` (`user`, `archived_at`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 30 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -921,10 +930,13 @@ CREATE TABLE
     `id_wallet_penerimaan` int (11) DEFAULT NULL,
     `id_pemasukan` int (11) DEFAULT NULL,
     `status` enum ('pending', 'selesai') NOT NULL,
+    `archived_at` datetime DEFAULT NULL,
+    `archived_by` int (11) DEFAULT NULL,
     PRIMARY KEY (`id_piutang`),
     KEY `idx_piutang_wallet_penerimaan` (`id_wallet_penerimaan`),
     UNIQUE KEY `uniq_piutang_pemasukan` (`id_pemasukan`),
-    KEY `idx_piutang_user_status` (`user`, `status`)
+    KEY `idx_piutang_user_status` (`user`, `status`),
+    KEY `idx_piutang_user_archive` (`user`, `archived_at`)
   ) ENGINE = InnoDB AUTO_INCREMENT = 19 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1197,6 +1209,28 @@ CREATE TABLE
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 --
+-- Table structure for table `wallet_type` (Sprint 1 - custom tipe wallet)
+-- Sudah termasuk dalam schema default sejak sprint1_wallet_type migration.
+--
+CREATE TABLE IF NOT EXISTS `wallet_type` (
+  `id_wallet_type` INT(11) NOT NULL AUTO_INCREMENT,
+  `user_id` INT(11) NOT NULL,
+  `nama_tipe` VARCHAR(50) NOT NULL,
+  `icon` VARCHAR(32) NOT NULL DEFAULT 'credit-card',
+  `warna` CHAR(7) NOT NULL DEFAULT '#64748B',
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_wallet_type`),
+  UNIQUE KEY `uniq_wallet_type_user_name` (`user_id`, `nama_tipe`),
+  UNIQUE KEY `uniq_wallet_type_owner` (`id_wallet_type`, `user_id`),
+  KEY `idx_wallet_type_user_active` (`user_id`, `is_active`),
+  CONSTRAINT `fk_wallet_type_user`
+    FOREIGN KEY (`user_id`) REFERENCES `user` (`id_user`)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
 -- Table structure for table `wallet`
 --
 DROP TABLE IF EXISTS `wallet`;
@@ -1210,7 +1244,8 @@ CREATE TABLE
     `id_wallet` int (11) NOT NULL AUTO_INCREMENT,
     `user_id` int (11) NOT NULL,
     `nama_wallet` varchar(100) NOT NULL,
-    `tipe_wallet` enum ('cash', 'bank', 'e_wallet', 'tabungan', 'lainnya') NOT NULL DEFAULT 'lainnya',
+    `tipe_wallet` enum ('cash', 'bank', 'e_wallet', 'tabungan', 'kartu', 'lainnya') NOT NULL DEFAULT 'lainnya',
+    `id_wallet_type` int (11) DEFAULT NULL,
     `saldo_awal` decimal(15, 2) NOT NULL DEFAULT 0.00,
     `is_default` tinyint (1) NOT NULL DEFAULT 0,
     `is_active` tinyint (1) NOT NULL DEFAULT 1,
@@ -1219,7 +1254,12 @@ CREATE TABLE
     PRIMARY KEY (`id_wallet`),
     KEY `idx_wallet_user` (`user_id`),
     KEY `idx_wallet_user_active` (`user_id`, `is_active`),
-    UNIQUE KEY `uniq_wallet_user_name` (`user_id`, `nama_wallet`)
+    UNIQUE KEY `uniq_wallet_user_name` (`user_id`, `nama_wallet`),
+    KEY `idx_wallet_custom_type_owner` (`id_wallet_type`, `user_id`),
+    CONSTRAINT `fk_wallet_custom_type_owner`
+      FOREIGN KEY (`id_wallet_type`, `user_id`)
+      REFERENCES `wallet_type` (`id_wallet_type`, `user_id`)
+      ON UPDATE CASCADE ON DELETE RESTRICT
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1287,12 +1327,15 @@ CREATE TABLE
     `status` enum ('pending', 'selesai', 'batal') NOT NULL DEFAULT 'selesai',
     `created_at` datetime NOT NULL DEFAULT current_timestamp(),
     `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+    `archived_at` datetime DEFAULT NULL,
+    `archived_by` int (11) DEFAULT NULL,
     PRIMARY KEY (`id_transfer`),
     KEY `idx_transfer_user` (`user_id`),
     KEY `idx_transfer_tanggal` (`tanggal`),
     KEY `idx_transfer_wallet_asal` (`wallet_asal_id`),
     KEY `idx_transfer_wallet_tujuan` (`wallet_tujuan_id`),
-    KEY `idx_transfer_status` (`status`)
+    KEY `idx_transfer_status` (`status`),
+    KEY `idx_transfer_user_archive` (`user_id`, `archived_at`)
   ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE

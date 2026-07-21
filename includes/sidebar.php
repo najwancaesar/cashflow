@@ -12,7 +12,7 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             aria-label="Tutup menu navigasi">
             <i class="fa fa-times" aria-hidden="true"></i>
         </button>
-        <a class="navbar-brand m-0" href="home">
+        <a class="navbar-brand m-0" href="main.php?module=home">
             <img src="assets/img/logocv.jpg" class="navbar-brand-img h-100" alt="main_logo">
             <span class="ms-1 font-weight-bold text-white" translate="no" style="font-size: 12px;">CashFlow
                 Control</span>
@@ -23,8 +23,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
         <ul class="navbar-nav">
             <li class="nav-item">
                 <a class="nav-link text-white <?php if (in_array($module, ['home', 'dashboard'], true)) {
-													echo 'active bg-gradient-warning';
-												} ?>" href="home">
+								echo 'active bg-gradient-warning';
+							} ?>" href="main.php?module=home">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-dashboard" aria-hidden="true"></i>
                     </div>
@@ -37,8 +37,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'wallet') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="wallet">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=wallet">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-credit-card" aria-hidden="true"></i>
                     </div>
@@ -47,8 +47,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'transfer_wallet') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="transfer_wallet">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=transfer_wallet">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-exchange" aria-hidden="true"></i>
                     </div>
@@ -57,8 +57,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'saving_goal') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="saving_goal">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=saving_goal">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-bullseye" aria-hidden="true"></i>
                     </div>
@@ -67,8 +67,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'recurring') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="recurring">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=recurring">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-refresh" aria-hidden="true"></i>
                     </div>
@@ -76,9 +76,19 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link text-white <?php if ($module == 'kalender_keuangan') {
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=kalender_keuangan">
+                    <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
+                        <i class="fa fa-calendar" aria-hidden="true"></i>
+                    </div>
+                    <span class="nav-link-text ms-1">Kalender Keuangan</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'pemasukan') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="pemasukan">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=pemasukan">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-arrow-circle-down" aria-hidden="true"></i>
                     </div>
@@ -87,8 +97,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'pengeluaran') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="pengeluaran">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=pengeluaran">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-arrow-circle-up" aria-hidden="true"></i>
                     </div>
@@ -97,8 +107,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'kategori') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="kategori">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=kategori">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-tags" aria-hidden="true"></i>
                     </div>
@@ -107,8 +117,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'hutang') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="hutang">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=hutang">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-minus-circle" aria-hidden="true"></i>
                     </div>
@@ -117,8 +127,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'piutang') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="piutang">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=piutang">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-handshake-o" aria-hidden="true"></i>
                     </div>
@@ -130,8 +140,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'laporan') {
-													echo 'active bg-gradient-warning';
-												} ?>" href="laporan">
+							echo 'active bg-gradient-warning';
+						} ?>" href="main.php?module=laporan">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-file-text-o" aria-hidden="true"></i>
                     </div>
@@ -146,8 +156,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'pengguna') {
-														echo 'active bg-gradient-warning';
-													} ?>" href="pengguna">
+								echo 'active bg-gradient-warning';
+							} ?>" href="main.php?module=pengguna">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-users" aria-hidden="true"></i>
                     </div>
@@ -156,8 +166,8 @@ $isAdmin = strtolower($_SESSION['role'] ?? '') === 'admin';
             </li>
             <li class="nav-item">
                 <a class="nav-link text-white <?php if ($module == 'audit_log') {
-														echo 'active bg-gradient-warning';
-													} ?>" href="main.php?module=audit_log">
+								echo 'active bg-gradient-warning';
+							} ?>" href="main.php?module=audit_log">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                         <i class="fa fa-history" aria-hidden="true"></i>
                     </div>
