@@ -1,6 +1,7 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
@@ -16,11 +17,6 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $tanggalHariIni = date('Y-m-d');
-
-function saving_goal_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
 
 function saving_goal_format_date($value)
 {
@@ -94,10 +90,10 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                     <td>
                         <p class="text-xs font-weight-bold mb-1"><?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?></p>
                         <p class="text-xs text-secondary mb-0">
-                            <?= saving_goal_rupiah($saldoTerkumpul) ?> dari <?= saving_goal_rupiah($targetNominal) ?>
+                            <?= cashflow_format_rupiah($saldoTerkumpul) ?> dari <?= cashflow_format_rupiah($targetNominal) ?>
                         </p>
                     </td>
-                    <td style="min-width: 180px;">
+                    <td data-order="<?= htmlspecialchars((string) $progressRaw, ENT_QUOTES, 'UTF-8') ?>" style="min-width: 180px;">
                         <div class="d-flex align-items-center">
                             <span class="text-xs font-weight-bold me-2"><?= number_format($progressRaw, 1) ?>%</span>
                             <div class="progress w-100">
@@ -108,7 +104,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                             </div>
                         </div>
                     </td>
-                    <td>
+                    <td data-order="<?= htmlspecialchars((string) ($row['target_tanggal'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                         <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(saving_goal_format_date($row['target_tanggal']), ENT_QUOTES, 'UTF-8') ?></p>
                     </td>
                     <td>
@@ -288,7 +284,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                                         <?php } ?>
                                                     </p>
                                                 </td>
-                                                <td><p class="text-xs font-weight-bold mb-0"><?= saving_goal_rupiah($mutasi['jumlah']) ?></p></td>
+                                                <td><p class="text-xs font-weight-bold mb-0"><?= cashflow_format_rupiah($mutasi['jumlah']) ?></p></td>
                                                 <td class="cashflow-long-text-col"><p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($mutasi['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p></td>
                                             </tr>
                                         <?php } ?>
@@ -447,7 +443,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Saldo Terkumpul</p>
-                        <h4 class="mb-0"><?= saving_goal_rupiah($totalSaldoAktif) ?></h4>
+                        <h4 class="mb-0"><?= cashflow_format_rupiah($totalSaldoAktif) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -467,7 +463,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
-                    <p class="mb-0 text-sm text-secondary">Dari target <?= saving_goal_rupiah($totalTargetAktif) ?></p>
+                    <p class="mb-0 text-sm text-secondary">Dari target <?= cashflow_format_rupiah($totalTargetAktif) ?></p>
                 </div>
             </div>
         </div>
@@ -708,7 +704,8 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                     columnDefs: [
                         { targets: -1, orderable: false, searchable: false }
                     ],
-                    dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+                    order: [[0, 'asc']],
+                    dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
                 });
             }
         });

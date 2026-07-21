@@ -18,11 +18,6 @@ $userYangSedangLogin = (int) $_SESSION['id_user'];
 $tanggalHariIni = date('Y-m-d');
 $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 
-function transfer_wallet_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
-
 function transfer_wallet_status_badge($status)
 {
     return cashflow_status_badge_class($status);
@@ -98,14 +93,11 @@ mysqli_stmt_close($transferStmt);
                             Transfer wallet membutuhkan minimal 2 wallet aktif.
                         </div>
                     <?php } ?>
-                    <div class="cashflow-toolbar-panel mt-3">
-                        <div id="transferDataTableControls" class="cashflow-toolbar-group cashflow-toolbar-data"></div>
-                        <div class="cashflow-toolbar-group cashflow-toolbar-actions">
-                            <button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal"
-                                data-bs-target="#modalTransferWallet" <?= $transferFormDisabled ? 'disabled' : '' ?>>
-                                <i class="fa fa-exchange" aria-hidden="true"></i> Tambah Transfer
-                            </button>
-                        </div>
+                    <div class="cashflow-table-page-actions">
+                        <button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal"
+                            data-bs-target="#modalTransferWallet" <?= $transferFormDisabled ? 'disabled' : '' ?>>
+                            <i class="fa fa-exchange" aria-hidden="true"></i> Tambah Transfer
+                        </button>
                     </div>
                     <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <?php if (empty($transferRows)) { ?>
@@ -136,7 +128,7 @@ mysqli_stmt_close($transferStmt);
                                         $walletTujuanTypeMeta = cashflow_wallet_type_meta_for_wallet($row['tipe_wallet_tujuan'], $row['wallet_tujuan_id'], $walletCustomTypeMap);
                                         ?>
                                         <tr>
-                                            <td class="align-middle text-center">
+                                            <td class="align-middle text-center" data-order="<?= htmlspecialchars((string) $row['tanggal'], ENT_QUOTES, 'UTF-8') ?>">
                                                 <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars(cashflow_format_date($row['tanggal']), ENT_QUOTES, 'UTF-8') ?></span>
                                             </td>
                                             <td>
@@ -147,7 +139,7 @@ mysqli_stmt_close($transferStmt);
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet_tujuan'], ENT_QUOTES, 'UTF-8') ?></p>
                                                 <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletTujuanTypeMeta) ?></p>
                                             </td>
-                                            <td>
+                                            <td data-order="<?= htmlspecialchars((string) $jumlahTransfer, ENT_QUOTES, 'UTF-8') ?>">
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($jumlahTransfer), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
@@ -199,8 +191,8 @@ mysqli_stmt_close($transferStmt);
                                                             data-confirm-confirm-text="Ya, hapus permanen"
                                                             data-confirm-cancel-text="Batal"
                                                             class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
-                                                            title="Hapus transfer pending" aria-label="Hapus transfer pending">
-                                                            <i class="fa fa-trash" aria-hidden="true"></i> Hapus Permanen
+                                                            title="Hapus" aria-label="Hapus">
+                                                            <i class="fa fa-trash" aria-hidden="true"></i> Hapus
                                                         </button>
                                                     </form>
                                                 <?php } ?>
@@ -316,12 +308,8 @@ mysqli_stmt_close($transferStmt);
                 columnDefs: [
                     { targets: -1, orderable: false, searchable: false }
                 ],
-                dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">',
-                initComplete: function() {
-                    $(this.api().table().container())
-                        .find('.cashflow-datatable-top')
-                        .appendTo('#transferDataTableControls');
-                }
+                order: [[0, 'desc']],
+                dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
         }
 

@@ -1,6 +1,7 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
@@ -92,14 +93,12 @@ $sql = $stmtHutang->get_result();
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
-                    <div class="cashflow-toolbar-panel mt-3">
-                        <div id="hutangDataTableControls" class="cashflow-toolbar-group cashflow-toolbar-data"></div>
-                        <div class="cashflow-toolbar-group cashflow-toolbar-actions">
-                            <button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal"
-                                data-bs-target="#modalTambah">
-                                <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
-                            </button>
-                        </div>
+                    <p class="cashflow-feature-description">Catat kewajiban yang harus dibayar. Pelunasan utang akan membuat pengeluaran pada wallet pembayaran yang dipilih.</p>
+                    <div class="cashflow-table-page-actions">
+                        <button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal"
+                            data-bs-target="#modalTambah">
+                            <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
+                        </button>
                     </div>
                     <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatable">
@@ -129,20 +128,20 @@ $sql = $stmtHutang->get_result();
                             ?>
 
                             <tr>
-                                <td class="align-middle text-center">
+                                <td class="align-middle text-center" data-order="<?= htmlspecialchars((string) $row['tanggal'], ENT_QUOTES, 'UTF-8') ?>">
                                     <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?></span>
                                 </td>
                                 <td>
                                     <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['kreditur'], ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
-                                <td>
-                                    <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
+                                <td data-order="<?= htmlspecialchars((string) ($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>">
+                                    <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>
                                     </p>
                                 </td>
                                 <td class="cashflow-long-text-col">
                                     <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
-                                <td>
+                                <td data-order="<?= htmlspecialchars((string) ($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                                     <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_hutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
                                 <td class="align-middle text-center text-sm">
@@ -175,7 +174,7 @@ $sql = $stmtHutang->get_result();
                                             data-bs-target="#modalLunasHutang"
                                             data-id="<?= (int) $row['id_hutang'] ?>"
                                             data-kreditur="<?= htmlspecialchars($row['kreditur'], ENT_QUOTES, 'UTF-8') ?>"
-                                            data-jumlah="Rp. <?= htmlspecialchars(number_format((float) ($row['jumlah'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"
+                                            data-jumlah="<?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>"
                                             <?= !$hasActiveWallet ? 'disabled' : '' ?>>
                                             Pending
                                         </button>
@@ -197,7 +196,7 @@ $sql = $stmtHutang->get_result();
                                             data-confirm-confirm-text="Ya, hapus"
                                             data-confirm-cancel-text="Batal"
                                             class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
-                                            title="Hapus utang pending" aria-label="Hapus utang pending">
+                                            title="Hapus" aria-label="Hapus">
                                             <i class="fa fa-trash" aria-hidden="true"></i>
                                         </button>
                                     </form>
@@ -357,12 +356,8 @@ $(document).ready(function() {
         columnDefs: [
             { targets: -1, orderable: false, searchable: false }
         ],
-        dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">',
-        initComplete: function() {
-            $(this.api().table().container())
-                .find('.cashflow-datatable-top')
-                .appendTo('#hutangDataTableControls');
-        }
+        order: [[0, 'desc']],
+        dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
     });
 
     $(document).on("click", ".btnedithutang", function() {

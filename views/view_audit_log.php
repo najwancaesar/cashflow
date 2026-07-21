@@ -366,7 +366,7 @@ if ($tableExists) {
                                         }
                                         ?>
                                         <tr>
-                                            <td>
+                                            <td data-order="<?= htmlspecialchars((string) $row['created_at'], ENT_QUOTES, 'UTF-8') ?>">
                                                 <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(audit_log_format_datetime($row['created_at']), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
@@ -405,7 +405,7 @@ if ($tableExists) {
 $(document).ready(function() {
     if ($('#datatableAuditLog').length) {
         $('#datatableAuditLog').DataTable({
-            order: [],
+            order: [[0, 'desc']],
             language: {
                 "paginate": {
                     "first": "&laquo",

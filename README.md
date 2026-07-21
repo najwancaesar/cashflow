@@ -141,7 +141,7 @@ Kelola pemasukan, pengeluaran, multi-wallet, transfer saldo, budget kategori, Ce
 
 **CashFlow Control** adalah aplikasi web untuk mencatat, memantau, dan mengelola arus kas pribadi secara terstruktur.
 
-Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangkan menjadi personal finance dashboard dengan fitur lengkap seperti **Multi-Wallet**, **Transfer Wallet**, **Budget per Kategori**, **Celengan Virtual**, **Recurring Transaction**, **Bulk Delete Desktop**, **Backup Data Per User**, dan **Laporan PDF/CSV**.
+Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangkan menjadi personal finance dashboard dengan fitur lengkap seperti **Multi-Wallet**, **Transfer Wallet**, **Budget per Kategori**, **Celengan Virtual**, **Recurring Transaction**, **Backup Data Per User**, dan **Laporan PDF/CSV**.
 
 > Cocok untuk penggunaan pribadi, pencatatan keuangan harian, monitoring saldo wallet, budgeting bulanan, backup data akun, dan rekap laporan keuangan lokal menggunakan XAMPP/Laragon.
 
@@ -156,8 +156,8 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
       <p>Catat pemasukan dan pengeluaran dengan kategori, wallet, status pending/selesai, catatan, dan nominal terformat.</p>
     </td>
     <td width="33%">
-      <h3>✅ Bulk Delete Desktop</h3>
-      <p>Hapus banyak transaksi pemasukan/pengeluaran sekaligus melalui checkbox khusus desktop/laptop agar tetap nyaman digunakan.</p>
+      <h3>✅ Aksi Transaksi Aman</h3>
+      <p>Penghapusan dilakukan satu per satu dan hanya tersedia untuk transaksi pending yang tidak memiliki relasi terlindungi.</p>
     </td>
     <td width="33%">
       <h3>🏦 Multi-Wallet</h3>
@@ -203,8 +203,8 @@ Project ini dibuat dengan **PHP Native** dan **MySQL/MariaDB**, lalu dikembangka
 | 🔐 **Auth & Role** | Login, register, session guard, role admin/user, SweetAlert welcome, dan logout confirmation. |
 | 🏠 **Dashboard User** | Ringkasan saldo, transaksi terbaru, insight wallet, budget, Quick Add, dan Celengan Virtual. |
 | 👥 **Dashboard Admin** | Monitoring dan manajemen data pengguna. |
-| 💵 **Pemasukan** | Tambah, edit, hapus, status transaksi, kategori, wallet tujuan, serta bulk delete desktop. |
-| 🧾 **Pengeluaran** | Tambah, edit, hapus, status transaksi, kategori, wallet sumber, serta bulk delete desktop. |
+| 💵 **Pemasukan** | Tambah, edit, hapus transaksi pending yang eligible, status transaksi, kategori, dan wallet tujuan. |
+| 🧾 **Pengeluaran** | Tambah, edit, hapus transaksi pending yang eligible, status transaksi, kategori, dan wallet sumber. |
 | 🏷️ **Kategori & Budget** | Kelola kategori pemasukan/pengeluaran dan budget bulanan kategori pengeluaran. |
 | 🏦 **Wallet** | Tambah/edit wallet, saldo awal, tipe wallet, default wallet, aktif/nonaktif wallet. |
 | 🔁 **Transfer Wallet** | Transfer saldo antar wallet dengan validasi saldo, status, dan riwayat transfer. |
@@ -408,14 +408,13 @@ Jika menggunakan clean URL via `.htaccess`, pastikan Apache module `mod_rewrite`
    - menu **Pemasukan**,
    - menu **Pengeluaran**,
    - atau **Quick Add** dari dashboard.
-5. Gunakan **Bulk Delete** pada desktop/laptop untuk menghapus beberapa pemasukan/pengeluaran sekaligus.
-6. Atur budget kategori pengeluaran melalui menu **Kategori**.
-7. Gunakan **Transfer Wallet** untuk memindahkan saldo antar wallet.
-8. Gunakan **Celengan Virtual** untuk target tabungan.
-9. Buat **Recurring Transaction** untuk transaksi rutin.
-10. Pantau ringkasan melalui dashboard.
-11. Cetak atau export laporan melalui menu **Laporan**.
-12. Backup data user melalui menu backup/admin jika ingin memindahkan data ke device lain.
+5. Atur budget kategori pengeluaran melalui menu **Kategori**.
+6. Gunakan **Transfer Wallet** untuk memindahkan saldo antar wallet.
+7. Gunakan **Celengan Virtual** untuk target tabungan.
+8. Buat **Recurring Transaction** untuk transaksi rutin.
+9. Pantau ringkasan melalui dashboard.
+10. Cetak atau export laporan melalui menu **Laporan**.
+11. Backup data user melalui menu backup/admin jika ingin memindahkan data ke device lain.
 
 ### 🛡️ Untuk Admin
 
@@ -440,22 +439,9 @@ Dashboard user menyediakan tombol cepat untuk:
 
 ---
 
-## ✅ Bulk Delete Transaksi
+## ✅ Penghapusan Transaksi
 
-Fitur bulk delete tersedia untuk halaman:
-
-- **Pemasukan**
-- **Pengeluaran**
-
-Cara kerja:
-
-1. Buka halaman pemasukan/pengeluaran melalui desktop/laptop.
-2. Centang transaksi yang ingin dihapus.
-3. Klik **Hapus Terpilih**.
-4. Konfirmasi melalui SweetAlert.
-5. Data yang dipilih akan dihapus jika lolos validasi user dan CSRF.
-
-> Fitur bulk delete sengaja difokuskan untuk desktop/tablet besar agar tampilan mobile tetap sederhana dan stabil. Di mobile, pengguna tetap dapat memakai tombol hapus satuan.
+Penghapusan pemasukan dan pengeluaran dilakukan satu per satu melalui kolom **Aksi**. Hanya transaksi pending biasa yang dapat dihapus. Transaksi selesai, transaksi linked, dan transaksi hasil recurring tetap dipertahankan untuk menjaga histori finansial.
 
 ---
 
@@ -581,7 +567,7 @@ Beberapa bagian aplikasi sudah dilengkapi hardening:
 - Prepared statement pada query penting.
 - CSRF protection untuk aksi mutasi.
 - Aksi hapus/status penting memakai POST.
-- Bulk delete memakai POST, CSRF, validasi ownership, dan prepared statement.
+- Penghapusan transaksi memakai POST, CSRF, validasi ownership/status/relasi, dan prepared statement.
 - Upload foto profil divalidasi berdasarkan ekstensi, MIME type, ukuran, dan nama file aman.
 - SweetAlert untuk konfirmasi aksi penting.
 - Password user disimpan sebagai hash, bukan plaintext.
@@ -598,8 +584,7 @@ CashFlow Control sudah dipoles agar lebih nyaman di HP:
 - Navbar hamburger/profile tetap mudah diakses.
 - Modal input dibuat lebih nyaman untuk layar kecil.
 - Tombol tambah transaksi dibuat full width pada mobile.
-- Bulk delete tidak ditampilkan di mobile agar UI tetap bersih.
-- Delete/edit satuan tetap tersedia untuk operasi transaksi di mobile.
+- Delete/edit satuan tetap tersedia untuk transaksi yang memenuhi aturan di mobile.
 
 ---
 
@@ -614,9 +599,9 @@ Gunakan checklist ini setelah setup:
 - [ ] Tambah pemasukan berhasil.
 - [ ] Tambah pengeluaran berhasil.
 - [ ] Edit saldo awal wallet menampilkan nominal yang sesuai.
-- [ ] Bulk delete pemasukan berjalan di desktop.
-- [ ] Bulk delete pengeluaran berjalan di desktop.
-- [ ] Tampilan mobile pemasukan/pengeluaran tetap rapi tanpa checkbox bulk.
+- [ ] Hapus manual pemasukan pending yang eligible berjalan.
+- [ ] Hapus manual pengeluaran pending yang eligible berjalan.
+- [ ] Tampilan mobile pemasukan/pengeluaran tetap rapi tanpa checkbox pemilihan.
 - [ ] Quick Add dashboard berjalan.
 - [ ] Transfer wallet memengaruhi saldo sesuai status.
 - [ ] Celengan Virtual bisa setor/tarik via wallet.
@@ -689,7 +674,7 @@ git push origin feature/nama-fitur
 
 ## 🧾 Lisensi
 
-Project ini menggunakan lisensi **MIT**.  
+Project ini menggunakan lisensi **MIT**.
 Silakan gunakan, pelajari, dan modifikasi sesuai kebutuhan.
 
 ---

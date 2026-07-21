@@ -5,11 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 
 function clean_input($data) {
-    global $con;
-    $data = trim($data);
-    $data = stripslashes($data);
-    $data = htmlspecialchars($data);
-    return mysqli_real_escape_string($con, $data);
+    return trim((string) $data);
 }
 
 function is_valid_tipe_kategori($tipeKategori) {
@@ -80,7 +76,7 @@ if ($act === 't') {
     }
 
     $idKategori = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== ''
-        ? (int) clean_input($_POST['id_kategori'])
+        ? (int) $_POST['id_kategori']
         : null;
     $namaKategori = clean_input($_POST['nama_kategori'] ?? '');
     $tipeKategori = clean_input($_POST['tipe_kategori'] ?? '');
@@ -139,7 +135,7 @@ if ($act === 'h') {
         show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=kategori');
     }
 
-    $idKategori = isset($_POST['id_kategori']) ? (int) clean_input($_POST['id_kategori']) : 0;
+    $idKategori = isset($_POST['id_kategori']) ? (int) $_POST['id_kategori'] : 0;
 
     if ($idKategori <= 0) {
         show_sweetalert_and_redirect('Gagal!', 'ID kategori tidak valid.', 'error', 'main.php?module=kategori');

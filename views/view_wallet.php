@@ -1,6 +1,7 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
@@ -16,17 +17,67 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 
-function format_wallet_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
-
 $walletRows = cashflow_get_user_wallet_balances($con, $userYangSedangLogin);
 $walletTypeFeatureReady = cashflow_wallet_type_schema_ready($con);
 $legacyWalletTypes = cashflow_selectable_legacy_wallet_types($con);
 $walletCardTypeReady = cashflow_wallet_legacy_type_supported($con, 'kartu');
 $customWalletTypes = cashflow_get_custom_wallet_types($con, $userYangSedangLogin, false);
 $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
+$walletHistoryMap = [];
+foreach ($walletRows as $walletRow) {
+    $walletHistoryMap[(int) $walletRow['id_wallet']] = 1;
+}
+$walletHistorySql = "SELECT wallet_relations.id_wallet, SUM(wallet_relations.total) AS total
+                     FROM (
+                         SELECT id_wallet, COUNT(*) AS total FROM pemasukan WHERE user = ? AND id_wallet IS NOT NULL GROUP BY id_wallet
+                         UNION ALL
+                         SELECT id_wallet, COUNT(*) AS total FROM pengeluaran WHERE user = ? AND id_wallet IS NOT NULL GROUP BY id_wallet
+                         UNION ALL
+                         SELECT wallet_asal_id AS id_wallet, COUNT(*) AS total FROM transfer_wallet WHERE user_id = ? GROUP BY wallet_asal_id
+                         UNION ALL
+                         SELECT wallet_tujuan_id AS id_wallet, COUNT(*) AS total FROM transfer_wallet WHERE user_id = ? GROUP BY wallet_tujuan_id
+                         UNION ALL
+                         SELECT id_wallet, COUNT(*) AS total FROM saving_goal_mutasi WHERE user_id = ? AND id_wallet IS NOT NULL GROUP BY id_wallet
+                         UNION ALL
+                         SELECT id_wallet, COUNT(*) AS total FROM recurring_transaction WHERE user_id = ? AND id_wallet IS NOT NULL GROUP BY id_wallet
+                         UNION ALL
+                         SELECT id_wallet_pembayaran AS id_wallet, COUNT(*) AS total FROM hutang WHERE user = ? AND id_wallet_pembayaran IS NOT NULL GROUP BY id_wallet_pembayaran
+                         UNION ALL
+                         SELECT id_wallet_penerimaan AS id_wallet, COUNT(*) AS total FROM piutang WHERE user = ? AND id_wallet_penerimaan IS NOT NULL GROUP BY id_wallet_penerimaan
+                     ) AS wallet_relations
+                     GROUP BY wallet_relations.id_wallet";
+$walletHistoryStmt = null;
+try {
+    $walletHistoryStmt = $con->prepare($walletHistorySql);
+    if (!$walletHistoryStmt) {
+        throw new RuntimeException('Wallet history query could not be prepared.');
+    }
+    $walletHistoryStmt->bind_param(
+        'iiiiiiii',
+        $userYangSedangLogin,
+        $userYangSedangLogin,
+        $userYangSedangLogin,
+        $userYangSedangLogin,
+        $userYangSedangLogin,
+        $userYangSedangLogin,
+        $userYangSedangLogin,
+        $userYangSedangLogin
+    );
+    if (!$walletHistoryStmt->execute()) {
+        throw new RuntimeException('Wallet history query failed.');
+    }
+    $walletHistoryMap = [];
+    $walletHistoryResult = $walletHistoryStmt->get_result();
+    while ($walletHistoryResult && ($walletHistoryRow = $walletHistoryResult->fetch_assoc())) {
+        $walletHistoryMap[(int) $walletHistoryRow['id_wallet']] = (int) $walletHistoryRow['total'];
+    }
+    $walletHistoryStmt->close();
+} catch (Throwable $error) {
+    if ($walletHistoryStmt instanceof mysqli_stmt) {
+        $walletHistoryStmt->close();
+    }
+    error_log('CashFlow wallet history map failed. Destructive wallet controls were disabled.');
+}
 ?>
 
 <div class="container-fluid py-4">
@@ -80,8 +131,8 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                         <?php
                                         $isDefault = (string) ($row['is_default'] ?? '0') === '1';
                                         $isActive = (string) ($row['is_active'] ?? '1') === '1';
+                                        $hasFinancialHistory = !empty($walletHistoryMap[(int) $row['id_wallet']]);
                                         $targetStatus = $isActive ? '0' : '1';
-                                        $targetStatusLabel = $isActive ? 'Nonaktif' : 'Aktif';
                                         $customWalletType = $walletCustomTypeMap[(int) $row['id_wallet']] ?? null;
                                         $walletTypeMeta = cashflow_wallet_type_meta($row['tipe_wallet'], $customWalletType);
                                         $walletTypeSelection = $walletTypeMeta['is_custom']
@@ -101,10 +152,10 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                     <?= htmlspecialchars(cashflow_wallet_type_text($walletTypeMeta), ENT_QUOTES, 'UTF-8') ?>
                                                 </span>
                                             </td>
-                                            <td>
-                                                <p class="text-xs font-weight-bold mb-0"><?= format_wallet_rupiah($row['saldo_terkini']) ?></p>
+                                            <td data-order="<?= htmlspecialchars((string) ($row['saldo_terkini'] ?? 0), ENT_QUOTES, 'UTF-8') ?>">
+                                                <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($row['saldo_terkini'] ?? 0), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
-                                            <td>
+                                            <td data-order="<?= htmlspecialchars((string) ($row['updated_at'] ?? $row['created_at']), ENT_QUOTES, 'UTF-8') ?>">
                                                 <span class="badge badge-sm <?= $isDefault ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
                                                     <?= $isDefault ? 'Default' : 'Bukan Default' ?>
                                                 </span>
@@ -120,63 +171,78 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                                 </p>
                                             </td>
                                             <td class="align-middle cashflow-action-col">
-                                                <div class="cashflow-action-group">
-                                                <a href="#" role="button"
-                                                    class="text-secondary text-warning font-weight-bold text-xs btneditwallet"
-                                                    data-id="<?= (int) $row['id_wallet'] ?>"
-                                                    data-nama="<?= htmlspecialchars($row['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-tipe="<?= htmlspecialchars($walletTypeSelection, ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-saldo="<?= htmlspecialchars(number_format((float) $row['saldo_awal'], 0, '', ''), ENT_QUOTES, 'UTF-8') ?>"
-                                                    title="Edit wallet" aria-label="Edit wallet">
-                                                    <i class="fa fa-pencil" aria-hidden="true"></i> Edit
-                                                </a>
-
-                                                <form action="actions/aksi_wallet.php?act=s" method="post" class="d-inline">
-                                                    <?= csrf_input() ?>
-                                                    <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
-                                                    <input type="hidden" name="value" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
-                                                    <button type="submit"
-                                                        data-confirm="true"
-                                                        data-confirm-title="<?= $isActive ? 'Nonaktifkan wallet ini?' : 'Aktifkan wallet ini?' ?>"
-                                                        data-confirm-text="<?= $isActive ? 'Wallet nonaktif tidak disiapkan untuk transaksi berikutnya.' : 'Wallet akan aktif kembali.' ?>"
-                                                        data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
-                                                        data-confirm-cancel-text="Batal"
-                                                        class="text-secondary <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2 border-0 bg-transparent p-0"
-                                                        title="<?= $isActive ? 'Nonaktifkan wallet' : 'Aktifkan wallet' ?>"
-                                                        aria-label="<?= $isActive ? 'Nonaktifkan wallet' : 'Aktifkan wallet' ?>">
-                                                        <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
-                                                        <?= $isActive ? 'NONAKTIFKAN' : 'AKTIFKAN' ?>
+                                                <div class="dropdown cashflow-row-action-dropdown">
+                                                    <button class="btn btn-outline-secondary btn-sm mb-0 cashflow-row-action-toggle dropdown-toggle"
+                                                        type="button" id="walletAction<?= (int) $row['id_wallet'] ?>"
+                                                        data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false"
+                                                        title="Buka aksi wallet" aria-label="Buka aksi wallet <?= htmlspecialchars($row['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>">
+                                                        <i class="fa fa-ellipsis-v" aria-hidden="true"></i> Aksi
                                                     </button>
-                                                </form>
-
-                                                <form action="actions/aksi_wallet.php?act=d" method="post" class="d-inline">
-                                                    <?= csrf_input() ?>
-                                                    <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
-                                                    <button type="submit"
-                                                        data-confirm="true"
-                                                        data-confirm-title="Jadikan wallet default?"
-                                                        data-confirm-text="Wallet ini akan menjadi wallet default akun Anda."
-                                                        data-confirm-confirm-text="Ya, jadikan default"
-                                                        data-confirm-cancel-text="Batal"
-                                                        class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0"
-                                                        title="Jadikan wallet default" aria-label="Jadikan wallet default">
-                                                        <i class="fa fa-star<?= $isDefault ? '' : '-o' ?>" aria-hidden="true"></i> Default
-                                                    </button>
-                                                </form>
-                                                <form action="actions/aksi_wallet.php?act=h" method="post" class="d-inline">
-                                                    <?= csrf_input() ?>
-                                                    <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
-                                                    <button type="submit"
-                                                        data-confirm="true"
-                                                        data-confirm-title="Hapus wallet ini?"
-                                                        data-confirm-text="Hanya wallet tanpa histori atau relasi finansial yang dapat dihapus permanen. Wallet yang sudah digunakan harus dinonaktifkan."
-                                                        data-confirm-confirm-text="Ya, hapus"
-                                                        data-confirm-cancel-text="Batal"
-                                                        class="text-secondary text-danger font-weight-bold text-xs ms-2 border-0 bg-transparent p-0"
-                                                        title="Hapus wallet" aria-label="Hapus wallet">
-                                                        <i class="fa fa-trash" aria-hidden="true"></i> HAPUS
-                                                    </button>
-                                                </form>
+                                                    <ul class="dropdown-menu dropdown-menu-end cashflow-row-action-menu" aria-labelledby="walletAction<?= (int) $row['id_wallet'] ?>">
+                                                        <li>
+                                                            <button type="button" class="dropdown-item btneditwallet"
+                                                                data-id="<?= (int) $row['id_wallet'] ?>"
+                                                                data-nama="<?= htmlspecialchars($row['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-tipe="<?= htmlspecialchars($walletTypeSelection, ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-saldo="<?= htmlspecialchars(number_format((float) $row['saldo_awal'], 0, '', ''), ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-has-history="<?= $hasFinancialHistory ? '1' : '0' ?>"
+                                                                title="Edit wallet" aria-label="Edit wallet">
+                                                                <i class="fa fa-pencil me-2" aria-hidden="true"></i>Edit
+                                                            </button>
+                                                        </li>
+                                                        <?php if ($isActive && !$isDefault) { ?>
+                                                            <li>
+                                                                <form action="actions/aksi_wallet.php?act=d" method="post">
+                                                                    <?= csrf_input() ?>
+                                                                    <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
+                                                                    <button type="submit" class="dropdown-item" data-confirm="true"
+                                                                        data-confirm-title="Jadikan wallet default?"
+                                                                        data-confirm-text="Wallet ini akan menjadi wallet default akun Anda."
+                                                                        data-confirm-confirm-text="Ya, jadikan default" data-confirm-cancel-text="Batal"
+                                                                        title="Jadikan Default" aria-label="Jadikan Default">
+                                                                        <i class="fa fa-star-o me-2" aria-hidden="true"></i>Jadikan Default
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        <?php } ?>
+                                                        <?php if (!$isDefault) { ?>
+                                                            <li>
+                                                                <form action="actions/aksi_wallet.php?act=s" method="post">
+                                                                    <?= csrf_input() ?>
+                                                                    <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
+                                                                    <input type="hidden" name="value" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
+                                                                    <button type="submit" class="dropdown-item" data-confirm="true"
+                                                                        data-confirm-title="<?= $isActive ? 'Nonaktifkan wallet ini?' : 'Aktifkan wallet ini?' ?>"
+                                                                        data-confirm-text="<?= $isActive ? 'Wallet nonaktif tidak tersedia untuk transaksi baru.' : 'Wallet akan aktif kembali.' ?>"
+                                                                        data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
+                                                                        data-confirm-cancel-text="Batal"
+                                                                        title="<?= $isActive ? 'Nonaktifkan' : 'Aktifkan' ?>" aria-label="<?= $isActive ? 'Nonaktifkan' : 'Aktifkan' ?>">
+                                                                        <i class="fa <?= $isActive ? 'fa-toggle-off' : 'fa-toggle-on' ?> me-2" aria-hidden="true"></i><?= $isActive ? 'NONAKTIFKAN' : 'AKTIFKAN' ?>
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        <?php } else { ?>
+                                                            <li><span class="dropdown-item disabled" title="Wallet default tidak dapat dinonaktifkan."><i class="fa fa-lock me-2" aria-hidden="true"></i>Wallet default aktif</span></li>
+                                                        <?php } ?>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <?php if ($hasFinancialHistory) { ?>
+                                                            <li><span class="dropdown-item disabled cashflow-row-action-note" title="Tidak dapat dihapus karena memiliki histori finansial."><i class="fa fa-lock me-2" aria-hidden="true"></i>Tidak dapat dihapus karena memiliki histori finansial.</span></li>
+                                                        <?php } else { ?>
+                                                            <li>
+                                                                <form action="actions/aksi_wallet.php?act=h" method="post">
+                                                                    <?= csrf_input() ?>
+                                                                    <input type="hidden" name="id_wallet" value="<?= (int) $row['id_wallet'] ?>">
+                                                                    <button type="submit" class="dropdown-item text-danger" data-confirm="true"
+                                                                        data-confirm-title="Hapus wallet ini?"
+                                                                        data-confirm-text="Wallet tanpa histori akan dihapus permanen."
+                                                                        data-confirm-confirm-text="Ya, hapus" data-confirm-cancel-text="Batal"
+                                                                        title="Hapus" aria-label="Hapus">
+                                                                        <i class="fa fa-trash me-2" aria-hidden="true"></i>Hapus
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        <?php } ?>
+                                                    </ul>
                                                 </div>
                                             </td>
                                         </tr>
@@ -248,6 +314,7 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                         <div class="input-group input-group-outline">
                             <input type="text" name="saldo_awal" id="saldo_awal" class="form-control js-format-nominal" inputmode="numeric" autocomplete="off" placeholder="0">
                         </div>
+                        <small id="walletSaldoAwalLockMessage" class="text-secondary d-none mt-1">Saldo awal dikunci karena wallet sudah memiliki histori transaksi.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -276,13 +343,13 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_wallet_type" id="wallet_type_id">
                     <div class="row g-3 align-items-end">
-                        <div class="col-md-5">
+                        <div class="col-12 col-md-5">
                             <label class="form-label" for="wallet_type_name">Nama Tipe</label>
-                            <input type="text" class="form-control" name="nama_tipe" id="wallet_type_name" maxlength="50" required>
+                            <input type="text" class="cashflow-modal-control" name="nama_tipe" id="wallet_type_name" maxlength="50" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-3">
                             <label class="form-label" for="wallet_type_icon">Ikon</label>
-                            <select class="form-control" name="icon" id="wallet_type_icon" required>
+                            <select class="cashflow-modal-control cashflow-modal-select" name="icon" id="wallet_type_icon" required>
                                 <?php foreach (cashflow_wallet_type_icon_options() as $iconKey => $iconLabel) { ?>
                                     <option value="<?= htmlspecialchars($iconKey, ENT_QUOTES, 'UTF-8') ?>">
                                         <?= htmlspecialchars($iconLabel, ENT_QUOTES, 'UTF-8') ?>
@@ -290,12 +357,12 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                                 <?php } ?>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-12 col-md-2">
                             <label class="form-label" for="wallet_type_color">Warna</label>
-                            <input type="color" class="form-control form-control-color w-100" name="warna"
+                            <input type="color" class="cashflow-color-control w-100" name="warna"
                                 id="wallet_type_color" value="#64748B" required>
                         </div>
-                        <div class="col-md-2 d-grid gap-2">
+                        <div class="col-12 col-md-2 d-grid gap-2">
                             <button type="submit" class="btn btn-info mb-0">Simpan</button>
                             <button type="button" class="btn btn-outline-secondary mb-0 d-none" id="walletTypeCancelEdit">Batal</button>
                         </div>
@@ -376,7 +443,8 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
                 columnDefs: [
                     { targets: -1, orderable: false, searchable: false }
                 ],
-                dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+                order: [[5, 'desc']],
+                dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
         }
 
@@ -390,6 +458,9 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
             $('#nama_wallet').val($(this).attr("data-nama"));
             $('#tipe_wallet').val($(this).attr("data-tipe"));
             $('#saldo_awal').val($(this).attr("data-saldo"));
+            const hasHistory = $(this).attr('data-has-history') === '1';
+            $('#saldo_awal').prop('readonly', hasHistory).attr('aria-readonly', hasHistory ? 'true' : 'false');
+            $('#walletSaldoAwalLockMessage').toggleClass('d-none', !hasHistory);
 
             if (typeof applyNominalFormatting === 'function') {
                 applyNominalFormatting(document.getElementById('saldo_awal'));
@@ -401,7 +472,8 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
             $('#id_wallet').val('');
             $('#nama_wallet').val('');
             $('#tipe_wallet').val('');
-            $('#saldo_awal').val('');
+            $('#saldo_awal').val('').prop('readonly', false).attr('aria-readonly', 'false');
+            $('#walletSaldoAwalLockMessage').addClass('d-none');
             $('#tipe_wallet option[data-wallet-type-active="0"]').prop('disabled', true);
         });
 

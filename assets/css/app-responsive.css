@@ -539,12 +539,15 @@ body .app-main-content .table-responsive .table .cashflow-long-text * {
 }
 
 table.dataTable thead th.cashflow-action-col::before,
-table.dataTable thead th.cashflow-action-col::after {
+table.dataTable thead th.cashflow-action-col::after,
+table.dataTable thead th.action-col::before,
+table.dataTable thead th.action-col::after {
     display: none !important;
     content: none !important;
 }
 
-table.dataTable thead th.cashflow-action-col {
+table.dataTable thead th.cashflow-action-col,
+table.dataTable thead th.action-col {
     background-image: none !important;
     cursor: default;
 }
@@ -2709,75 +2712,6 @@ table.dataTable thead th.cashflow-action-col {
     }
 }
 
-/* Desktop-only bulk delete controls for transaction tables */
-.transaction-table-toolbar {
-    display: flex;
-    width: auto;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-    margin: 0 1rem 16px;
-}
-
-.transaction-toolbar-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.transaction-toolbar-actions .btn,
-.bulk-delete-btn,
-.add-transaction-btn {
-    display: inline-flex;
-    min-height: 48px;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    white-space: nowrap;
-}
-
-.transaction-table th.bulk-select-col,
-.transaction-table td.bulk-select-col,
-table.dataTable th.bulk-select-col,
-table.dataTable td.bulk-select-col {
-    width: 48px !important;
-    min-width: 48px !important;
-    max-width: 48px !important;
-    padding-right: 0 !important;
-    padding-left: 0 !important;
-    text-align: center !important;
-    vertical-align: middle !important;
-}
-
-.bulk-select-col input[type="checkbox"],
-.bulk-select-all,
-.bulk-select-row {
-    display: inline-block !important;
-    width: 18px !important;
-    height: 18px !important;
-    min-width: 18px !important;
-    min-height: 18px !important;
-    margin: 0 auto !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    position: static !important;
-    cursor: pointer;
-    accent-color: #4f46e5;
-}
-
-table.dataTable thead th.bulk-select-col::before,
-table.dataTable thead th.bulk-select-col::after {
-    display: none !important;
-    content: none !important;
-}
-
-table.dataTable thead th.bulk-select-col {
-    background-image: none !important;
-    cursor: default;
-}
-
 @media (max-width: 768px) {
     .desktop-transaction-section {
         display: none !important;
@@ -2787,31 +2721,176 @@ table.dataTable thead th.bulk-select-col {
         display: block !important;
     }
 
-    .desktop-bulk-only,
-    .desktop-bulk-toolbar .bulk-delete-btn,
-    .bulk-select-col,
-    th.bulk-select-col,
-    td.bulk-select-col {
-        display: none !important;
-    }
-
-    .transaction-table-toolbar {
-        justify-content: stretch;
-    }
-
-    .transaction-toolbar-actions {
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .transaction-toolbar-actions .add-transaction-btn {
-        width: 100%;
-    }
 }
 
 .mobile-transaction-section {
     width: 100%;
+}
+
+/* Final release polish: compact table controls, row menus, and modal controls. */
+.cashflow-feature-description {
+    margin: 1rem 1.5rem 0;
+    color: #67748e;
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+.cashflow-table-page-actions {
+    display: flex;
+    width: auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin: 1rem 1.5rem 0;
+}
+
+.cashflow-table-page-actions .btn,
+.add-transaction-btn {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+.cashflow-datatable-top .input-group {
+    width: min(100%, 360px);
+}
+
+.cashflow-row-action-dropdown {
+    position: relative;
+    display: inline-flex;
+}
+
+.cashflow-row-action-toggle {
+    display: inline-flex;
+    min-width: 88px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.7rem;
+}
+
+.cashflow-row-action-menu {
+    min-width: 220px;
+    max-width: min(300px, calc(100vw - 2rem));
+    padding: 0.45rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 0.75rem;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.14);
+    z-index: 1080;
+}
+
+.cashflow-row-action-menu form {
+    margin: 0;
+}
+
+.cashflow-row-action-menu .dropdown-item {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    padding: 0.55rem 0.7rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    font-size: 0.82rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.cashflow-row-action-menu .cashflow-row-action-note {
+    line-height: 1.4;
+}
+
+.table-responsive:has(.cashflow-row-action-dropdown.show) {
+    overflow: visible;
+}
+
+.cashflow-modal-control,
+.cashflow-modal-select,
+.cashflow-color-control {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #d7dce8 !important;
+    border-radius: 0.65rem !important;
+    background-color: #fff !important;
+    color: #344767;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cashflow-modal-select {
+    padding-right: 2.5rem;
+    appearance: auto;
+    cursor: pointer;
+}
+
+.cashflow-color-control {
+    padding: 0.35rem;
+    cursor: pointer;
+}
+
+.cashflow-modal-control:focus,
+.cashflow-modal-select:focus,
+.cashflow-color-control:focus {
+    outline: none;
+    border-color: #2688eb !important;
+    box-shadow: 0 0 0 3px rgba(38, 136, 235, 0.15);
+}
+
+.cashflow-modal-control:invalid:not(:placeholder-shown),
+.cashflow-modal-select:invalid {
+    border-color: #dc3545 !important;
+}
+
+.cashflow-user-identity-cell,
+.cashflow-user-identity-cell .user-mobile-identity,
+.cashflow-user-identity-cell .user-mobile-email {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.cashflow-user-action-cell,
+.cashflow-user-table.cashflow-responsive-table tbody tr:has(.cashflow-row-action-dropdown.show),
+.cashflow-user-table.cashflow-responsive-table td:has(.cashflow-row-action-dropdown.show) {
+    overflow: visible !important;
+}
+
+@media (max-width: 575.98px) {
+    .cashflow-feature-description,
+    .cashflow-table-page-actions {
+        margin-right: 1rem;
+        margin-left: 1rem;
+    }
+
+    .cashflow-table-page-actions,
+    .cashflow-table-page-actions .btn,
+    .mobile-transaction-toolbar .btn,
+    .mobile-transaction-toolbar .cashflow-toolbar-group {
+        width: 100%;
+    }
+
+    .cashflow-table-page-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .mobile-transaction-toolbar {
+        margin: 1rem;
+    }
+
+    .cashflow-row-action-toggle {
+        min-height: 42px;
+    }
 }
 
 .mobile-transaction-list {

@@ -8,11 +8,14 @@ include_once __DIR__ . "/../includes/activity_log_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 function clean_input($data) {
-    global $con;
-    $data = trim($data);
-    $data = stripslashes($data);
-    $data = htmlspecialchars($data);
-    return mysqli_real_escape_string($con, $data);
+    return trim((string) $data);
+}
+
+function is_valid_transaction_date($value) {
+    if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', (string) $value, $matches)) {
+        return false;
+    }
+    return checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
 }
 
 function validate_kategori_id($kategoriId, $userId, $tipeKategori) {
@@ -210,13 +213,13 @@ if (isset($_GET['act'])) {
             $jumlah = nominal_input_to_number($jumlahRaw);
             $status = clean_input($_POST['status'] ?? 'pending');
             $kategoriId = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== ''
-                ? (int) clean_input($_POST['id_kategori'])
+                ? (int) $_POST['id_kategori']
                 : null;
             $walletId = isset($_POST['id_wallet']) && $_POST['id_wallet'] !== ''
-                ? (int) clean_input($_POST['id_wallet'])
+                ? (int) $_POST['id_wallet']
                 : null;
 
-            if ($tanggal === '' || $jumlah <= 0 || strpos($jumlahRaw, '-') !== false || $status === '') {
+            if (!is_valid_transaction_date($tanggal) || $jumlah <= 0 || strpos($jumlahRaw, '-') !== false || $status === '') {
                 show_sweetalert_and_redirect('Gagal!', 'Tanggal, jumlah, dan status wajib diisi!', 'error', 'main.php?module=pengeluaran');
             }
 
@@ -258,7 +261,7 @@ if (isset($_GET['act'])) {
                 record_activity($con, 'pengeluaran', 'tambah', "Menambahkan pengeluaran ID {$newPengeluaranId}.");
                 show_sweetalert_and_redirect('Berhasil!', 'Data berhasil ditambahkan.', 'success', 'main.php?module=pengeluaran');
             } else {
-                $id_pengeluaran = (int) clean_input($_POST['id_pengeluaran']);
+                $id_pengeluaran = (int) $_POST['id_pengeluaran'];
                 if ($id_pengeluaran <= 0) {
                     show_sweetalert_and_redirect('Gagal!', 'Data pengeluaran tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pengeluaran');
                 }
@@ -455,23 +458,6 @@ if (isset($_GET['act'])) {
 
             record_activity($con, 'pengeluaran', 'hapus', "Menghapus pengeluaran ID {$id_pengeluaran}.");
             show_sweetalert_and_redirect('Berhasil!', 'Data berhasil dihapus.', 'success', 'main.php?module=pengeluaran');
-            break;
-
-        case 'bulk_delete':
-            if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-                show_sweetalert_and_redirect('Akses ditolak', 'Hapus pengeluaran terpilih wajib melalui form yang valid.', 'warning', 'main.php?module=pengeluaran');
-            }
-
-            if (!verify_csrf_token()) {
-                show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pengeluaran');
-            }
-
-            show_sweetalert_and_redirect(
-                'Form perlu dimuat ulang',
-                'Endpoint bulk lama sudah dinonaktifkan. Muat ulang halaman untuk menggunakan bulk action yang aman.',
-                'warning',
-                'main.php?module=pengeluaran'
-            );
             break;
 
         default:

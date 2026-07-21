@@ -2,6 +2,7 @@
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/budget_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -42,11 +43,6 @@ $namaBulanBudget = [
 ];
 $periodeBudgetLabel = $namaBulanBudget[$budgetBulan] . ' ' . $budgetTahun;
 $isPeriodeBudgetBerjalan = cashflow_budget_is_current_period($budgetBulan, $budgetTahun);
-
-function format_kategori_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
 
 $kategoriQuery = "SELECT
                       kategori.id_kategori,
@@ -229,9 +225,9 @@ mysqli_stmt_close($budgetHistoryStmt);
                                                     <div class="category-budget-period"><?= htmlspecialchars($periodeBudgetLabel) ?></div>
                                                     <p class="text-xs text-secondary mb-1 category-budget-amount">
                                                         Terpakai
-                                                        <strong class="text-dark"><?= format_kategori_rupiah($totalTerpakai) ?></strong>
+                                                        <strong class="text-dark"><?= cashflow_format_rupiah($totalTerpakai) ?></strong>
                                                         dari
-                                                        <strong class="text-dark"><?= format_kategori_rupiah($budgetNominal) ?></strong>
+                                                        <strong class="text-dark"><?= cashflow_format_rupiah($budgetNominal) ?></strong>
                                                     </p>
                                                     <div class="progress budget-category-progress category-budget-progress mb-1">
                                                         <div class="progress-bar <?= htmlspecialchars($budgetStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
@@ -243,7 +239,7 @@ mysqli_stmt_close($budgetHistoryStmt);
                                                     </div>
                                                     <div class="category-budget-meta">
                                                         <span><?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai</span>
-                                                        <span>Sisa <?= format_kategori_rupiah($sisaBudget) ?></span>
+                                                        <span>Sisa <?= cashflow_format_rupiah($sisaBudget) ?></span>
                                                     </div>
                                                     <?php if ($isPeriodeBudgetBerjalan) { ?>
                                                         <button type="button"
@@ -284,9 +280,9 @@ mysqli_stmt_close($budgetHistoryStmt);
                                                                     </div>
                                                                     <p class="text-xs text-secondary mb-2">
                                                                         Terpakai
-                                                                        <strong class="text-dark"><?= format_kategori_rupiah($totalTerpakai) ?></strong>
+                                                                        <strong class="text-dark"><?= cashflow_format_rupiah($totalTerpakai) ?></strong>
                                                                         dari
-                                                                        <strong class="text-dark"><?= format_kategori_rupiah($budgetNominal) ?></strong>
+                                                                        <strong class="text-dark"><?= cashflow_format_rupiah($budgetNominal) ?></strong>
                                                                     </p>
                                                                     <div class="progress budget-category-progress category-budget-progress mb-2">
                                                                         <div class="progress-bar <?= htmlspecialchars($budgetStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
@@ -298,7 +294,7 @@ mysqli_stmt_close($budgetHistoryStmt);
                                                                     </div>
                                                                     <div class="category-budget-meta mb-3">
                                                                         <span><?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai</span>
-                                                                        <span>Sisa <?= format_kategori_rupiah($sisaBudget) ?></span>
+                                                                        <span>Sisa <?= cashflow_format_rupiah($sisaBudget) ?></span>
                                                                     </div>
                                                                     <label class="form-label">Nominal Budget</label>
                                                                     <div class="input-group input-group-outline budget-category-input category-budget-control">
@@ -324,7 +320,7 @@ mysqli_stmt_close($budgetHistoryStmt);
                                                 <p class="text-xs text-secondary mb-0">Tidak berlaku untuk pemasukan</p>
                                             <?php } ?>
                                         </td>
-                                        <td>
+                                        <td data-order="<?= htmlspecialchars((string) $row['created_at'], ENT_QUOTES, 'UTF-8') ?>">
                                             <p class="text-xs text-secondary mb-0">
                                                 <?= htmlspecialchars(date('d M Y H:i', strtotime($row['created_at']))) ?>
                                             </p>
@@ -406,10 +402,10 @@ mysqli_stmt_close($budgetHistoryStmt);
                                         <tr>
                                             <td><p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($historyRow['nama_kategori'], ENT_QUOTES, 'UTF-8') ?></p></td>
                                             <td data-order="<?= (int) ($historyRow['tahun'] ?? 0) * 100 + $historyMonth ?>"><p class="text-xs text-secondary mb-0 text-nowrap"><?= htmlspecialchars($historyPeriod, ENT_QUOTES, 'UTF-8') ?></p></td>
-                                            <td><p class="text-xs font-weight-bold mb-0 text-nowrap"><?= format_kategori_rupiah($historyBudget) ?></p></td>
-                                            <td><p class="text-xs text-secondary mb-0 text-nowrap"><?= format_kategori_rupiah($historyUsed) ?></p></td>
-                                            <td><p class="text-xs <?= $historyRemaining < 0 ? 'text-danger' : 'text-secondary' ?> mb-0 text-nowrap"><?= format_kategori_rupiah($historyRemaining) ?></p></td>
-                                            <td style="min-width: 150px;">
+                                            <td data-order="<?= htmlspecialchars((string) $historyBudget, ENT_QUOTES, 'UTF-8') ?>"><p class="text-xs font-weight-bold mb-0 text-nowrap"><?= cashflow_format_rupiah($historyBudget) ?></p></td>
+                                            <td data-order="<?= htmlspecialchars((string) $historyUsed, ENT_QUOTES, 'UTF-8') ?>"><p class="text-xs text-secondary mb-0 text-nowrap"><?= cashflow_format_rupiah($historyUsed) ?></p></td>
+                                            <td data-order="<?= htmlspecialchars((string) $historyRemaining, ENT_QUOTES, 'UTF-8') ?>"><p class="text-xs <?= $historyRemaining < 0 ? 'text-danger' : 'text-secondary' ?> mb-0 text-nowrap"><?= cashflow_format_rupiah($historyRemaining) ?></p></td>
+                                            <td data-order="<?= htmlspecialchars((string) $historyStatus['percentage'], ENT_QUOTES, 'UTF-8') ?>" style="min-width: 150px;">
                                                 <div class="progress budget-category-progress mb-1">
                                                     <div class="progress-bar <?= htmlspecialchars($historyStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
                                                         role="progressbar"
@@ -553,7 +549,8 @@ mysqli_stmt_close($budgetHistoryStmt);
             columnDefs: [
                 { targets: -1, orderable: false, searchable: false }
             ],
-            dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+            order: [[0, 'asc']],
+            dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
         });
 
         if ($('#datatableBudgetHistory').length) {

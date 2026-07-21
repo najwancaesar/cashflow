@@ -79,9 +79,6 @@
         }
 
         var headers = Array.prototype.map.call(table.querySelectorAll('thead th'), function (header) {
-            if (header.classList.contains('bulk-select-col')) {
-                return null;
-            }
             return (header.textContent || '').replace(/\s+/g, ' ').trim();
         });
 
@@ -93,13 +90,7 @@
 
         Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), function (row) {
             Array.prototype.forEach.call(row.children, function (cell, index) {
-                if (cell.classList.contains('bulk-select-col')) {
-                    cell.removeAttribute('data-label');
-                    cell.setAttribute('aria-hidden', 'true');
-                    return;
-                }
-
-                if (cell.classList.contains('action-col')) {
+                if (cell.classList.contains('action-col') || cell.classList.contains('cashflow-action-col')) {
                     cell.setAttribute('data-label', 'Aksi');
                     return;
                 }

@@ -28,12 +28,16 @@ function require_wallet_post_csrf()
     }
 }
 
-function fetch_wallet_by_id($con, $walletId, $userId)
+function fetch_wallet_by_id($con, $walletId, $userId, $forUpdate = false)
 {
-    $stmt = $con->prepare("SELECT id_wallet, user_id, nama_wallet, tipe_wallet, saldo_awal, is_default, is_active
-                           FROM wallet
-                           WHERE id_wallet = ? AND user_id = ?
-                           LIMIT 1");
+    $sql = "SELECT id_wallet, user_id, nama_wallet, tipe_wallet, saldo_awal, is_default, is_active
+            FROM wallet
+            WHERE id_wallet = ? AND user_id = ?
+            LIMIT 1";
+    if ($forUpdate) {
+        $sql .= " FOR UPDATE";
+    }
+    $stmt = $con->prepare($sql);
     $stmt->bind_param("ii", $walletId, $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -186,27 +190,58 @@ if ($act === 't') {
         show_sweetalert_and_redirect('Gagal', 'Wallet gagal ditambahkan.', 'error', 'main.php?module=wallet');
     }
 
-    if ($walletTypeSchemaReady) {
-        $stmt = $con->prepare("UPDATE wallet
-                               SET nama_wallet = ?, tipe_wallet = ?, id_wallet_type = ?, saldo_awal = ?, updated_at = NOW()
-                               WHERE id_wallet = ? AND user_id = ?");
-        $stmt->bind_param("ssidii", $namaWallet, $tipeWallet, $customWalletTypeId, $saldoAwal, $walletId, $userId);
-    } else {
-        $stmt = $con->prepare("UPDATE wallet
-                               SET nama_wallet = ?, tipe_wallet = ?, saldo_awal = ?, updated_at = NOW()
-                               WHERE id_wallet = ? AND user_id = ?");
-        $stmt->bind_param("ssdii", $namaWallet, $tipeWallet, $saldoAwal, $walletId, $userId);
-    }
-    $result = $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
+    try {
+        $con->begin_transaction();
+        $lockedWallet = fetch_wallet_by_id($con, $walletId, $userId, true);
+        if (!$lockedWallet) {
+            throw new DomainException('Wallet yang ingin diubah tidak ditemukan.');
+        }
 
-    if ($result && $affectedRows >= 0) {
+        $relationCount = count_wallet_financial_relations($con, $walletId);
+        if ($relationCount === null) {
+            throw new RuntimeException('Relasi wallet tidak dapat diverifikasi.');
+        }
+        if ($relationCount > 0 && abs((float) $lockedWallet['saldo_awal'] - (float) $saldoAwal) > 0.00001) {
+            throw new DomainException('Saldo awal dikunci karena wallet sudah memiliki histori transaksi. Gunakan transaksi penyesuaian untuk koreksi saldo.');
+        }
+        if ($relationCount > 0) {
+            $saldoAwal = (float) $lockedWallet['saldo_awal'];
+        }
+
+        if ($walletTypeSchemaReady) {
+            $stmt = $con->prepare("UPDATE wallet
+                                   SET nama_wallet = ?, tipe_wallet = ?, id_wallet_type = ?, saldo_awal = ?, updated_at = NOW()
+                                   WHERE id_wallet = ? AND user_id = ?");
+            if (!$stmt) {
+                throw new RuntimeException('Perubahan wallet tidak dapat disiapkan.');
+            }
+            $stmt->bind_param("ssidii", $namaWallet, $tipeWallet, $customWalletTypeId, $saldoAwal, $walletId, $userId);
+        } else {
+            $stmt = $con->prepare("UPDATE wallet
+                                   SET nama_wallet = ?, tipe_wallet = ?, saldo_awal = ?, updated_at = NOW()
+                                   WHERE id_wallet = ? AND user_id = ?");
+            if (!$stmt) {
+                throw new RuntimeException('Perubahan wallet tidak dapat disiapkan.');
+            }
+            $stmt->bind_param("ssdii", $namaWallet, $tipeWallet, $saldoAwal, $walletId, $userId);
+        }
+        if (!$stmt->execute()) {
+            $stmt->close();
+            throw new RuntimeException('Perubahan wallet gagal dijalankan.');
+        }
+        $stmt->close();
+        $con->commit();
+
         record_activity($con, 'wallet', 'edit', "Mengubah wallet ID {$walletId}.");
         show_sweetalert_and_redirect('Berhasil', 'Wallet berhasil diperbarui.', 'success', 'main.php?module=wallet');
+    } catch (DomainException $error) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Perubahan ditolak', $error->getMessage(), 'warning', 'main.php?module=wallet');
+    } catch (Throwable $error) {
+        $con->rollback();
+        error_log('CashFlow wallet edit failed: ' . $error->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Wallet gagal diperbarui.', 'error', 'main.php?module=wallet');
     }
-
-    show_sweetalert_and_redirect('Gagal', 'Wallet gagal diperbarui.', 'error', 'main.php?module=wallet');
 }
 
 if ($act === 's') {

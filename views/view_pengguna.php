@@ -220,12 +220,12 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                                 <span class="user-mobile-email text-xs text-secondary"><?= htmlspecialchars($row['email']) ?></span>
                                             </div>
                                         </td>
-                                        <td>
+                                        <td data-order="<?= htmlspecialchars((string) $row['create_at'], ENT_QUOTES, 'UTF-8') ?>">
                                             <span class="badge badge-sm cashflow-user-badge <?= ($row['role'] ?? 'user') === 'admin' ? 'bg-gradient-dark' : 'bg-gradient-info' ?>">
                                                 <?= htmlspecialchars(ucfirst($row['role'] ?? 'user')) ?>
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-order="<?= htmlspecialchars((string) ($row['last_login_at'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                                             <span class="badge badge-sm cashflow-user-badge <?= $isActive ? 'bg-gradient-success' : 'bg-gradient-secondary' ?>">
                                                 <?= $isActive ? 'Aktif' : 'Nonaktif' ?>
                                             </span>
@@ -237,83 +237,79 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                                             <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_user_datetime($row['last_login_at'])) ?></p>
                                         </td>
                                         <td class="align-middle cashflow-user-action-cell cashflow-action-col">
-                                            <div class="cashflow-user-actions cashflow-action-group">
-                                                <a href="main.php?module=pengguna&detail=<?= (int) $row['id_user'] ?>" class="text-secondary font-weight-bold text-xs me-2"
-                                                    title="Lihat detail user" aria-label="Lihat detail user">
-                                                    <i class="fa fa-eye" aria-hidden="true"></i>
-                                                </a>
-                                                <form action="actions/aksi_backup.php" method="post" class="d-inline">
-                                                    <?= csrf_input() ?>
-                                                    <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
-                                                    <button type="submit"
-                                                        title="Backup Data"
-                                                        aria-label="Backup data user"
-                                                        data-confirm="true"
-                                                        data-confirm-title="Backup data user?"
-                                                        data-confirm-text="File SQL akan dibuat dan langsung diunduh."
-                                                        data-confirm-confirm-text="Ya, Backup"
-                                                        data-confirm-cancel-text="Batal"
-                                                        class="text-secondary text-info font-weight-bold text-xs border-0 bg-transparent p-0 me-2">
-                                                        <i class="fa fa-download" aria-hidden="true"></i> Backup Data
-                                                    </button>
-                                                </form>
-                                                <?php if (!$isSelf) { ?>
-                                                    <a href="#" role="button"
-                                                        class="text-secondary text-warning font-weight-bold text-xs me-2 btnedituser"
-                                                        data-id="<?= (int) $row['id_user'] ?>"
-                                                        data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
-                                                        data-username="<?= htmlspecialchars($row['username'], ENT_QUOTES) ?>"
-                                                        data-email="<?= htmlspecialchars($row['email'], ENT_QUOTES) ?>"
-                                                        data-no_telp="<?= htmlspecialchars($row['no_telp'], ENT_QUOTES) ?>"
-                                                        data-role="<?= htmlspecialchars($row['role'], ENT_QUOTES) ?>"
-                                                        data-is_active="<?= htmlspecialchars($row['is_active'], ENT_QUOTES) ?>"
-                                                        title="Edit user" aria-label="Edit user">
-                                                        <i class="fa fa-pencil" aria-hidden="true"></i>
-                                                    </a>
-
-                                                    <form action="actions/aksi_user.php?act=s" method="post" class="d-inline">
-                                                        <?= csrf_input() ?>
-                                                        <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
-                                                        <input type="hidden" name="value" value="<?= $isActive ? '0' : '1' ?>">
-                                                        <button type="submit"
-                                                            data-confirm="true"
-                                                            data-confirm-title="<?= $isActive ? 'Nonaktifkan user ini?' : 'Aktifkan user ini?' ?>"
-                                                            data-confirm-text="<?= $isActive ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login kembali ke sistem.' ?>"
-                                                            data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>"
-                                                            data-confirm-cancel-text="Batal"
-                                                            class="border-0 bg-transparent p-0 <?= $isActive ? 'text-success' : 'text-secondary' ?> font-weight-bold text-xs me-2"
-                                                            title="<?= $isActive ? 'Nonaktifkan user' : 'Aktifkan user' ?>"
-                                                            aria-label="<?= $isActive ? 'Nonaktifkan user' : 'Aktifkan user' ?>">
-                                                            <i class="fa <?= $isActive ? 'fa-toggle-on' : 'fa-toggle-off' ?>" aria-hidden="true"></i>
-                                                        </button>
-                                                    </form>
-
-                                                    <a href="#" role="button"
-                                                        class="text-secondary text-info font-weight-bold text-xs me-2 btnresetpassworduser"
-                                                        data-id="<?= (int) $row['id_user'] ?>"
-                                                        data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
-                                                        title="Reset password user" aria-label="Reset password user">
-                                                        <i class="fa fa-key" aria-hidden="true"></i>
-                                                    </a>
-
-                                                    <form action="actions/aksi_user.php?act=h" method="post" class="d-inline">
-                                                        <?= csrf_input() ?>
-                                                        <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
-                                                        <button type="submit"
-                                                            title="Hapus user"
-                                                            aria-label="Hapus user"
-                                                            data-confirm="true"
-                                                            data-confirm-title="Hapus pengguna ini?"
-                                                            data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
-                                                            data-confirm-confirm-text="Ya, hapus"
-                                                            data-confirm-cancel-text="Batal"
-                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
-                                                            <i class="fa fa-trash" aria-hidden="true"></i>
-                                                        </button>
-                                                    </form>
-                                                <?php } else { ?>
-                                                    <span class="text-xs text-secondary">Kelola akun sendiri lewat Profil</span>
-                                                <?php } ?>
+                                            <div class="dropdown cashflow-row-action-dropdown">
+                                                <button class="btn btn-outline-secondary btn-sm mb-0 cashflow-row-action-toggle dropdown-toggle"
+                                                    type="button" id="userAction<?= (int) $row['id_user'] ?>"
+                                                    data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false"
+                                                    title="Buka aksi pengguna" aria-label="Buka aksi pengguna <?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?>">
+                                                    <i class="fa fa-ellipsis-v" aria-hidden="true"></i> Aksi
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end cashflow-row-action-menu" aria-labelledby="userAction<?= (int) $row['id_user'] ?>">
+                                                    <li><a href="main.php?module=pengguna&amp;detail=<?= (int) $row['id_user'] ?>" class="dropdown-item" title="Detail" aria-label="Detail"><i class="fa fa-eye me-2" aria-hidden="true"></i>Detail</a></li>
+                                                    <li>
+                                                        <form action="actions/aksi_backup.php" method="post">
+                                                            <?= csrf_input() ?>
+                                                            <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
+                                                            <button type="submit" class="dropdown-item" title="Backup Data" aria-label="Backup Data"
+                                                                data-confirm="true" data-confirm-title="Backup data user?"
+                                                                data-confirm-text="File SQL akan dibuat dan langsung diunduh."
+                                                                data-confirm-confirm-text="Ya, Backup" data-confirm-cancel-text="Batal">
+                                                                <i class="fa fa-download me-2" aria-hidden="true"></i>Backup Data
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <?php if (!$isSelf) { ?>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item btnedituser"
+                                                                data-id="<?= (int) $row['id_user'] ?>"
+                                                                data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-username="<?= htmlspecialchars($row['username'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-email="<?= htmlspecialchars($row['email'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-no_telp="<?= htmlspecialchars($row['no_telp'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-role="<?= htmlspecialchars($row['role'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                data-is_active="<?= htmlspecialchars($row['is_active'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                title="Edit" aria-label="Edit">
+                                                                <i class="fa fa-pencil me-2" aria-hidden="true"></i>Edit
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <form action="actions/aksi_user.php?act=s" method="post">
+                                                                <?= csrf_input() ?>
+                                                                <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
+                                                                <input type="hidden" name="value" value="<?= $isActive ? '0' : '1' ?>">
+                                                                <button type="submit" class="dropdown-item" data-confirm="true"
+                                                                    data-confirm-title="<?= $isActive ? 'Nonaktifkan user ini?' : 'Aktifkan user ini?' ?>"
+                                                                    data-confirm-text="<?= $isActive ? 'User tidak akan bisa login sampai diaktifkan kembali.' : 'User akan bisa login kembali ke sistem.' ?>"
+                                                                    data-confirm-confirm-text="<?= $isActive ? 'Ya, nonaktifkan' : 'Ya, aktifkan' ?>" data-confirm-cancel-text="Batal"
+                                                                    title="<?= $isActive ? 'Nonaktifkan' : 'Aktifkan' ?>" aria-label="<?= $isActive ? 'Nonaktifkan' : 'Aktifkan' ?>">
+                                                                    <i class="fa <?= $isActive ? 'fa-toggle-off' : 'fa-toggle-on' ?> me-2" aria-hidden="true"></i><?= $isActive ? 'Nonaktifkan' : 'Aktifkan' ?>
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                        <li>
+                                                            <button type="button" class="dropdown-item btnresetpassworduser"
+                                                                data-id="<?= (int) $row['id_user'] ?>" data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?>"
+                                                                title="Reset Password" aria-label="Reset Password">
+                                                                <i class="fa fa-key me-2" aria-hidden="true"></i>Reset Password
+                                                            </button>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <form action="actions/aksi_user.php?act=h" method="post">
+                                                                <?= csrf_input() ?>
+                                                                <input type="hidden" name="id_user" value="<?= (int) $row['id_user'] ?>">
+                                                                <button type="submit" class="dropdown-item text-danger" title="Hapus" aria-label="Hapus"
+                                                                    data-confirm="true" data-confirm-title="Hapus pengguna ini?"
+                                                                    data-confirm-text="Akun yang dihapus tidak bisa dipulihkan lagi."
+                                                                    data-confirm-confirm-text="Ya, hapus" data-confirm-cancel-text="Batal">
+                                                                    <i class="fa fa-trash me-2" aria-hidden="true"></i>Hapus
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    <?php } else { ?>
+                                                        <li><span class="dropdown-item disabled cashflow-row-action-note"><i class="fa fa-lock me-2" aria-hidden="true"></i>Kelola akun sendiri lewat Profil</span></li>
+                                                    <?php } ?>
+                                                </ul>
                                             </div>
                                         </td>
                                     </tr>
@@ -535,7 +531,8 @@ $(document).ready(function() {
         columnDefs: [
             { targets: -1, orderable: false, searchable: false }
         ],
-        dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+        order: [[4, 'desc']],
+        dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
     });
 });
 </script>

@@ -1,6 +1,7 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
 include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
@@ -18,11 +19,6 @@ $walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedang
 $tanggalHariIni = date('Y-m-d');
 $periodeBulanIni = (int) date('n');
 $periodeTahunIni = (int) date('Y');
-
-function recurring_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
 
 function recurring_type_label($type)
 {
@@ -238,8 +234,8 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                                 <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html(cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap)) ?></p>
                                             </td>
-                                            <td>
-                                                <p class="text-xs font-weight-bold mb-0"><?= recurring_rupiah($jumlah) ?></p>
+                                            <td data-order="<?= htmlspecialchars((string) $jumlah, ENT_QUOTES, 'UTF-8') ?>">
+                                                <p class="text-xs font-weight-bold mb-0"><?= cashflow_format_rupiah($jumlah) ?></p>
                                                 <p class="text-xs text-secondary mb-0">Default: <?= htmlspecialchars(ucfirst($statusTransaksiDefault), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
@@ -441,10 +437,11 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                         "previous": "&lt"
                     },
                 },
-                columnDefs: [
-                    { targets: -1, orderable: false, searchable: false }
-                ],
-                dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+                    columnDefs: [
+                        { targets: -1, orderable: false, searchable: false }
+                    ],
+                    order: [[0, 'asc']],
+                    dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
         }
 

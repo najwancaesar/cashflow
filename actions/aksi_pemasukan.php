@@ -9,11 +9,14 @@ include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 // Fungsi untuk membersihkan input
 function clean_input($data) {
-    global $con;
-    $data = trim($data);
-    $data = stripslashes($data);
-    $data = htmlspecialchars($data);
-    return mysqli_real_escape_string($con, $data);
+    return trim((string) $data);
+}
+
+function is_valid_transaction_date($value) {
+    if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', (string) $value, $matches)) {
+        return false;
+    }
+    return checkdate((int) $matches[2], (int) $matches[3], (int) $matches[1]);
 }
 
 function validate_kategori_id($kategoriId, $userId, $tipeKategori) {
@@ -176,13 +179,13 @@ if ($act == 't') {
     $jumlah = nominal_input_to_number($jumlahRaw);
     $status = clean_input($_POST['status'] ?? '');
     $kategoriId = isset($_POST['id_kategori']) && $_POST['id_kategori'] !== ''
-        ? (int) clean_input($_POST['id_kategori'])
+        ? (int) $_POST['id_kategori']
         : null;
     $walletId = isset($_POST['id_wallet']) && $_POST['id_wallet'] !== ''
-        ? (int) clean_input($_POST['id_wallet'])
+        ? (int) $_POST['id_wallet']
         : null;
 
-    if ($tanggal === '' || $jumlah <= 0 || strpos($jumlahRaw, '-') !== false || $status === '') {
+    if (!is_valid_transaction_date($tanggal) || $jumlah <= 0 || strpos($jumlahRaw, '-') !== false || $status === '') {
         show_sweetalert_and_redirect('Gagal!', 'Tanggal, jumlah, dan status wajib diisi.', 'error', 'main.php?module=pemasukan');
     }
 
@@ -221,7 +224,7 @@ if ($act == 't') {
         record_activity($con, 'pemasukan', 'tambah', "Menambahkan pemasukan ID {$newPemasukanId}.");
         show_sweetalert_and_redirect('Berhasil!', 'Data berhasil ditambahkan.', 'success', 'main.php?module=pemasukan');
     } else {
-        $id_pemasukan = (int) clean_input($_POST['id_pemasukan']);
+        $id_pemasukan = (int) $_POST['id_pemasukan'];
         if ($id_pemasukan <= 0) {
             show_sweetalert_and_redirect('Gagal!', 'Data pemasukan tidak ditemukan atau bukan milik Anda.', 'error', 'main.php?module=pemasukan');
         }
@@ -430,23 +433,6 @@ if ($act == 'h') {
 
     record_activity($con, 'pemasukan', 'hapus', "Menghapus pemasukan pending ID {$id_pemasukan}.");
     show_sweetalert_and_redirect('Berhasil!', 'Data berhasil dihapus.', 'success', 'main.php?module=pemasukan');
-}
-
-if ($act == 'bulk_delete') {
-    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-        show_sweetalert_and_redirect('Akses ditolak', 'Hapus pemasukan terpilih wajib melalui form yang valid.', 'warning', 'main.php?module=pemasukan');
-    }
-
-    if (!verify_csrf_token()) {
-        show_sweetalert_and_redirect('Session kadaluarsa', 'Token keamanan tidak valid. Silakan coba lagi.', 'warning', 'main.php?module=pemasukan');
-    }
-
-    show_sweetalert_and_redirect(
-        'Form perlu dimuat ulang',
-        'Endpoint bulk lama sudah dinonaktifkan. Muat ulang halaman untuk menggunakan bulk action yang aman.',
-        'warning',
-        'main.php?module=pemasukan'
-    );
 }
 
 show_sweetalert_and_redirect('Gagal!', 'Aksi pemasukan tidak valid.', 'error', 'main.php?module=pemasukan');
