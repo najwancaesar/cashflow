@@ -3111,3 +3111,17 @@ table.dataTable thead th.action-col {
         border-radius: 1.25rem 1.25rem 0 0;
     }
 }
+
+
+/* Fix Dropdown Chevron for all select in outline group */
+.input-group.input-group-outline select.form-control {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23495057' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 14px 10px;
+    padding-right: 1.75rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
