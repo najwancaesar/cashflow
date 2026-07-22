@@ -179,7 +179,7 @@ $renderPengeluaranRow = function (array $row) use ($defaultWalletName, $defaultW
         </td>
         <td class="align-middle cashflow-action-col">
             <div class="cashflow-action-group">
-            <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id']) && empty($row['linked_hutang_id'])) { ?>
+            <?php if (empty($row['recurring_log_id']) && empty($row['linked_hutang_id'])) { ?>
             <form action="actions/aksi_pengeluaran.php?act=h" method="post" class="d-inline">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
@@ -281,7 +281,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         <div class="mobile-transaction-row mobile-transaction-actions-row">
             <span class="mobile-transaction-label">Aksi</span>
             <span class="mobile-transaction-value mobile-transaction-actions">
-                <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id']) && empty($row['linked_hutang_id'])) { ?>
+                <?php if (empty($row['recurring_log_id']) && empty($row['linked_hutang_id'])) { ?>
                 <form action="actions/aksi_pengeluaran.php?act=h" method="post" class="d-inline">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
@@ -350,7 +350,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                                         <th>Jumlah Pengeluaran</th>
                                         <th>Wallet</th>
                                         <th>Status</th>
-                                        <th class="cashflow-action-col" style="width: 1%; white-space: nowrap;">Aksi</th>
+                                        <th class="cashflow-action-col">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>

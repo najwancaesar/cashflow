@@ -281,8 +281,8 @@ if($act == 'h'){
 			throw new DomainException('Data utang tidak ditemukan atau bukan milik Anda.');
 		}
 		$idPengeluaran = (int) ($hutang['id_pengeluaran'] ?? 0);
-		if ((string) ($hutang['status'] ?? '') === 'selesai' || $idPengeluaran > 0) {
-			throw new DomainException('Utang lunas atau memiliki pengeluaran linked tidak dapat dihapus permanen.');
+		if ($idPengeluaran > 0) {
+			throw new DomainException('Utang memiliki pengeluaran linked pelunasan tidak dapat dihapus permanen.');
 		}
 
 		$stmt = $con->prepare("DELETE FROM hutang WHERE id_hutang = ? AND user = ?");

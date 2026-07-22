@@ -373,7 +373,7 @@ if ($act == 'h') {
     try {
         $con->begin_transaction();
 
-        $statusStmt = $con->prepare("SELECT status FROM pemasukan
+        $statusStmt = $con->prepare("SELECT status, id_wallet FROM pemasukan
                                      WHERE id_pemasukan = ? AND user = ?
                                      LIMIT 1 FOR UPDATE");
         if (!$statusStmt) {
@@ -386,8 +386,18 @@ if ($act == 'h') {
         if (!$statusRow) {
             throw new DomainException('Data pemasukan tidak ditemukan atau bukan milik Anda.');
         }
-        if (($statusRow['status'] ?? '') !== 'pending') {
-            throw new DomainException('Pemasukan selesai tidak dapat dihapus permanen agar saldo dan histori tetap utuh.');
+        
+        if (($statusRow['status'] ?? '') === 'selesai') {
+            $walletId = (int) ($statusRow['id_wallet'] ?? 0);
+            if ($walletId) {
+                cashflow_lock_owned_wallets($con, $user, [$walletId]);
+                $currentBalance = cashflow_calculate_wallet_balance($con, $user, $walletId);
+                $proposedBalance = cashflow_calculate_wallet_balance($con, $user, $walletId, null, null, $id_pemasukan);
+                ensure_pemasukan_change_does_not_worsen_negative_balance(
+                    [$walletId => $currentBalance],
+                    [$walletId => $proposedBalance]
+                );
+            }
         }
 
         $relationStmt = $con->prepare("SELECT id_log AS relation_id
@@ -410,7 +420,7 @@ if ($act == 'h') {
         }
 
         $stmt = $con->prepare("DELETE FROM pemasukan
-                               WHERE id_pemasukan = ? AND user = ? AND status = 'pending'");
+                               WHERE id_pemasukan = ? AND user = ?");
         if (!$stmt) {
             throw new RuntimeException('Gagal menyiapkan penghapusan pemasukan.');
         }

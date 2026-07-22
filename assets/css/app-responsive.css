@@ -509,7 +509,7 @@ body .app-main-content .table-responsive .table .cashflow-long-text * {
 
 .cashflow-action-col {
     width: 1%;
-    min-width: 145px;
+    min-width: 75px;
     text-align: left !important;
     white-space: normal !important;
 }
@@ -594,7 +594,7 @@ table.dataTable thead th.action-col {
     }
 
     .cashflow-action-col {
-        min-width: 132px;
+        min-width: 75px;
     }
 
     .cashflow-action-group {

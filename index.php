@@ -953,7 +953,7 @@
           <span class="brand-mark brand-logo"><img src="assets/img/logocv.jpg" alt="CashFlow Control"></span>
           <span>CashFlow Control</span>
         </a>
-        <button class="navbar-toggler border-0 p-0" type="button" data-toggle="collapse" data-target="#navbarMain"
+        <button class="navbar-toggler border-0 p-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
           aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
           <span class="d-inline-flex align-items-center justify-content-center"
             style="width:44px;height:44px;border-radius:14px;background:rgba(29,119,255,.08);color:#1d77ff;"><i

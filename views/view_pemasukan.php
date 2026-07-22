@@ -140,7 +140,7 @@ $renderPemasukanRow = function (array $row) use ($defaultWalletName, $defaultWal
         </td>
         <td class="align-middle cashflow-action-col">
             <div class="cashflow-action-group">
-            <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id']) && empty($row['linked_piutang_id'])) { ?>
+            <?php if (empty($row['recurring_log_id']) && empty($row['linked_piutang_id'])) { ?>
             <form action="actions/aksi_pemasukan.php?act=h" method="post" class="d-inline">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
@@ -241,7 +241,7 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
         <div class="mobile-transaction-row mobile-transaction-actions-row">
             <span class="mobile-transaction-label">Aksi</span>
             <span class="mobile-transaction-value mobile-transaction-actions">
-                <?php if ($statusTransaksi === 'pending' && empty($row['recurring_log_id']) && empty($row['linked_piutang_id'])) { ?>
+                <?php if (empty($row['recurring_log_id']) && empty($row['linked_piutang_id'])) { ?>
                 <form action="actions/aksi_pemasukan.php?act=h" method="post" class="d-inline">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_pemasukan" value="<?= (int) $row['id_pemasukan'] ?>">
@@ -310,7 +310,7 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
                                         <th>Jumlah Pemasukan</th>
                                         <th>Wallet</th>
                                         <th>Status</th>
-                                        <th class="cashflow-action-col" style="width: 1%; white-space: nowrap;">Aksi</th>
+                                        <th class="cashflow-action-col">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>

@@ -117,7 +117,7 @@ $sql = $stmtHutang->get_result();
                                     <th>Status Jatuh Tempo</th>
                                     <th>User</th>
                                     <th>Status</th>
-                                    <th class="cashflow-action-col" style="width: 1%; white-space: nowrap;">Aksi</th>
+                                    <th class="cashflow-action-col">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -185,8 +185,8 @@ $sql = $stmtHutang->get_result();
                                 </td>
                                 <td class="align-middle cashflow-action-col">
                                     <div class="cashflow-action-group">
-                                    <?php if (($row['status'] ?? '') === 'pending' && empty($row['id_pengeluaran'])) { ?>
-                                    <form action="actions/aksi_hutang.php?act=h" method="post" class="d-inline">
+                                    <?php if (empty($row['id_pengeluaran'])) { ?>
+                                        <form action="actions/aksi_hutang.php?act=h" method="post" class="d-inline">
                                         <?= csrf_input() ?>
                                         <input type="hidden" name="id_hutang" value="<?= (int) $row['id_hutang'] ?>">
                                         <button type="submit"

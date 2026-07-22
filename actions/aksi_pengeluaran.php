@@ -408,9 +408,7 @@ if (isset($_GET['act'])) {
                 if (!$existingPengeluaran) {
                     throw new DomainException('Data pengeluaran tidak ditemukan atau bukan milik Anda.');
                 }
-                if ((string) ($existingPengeluaran['status'] ?? '') === 'selesai') {
-                    throw new DomainException('Pengeluaran selesai tidak dapat dihapus permanen agar saldo dan histori tetap utuh.');
-                }
+
 
                 $relationStmt = $con->prepare("SELECT id_log FROM recurring_generation_log
                                                WHERE user_id = ? AND tipe_transaksi = 'pengeluaran' AND id_transaksi = ? LIMIT 1");
@@ -439,7 +437,7 @@ if (isset($_GET['act'])) {
                 }
 
                 $stmt = $con->prepare("DELETE FROM pengeluaran
-                                       WHERE id_pengeluaran = ? AND user = ? AND status = 'pending'");
+                                       WHERE id_pengeluaran = ? AND user = ?");
                 if (!$stmt) {
                     throw new RuntimeException('Gagal menyiapkan penghapusan pengeluaran.');
                 }

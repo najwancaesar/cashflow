@@ -68,7 +68,7 @@ Schema default sudah mencakup hasil seluruh migration yang pernah dijalankan (cu
 
 File migration di `database/migrations/` tetap dipertahankan di repo sebagai riwayat perubahan schema dan opsi rollback jika diperlukan.
 
-Clean URL via `.htaccess` bersifat opsional — navigasi utama sidebar berfungsi langsung melalui `main.php?module=xxx` tanpa ketergantungan pada `mod_rewrite`.
+Clean URL via `.htaccess` bersifat opsional - seluruh navigasi utama (termasuk redirect form dan sidebar) berfungsi langsung melalui `main.php?module=xxx` tanpa ketergantungan pada `mod_rewrite` maupun `RewriteBase`.
 
 ### Struktur folder
 
@@ -618,7 +618,7 @@ Gunakan checklist ini setelah setup:
 | Foto profil tidak tampil setelah restore | Copy file gambar dari `assets/img/profil/` secara manual ke device tujuan. |
 | Export PDF error | Pastikan folder `tcpdf/` tersedia dan path laporan tidak berubah. |
 | Tampilan CSS/JS belum berubah | Hard refresh browser atau aktifkan Disable Cache di DevTools. |
-| Clean URL tidak jalan | Navigasi sidebar utama tidak bergantung pada clean URL dan berfungsi langsung via `main.php?module=xxx`. Jika ingin clean URL, pastikan `.htaccess` tersedia dan Apache `mod_rewrite` aktif. |
+| Clean URL tidak jalan | Navigasi sidebar utama dan internal redirect form tidak bergantung pada clean URL dan berfungsi langsung via `main.php?module=xxx`. Jika ingin clean URL, pastikan `.htaccess` tersedia dan Apache `mod_rewrite` aktif. |
 | Upload foto gagal | Pastikan ukuran file sesuai limit dan folder upload bisa ditulis. |
 
 ---
