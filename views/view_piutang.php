@@ -148,7 +148,12 @@ $sql = $stmtPiutang->get_result();
 									</td>
 									<td class="align-middle text-center text-sm">
 										<?php if (($row['status'] ?? '') === 'selesai') { ?>
-											<span class="badge badge-sm bg-gradient-success">Selesai</span>
+											<span class="badge badge-sm bg-gradient-success" style="cursor:pointer;"
+												data-piutang-revert="true"
+												data-id="<?= (int) $row['id_piutang'] ?>"
+												data-debitur="<?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?>"
+												title="Klik untuk batalkan pelunasan"
+											>Selesai ↩</span>
 											<?php if (!empty($row['tanggal_lunas']) || !empty($row['wallet_penerimaan_nama'])) { ?>
 												<small class="d-block text-xs text-secondary mt-1">
 													Diterima ke
@@ -177,24 +182,31 @@ $sql = $stmtPiutang->get_result();
 											<?php } ?>
 										<?php } ?>
 									</td>
-									<td class="align-middle cashflow-action-col">
-										<div class="cashflow-action-group">
-                                        <?php if (empty($row['id_pemasukan'])) { ?>
-                                        <form action="actions/aksi_piutang.php?act=h" method="post" class="d-inline">
-											<?= csrf_input() ?>
-											<input type="hidden" name="id_piutang" value="<?= (int) $row['id_piutang'] ?>">
-											<button type="submit"
-												data-confirm="true"
-												data-confirm-title="Hapus data piutang ini?"
-												data-confirm-text="Data piutang yang dihapus tidak bisa dikembalikan."
-												data-confirm-confirm-text="Ya, hapus"
-												data-confirm-cancel-text="Batal"
-												class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
-											title="Hapus" aria-label="Hapus">
-												<i class="fa fa-trash" aria-hidden="true"></i>
-											</button>
-										</form>
-										<?php } ?>
+										<td class="align-middle cashflow-action-col">
+											<div class="cashflow-action-group">
+											<?php
+											$isLunasRow = ($row['status'] ?? '') === 'selesai' && !empty($row['id_pemasukan']);
+											$deleteTitle = $isLunasRow
+												? 'Hapus piutang lunas ini?'
+												: 'Hapus data piutang ini?';
+											$deleteText = $isLunasRow
+												? 'PERHATIAN: Menghapus piutang yang sudah lunas akan IKUT menghapus catatan pemasukan terkait dan mengurangi saldo wallet. Tindakan ini tidak bisa dibatalkan.'
+												: 'Data piutang yang dihapus tidak bisa dikembalikan.';
+											?>
+											<form action="actions/aksi_piutang.php?act=h" method="post" class="d-inline">
+												<?= csrf_input() ?>
+												<input type="hidden" name="id_piutang" value="<?= (int) $row['id_piutang'] ?>">
+												<button type="submit"
+													data-confirm="true"
+													data-confirm-title="<?= htmlspecialchars($deleteTitle, ENT_QUOTES, 'UTF-8') ?>"
+													data-confirm-text="<?= htmlspecialchars($deleteText, ENT_QUOTES, 'UTF-8') ?>"
+													data-confirm-confirm-text="Ya, hapus"
+													data-confirm-cancel-text="Batal"
+													class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+												title="Hapus" aria-label="Hapus">
+													<i class="fa fa-trash" aria-hidden="true"></i>
+												</button>
+											</form>
 
 										<a href="#" role="button"
 											data-id="<?= (int) $row['id_piutang'] ?>"
@@ -368,5 +380,33 @@ $sql = $stmtPiutang->get_result();
 			$('#tanggal_lunas_piutang').val('<?= htmlspecialchars($today, ENT_QUOTES, 'UTF-8') ?>');
 			$('#lunas_piutang_info').text('Lunasi piutang dari ' + ($(this).attr("data-debitur") || '-') + ' sebesar ' + ($(this).attr("data-jumlah") || 'Rp. 0') + '.');
 		});
+
+		// Handler klik badge "Selesai ↩" — batalkan pelunasan piutang
+		$(document).on("click", "[data-piutang-revert]", function() {
+			var id = $(this).attr("data-id");
+			var debitur = $(this).attr("data-debitur") || '-';
+			if (!id) return;
+			Swal.fire({
+				title: 'Batalkan pelunasan piutang?',
+				html: 'Membatalkan pelunasan piutang dari <strong>' + debitur + '</strong> akan <strong>menghapus catatan pemasukan terkait</strong> dan mengurangi saldo wallet penerimaan.<br><br>Status piutang akan kembali ke <em>Pending</em>.',
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonColor: '#d33',
+				cancelButtonColor: '#6c757d',
+				confirmButtonText: 'Ya, batalkan pelunasan',
+				cancelButtonText: 'Tidak'
+			}).then(function(result) {
+				if (result.isConfirmed) {
+					$('#revert-piutang-id').val(id);
+					$('#form-revert-piutang').submit();
+				}
+			});
+		});
 	});
 </script>
+
+<!-- Form tersembunyi untuk revert status piutang -->
+<form id="form-revert-piutang" action="actions/aksi_piutang.php?act=revert_status" method="post" style="display:none;">
+	<?= csrf_input() ?>
+	<input type="hidden" name="id_piutang" id="revert-piutang-id" value="">
+</form>

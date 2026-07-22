@@ -45,7 +45,7 @@
             return;
         }
 
-        if ($cardBody.children('.cashflow-table-toolbar').length) {
+        if ($cardBody.find('.cashflow-table-toolbar').length) {
             return;
         }
 
@@ -54,13 +54,18 @@
             return;
         }
 
-        var $action = $cardBody.children('.text-end').filter(function () {
-            return $(this).find('button[data-bs-toggle="modal"], a[data-bs-toggle="modal"]').length > 0;
-        }).first();
+        // Cari tombol tambah — bisa di .cashflow-table-page-actions atau .text-end
+        var $action = $cardBody.find('.cashflow-table-page-actions').first();
+        if (!$action.length) {
+            $action = $cardBody.children('.text-end').filter(function () {
+                return $(this).find('button[data-bs-toggle="modal"], a[data-bs-toggle="modal"]').length > 0;
+            }).first();
+        }
 
         var $toolbar = $('<div class="cashflow-table-toolbar"></div>');
         $controls.addClass('cashflow-table-controls');
 
+        // Sisipkan toolbar tepat sebelum table-responsive
         $tableArea.before($toolbar);
         $toolbar.append($controls);
 

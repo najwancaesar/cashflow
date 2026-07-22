@@ -99,6 +99,38 @@ function handle_piutang_transaction_failure($con, Throwable $error, $fallbackMes
 	show_sweetalert_and_redirect('Gagal', $fallbackMessage, 'error', 'main.php?module=piutang');
 }
 
+/**
+ * Ambil id_kategori untuk kategori bernama $namaKategori milik user.
+ * Jika belum ada, buat otomatis lalu kembalikan ID-nya.
+ */
+function get_or_create_kategori_piutang($con, $userId, $namaKategori, $tipeKategori)
+{
+    $stmt = $con->prepare("SELECT id_kategori FROM kategori WHERE user_id = ? AND nama_kategori = ? AND tipe_kategori = ? LIMIT 1");
+    if (!$stmt) {
+        return null;
+    }
+    $stmt->bind_param("iss", $userId, $namaKategori, $tipeKategori);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $row = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    if ($row) {
+        return (int) $row['id_kategori'];
+    }
+
+    // Belum ada — buat otomatis
+    $ins = $con->prepare("INSERT INTO kategori (user_id, nama_kategori, tipe_kategori) VALUES (?, ?, ?)");
+    if (!$ins) {
+        return null;
+    }
+    $ins->bind_param("iss", $userId, $namaKategori, $tipeKategori);
+    $ins->execute();
+    $newId = (int) $con->insert_id;
+    $ins->close();
+    return $newId ?: null;
+}
+
 if($act == 't'){
 	require_post_csrf_piutang();
 	$id = (int) ($_POST['id_piutang'] ?? 0);
@@ -227,7 +259,9 @@ if($act == 'l'){
 
 		$saldoSebelum = cashflow_calculate_wallet_balance($con, $user, $walletId);
 		$statusSelesai = 'selesai';
-		$idKategori = null;
+
+		// Ambil/buat kategori "Piutang" untuk user ini
+		$idKategori = get_or_create_kategori_piutang($con, $user, 'Piutang', 'pemasukan');
 
 		$stmtInsert = $con->prepare("INSERT INTO pemasukan (tanggal, catatan, jumlah, user, status, id_kategori, id_wallet)
 			VALUES (?, ?, ?, ?, ?, ?, ?)");
@@ -277,6 +311,76 @@ if($act == 'l'){
 	}
 }
 
+// Batalkan pelunasan: Selesai → Pending (hapus pemasukan linked, kembalikan status)
+if ($act == 'revert_status') {
+	require_post_csrf_piutang();
+	$id = (int) ($_POST['id_piutang'] ?? 0);
+
+	if ($id <= 0) {
+		show_sweetalert_and_redirect('Gagal', 'ID piutang tidak valid.', 'error', 'main.php?module=piutang');
+	}
+
+	try {
+		$con->begin_transaction();
+		$piutang = fetch_piutang_for_user($con, $id, $user, true);
+		if (!$piutang) {
+			throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
+		}
+		if (($piutang['status'] ?? '') !== 'selesai') {
+			throw new DomainException('Hanya piutang yang sudah lunas yang dapat dibatalkan pelunasannya.');
+		}
+
+		$idPemasukan = (int) ($piutang['id_pemasukan'] ?? 0);
+		$walletId    = (int) ($piutang['id_wallet_penerimaan'] ?? 0);
+
+		if ($idPemasukan <= 0) {
+			throw new DomainException('Piutang ini tidak memiliki pemasukan terkait — tidak bisa dibatalkan via alur ini.');
+		}
+
+		// Kunci wallet terdampak
+		if ($walletId > 0) {
+			cashflow_lock_owned_wallets($con, $user, [$walletId]);
+		}
+
+		// Cek saldo: menghapus pemasukan akan mengurangi saldo
+		cashflow_ensure_removing_pemasukan_wont_worsen_balance($con, $user, $walletId, $idPemasukan);
+
+		// NULL-kan dulu referensi FK di piutang (ON DELETE RESTRICT mencegah hapus langsung)
+		$nullStmt = $con->prepare("UPDATE piutang SET status = 'pending', tanggal_lunas = NULL, id_wallet_penerimaan = NULL, id_pemasukan = NULL WHERE id_piutang = ? AND user = ?");
+		if (!$nullStmt) {
+			throw new RuntimeException('Gagal menyiapkan pembaruan piutang.');
+		}
+		$nullStmt->bind_param("ii", $id, $user);
+		if (!$nullStmt->execute() || $nullStmt->affected_rows <= 0) {
+			$nullStmt->close();
+			throw new RuntimeException('Pembaruan status piutang gagal.');
+		}
+		$nullStmt->close();
+
+		// Sekarang aman hapus pemasukan (tidak ada lagi FK yang mereferensikan)
+		$delStmt = $con->prepare("DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ?");
+		if (!$delStmt) {
+			throw new RuntimeException('Gagal menyiapkan penghapusan pemasukan linked.');
+		}
+		$delStmt->bind_param("ii", $idPemasukan, $user);
+		if (!$delStmt->execute() || $delStmt->affected_rows <= 0) {
+			$delStmt->close();
+			throw new RuntimeException('Pemasukan linked gagal dihapus.');
+		}
+		$delStmt->close();
+
+		$con->commit();
+
+		if (function_exists('record_activity')) {
+			record_activity($con, 'piutang', 'revert_status', "Membatalkan pelunasan piutang ID {$id}; pemasukan ID {$idPemasukan} dihapus.");
+		}
+
+		show_sweetalert_and_redirect('Berhasil', 'Pelunasan piutang berhasil dibatalkan. Status dikembalikan ke Pending.', 'success', 'main.php?module=piutang');
+	} catch (Throwable $e) {
+		handle_piutang_transaction_failure($con, $e, 'Pembatalan pelunasan piutang gagal diproses.');
+	}
+}
+
 if($act == 'h'){
 	require_post_csrf_piutang();
 	$id = (int) ($_POST['id_piutang'] ?? 0);
@@ -291,11 +395,41 @@ if($act == 'h'){
 		if (!$piutang) {
 			throw new DomainException('Data piutang tidak ditemukan atau bukan milik Anda.');
 		}
+
 		$idPemasukan = (int) ($piutang['id_pemasukan'] ?? 0);
-		if ($idPemasukan > 0) {
-			throw new DomainException('Piutang memiliki pemasukan linked pelunasan tidak dapat dihapus permanen.');
+		$walletId    = (int) ($piutang['id_wallet_penerimaan'] ?? 0);
+		$isLunas     = ($piutang['status'] ?? '') === 'selesai' && $idPemasukan > 0;
+
+		if ($isLunas) {
+			// Piutang lunas: kunci wallet, cek saldo
+			if ($walletId > 0) {
+				cashflow_lock_owned_wallets($con, $user, [$walletId]);
+			}
+			cashflow_ensure_removing_pemasukan_wont_worsen_balance($con, $user, $walletId, $idPemasukan);
+
+			// NULL-kan referensi FK dulu (ON DELETE RESTRICT)
+			$nullPiutang = $con->prepare("UPDATE piutang SET id_pemasukan = NULL, id_wallet_penerimaan = NULL WHERE id_piutang = ? AND user = ?");
+			if (!$nullPiutang) {
+				throw new RuntimeException('Gagal menyiapkan pembaruan referensi piutang.');
+			}
+			$nullPiutang->bind_param("ii", $id, $user);
+			$nullPiutang->execute();
+			$nullPiutang->close();
+
+			// Sekarang aman hapus pemasukan
+			$delPemasukan = $con->prepare("DELETE FROM pemasukan WHERE id_pemasukan = ? AND user = ?");
+			if (!$delPemasukan) {
+				throw new RuntimeException('Gagal menyiapkan penghapusan pemasukan linked.');
+			}
+			$delPemasukan->bind_param("ii", $idPemasukan, $user);
+			if (!$delPemasukan->execute() || $delPemasukan->affected_rows <= 0) {
+				$delPemasukan->close();
+				throw new RuntimeException('Pemasukan linked gagal dihapus.');
+			}
+			$delPemasukan->close();
 		}
 
+		// Hapus piutang
 		$stmt = $con->prepare("DELETE FROM piutang WHERE id_piutang = ? AND user = ?");
 		if (!$stmt) {
 			throw new Exception('Prepare delete piutang gagal.');
@@ -315,7 +449,8 @@ if($act == 'h'){
 		$con->commit();
 
 		if (function_exists('record_activity')) {
-			record_activity($con, 'piutang', 'hapus', "Menghapus piutang pending ID {$id}.");
+			$logStatus = $isLunas ? 'lunas (beserta pemasukan linked)' : 'pending';
+			record_activity($con, 'piutang', 'hapus', "Menghapus piutang {$logStatus} ID {$id}.");
 		}
 
 		show_sweetalert_and_redirect('Berhasil', 'Data piutang berhasil dihapus.', 'success', 'main.php?module=piutang');

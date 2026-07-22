@@ -9,6 +9,7 @@ function get_default_category_map()
             'Freelance',
             'Investasi',
             'Hadiah',
+            'Piutang',
             'Lain-lain',
         ],
         'pengeluaran' => [
@@ -20,6 +21,7 @@ function get_default_category_map()
             'Investasi',
             'Kesehatan',
             'Pendidikan',
+            'Utang',
             'Lain-lain',
         ],
     ];

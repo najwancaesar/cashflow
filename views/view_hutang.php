@@ -154,7 +154,12 @@ $sql = $stmtHutang->get_result();
                                 </td>
                                 <td class="align-middle text-center text-sm">
                                     <?php if (($row['status'] ?? '') === 'selesai') { ?>
-                                        <span class="badge badge-sm bg-gradient-success">Selesai</span>
+                                        <span class="badge badge-sm bg-gradient-success" style="cursor:pointer;"
+                                            data-hutang-revert="true"
+                                            data-id="<?= (int) $row['id_hutang'] ?>"
+                                            data-kreditur="<?= htmlspecialchars($row['kreditur'], ENT_QUOTES, 'UTF-8') ?>"
+                                            title="Klik untuk batalkan pelunasan"
+                                        >Selesai ↩</span>
                                         <?php if (!empty($row['tanggal_lunas']) || !empty($row['wallet_pembayaran_nama'])) { ?>
                                             <small class="d-block text-xs text-secondary mt-1">
                                                 Dibayar dari
@@ -185,14 +190,22 @@ $sql = $stmtHutang->get_result();
                                 </td>
                                 <td class="align-middle cashflow-action-col">
                                     <div class="cashflow-action-group">
-                                    <?php if (empty($row['id_pengeluaran'])) { ?>
+                                    <?php
+                                    $isLunasRowH = ($row['status'] ?? '') === 'selesai' && !empty($row['id_pengeluaran']);
+                                    $deleteTitleH = $isLunasRowH
+                                        ? 'Hapus utang lunas ini?'
+                                        : 'Hapus data utang ini?';
+                                    $deleteTextH = $isLunasRowH
+                                        ? 'PERHATIAN: Menghapus utang yang sudah lunas akan IKUT menghapus catatan pengeluaran terkait dan menambah saldo wallet kembali. Tindakan ini tidak bisa dibatalkan.'
+                                        : 'Data utang yang dihapus tidak bisa dikembalikan.';
+                                    ?>
                                         <form action="actions/aksi_hutang.php?act=h" method="post" class="d-inline">
                                         <?= csrf_input() ?>
                                         <input type="hidden" name="id_hutang" value="<?= (int) $row['id_hutang'] ?>">
                                         <button type="submit"
                                             data-confirm="true"
-                                            data-confirm-title="Hapus data utang ini?"
-                                            data-confirm-text="Data utang yang dihapus tidak bisa dikembalikan."
+                                            data-confirm-title="<?= htmlspecialchars($deleteTitleH, ENT_QUOTES, 'UTF-8') ?>"
+                                            data-confirm-text="<?= htmlspecialchars($deleteTextH, ENT_QUOTES, 'UTF-8') ?>"
                                             data-confirm-confirm-text="Ya, hapus"
                                             data-confirm-cancel-text="Batal"
                                             class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
@@ -200,7 +213,6 @@ $sql = $stmtHutang->get_result();
                                             <i class="fa fa-trash" aria-hidden="true"></i>
                                         </button>
                                     </form>
-                                    <?php } ?>
 
                                     <a href="#" role="button" data-id="<?= (int) $row['id_hutang'] ?>"
                                         data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?>"
@@ -373,5 +385,33 @@ $(document).ready(function() {
         $('#tanggal_lunas_hutang').val('<?= htmlspecialchars($today, ENT_QUOTES, 'UTF-8') ?>');
         $('#lunas_hutang_info').text('Lunasi utang ke ' + ($(this).attr("data-kreditur") || '-') + ' sebesar ' + ($(this).attr("data-jumlah") || 'Rp. 0') + '.');
     });
+
+    // Handler klik badge "Selesai ↩" — batalkan pelunasan hutang
+    $(document).on("click", "[data-hutang-revert]", function() {
+        var id = $(this).attr("data-id");
+        var kreditur = $(this).attr("data-kreditur") || '-';
+        if (!id) return;
+        Swal.fire({
+            title: 'Batalkan pelunasan utang?',
+            html: 'Membatalkan pelunasan utang ke <strong>' + kreditur + '</strong> akan <strong>menghapus catatan pengeluaran terkait</strong> dan mengembalikan saldo wallet pembayaran.<br><br>Status utang akan kembali ke <em>Pending</em>.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, batalkan pelunasan',
+            cancelButtonText: 'Tidak'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $('#revert-hutang-id').val(id);
+                $('#form-revert-hutang').submit();
+            }
+        });
+    });
 });
 </script>
+
+<!-- Form tersembunyi untuk revert status hutang -->
+<form id="form-revert-hutang" action="actions/aksi_hutang.php?act=revert_status" method="post" style="display:none;">
+	<?= csrf_input() ?>
+	<input type="hidden" name="id_hutang" id="revert-hutang-id" value="">
+</form>

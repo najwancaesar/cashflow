@@ -245,3 +245,45 @@ if (!function_exists('cashflow_get_user_wallet_balances')) {
         return $wallets;
     }
 }
+
+/**
+ * Pastikan menghapus sebuah pemasukan (excludePemasukanId) dari wallet tertentu
+ * tidak menyebabkan saldo wallet menjadi (atau semakin) negatif.
+ *
+ * Cara kerja:
+ * - currentBalance  = saldo dengan baris tersebut masih dihitung
+ * - proposedBalance = saldo seolah baris itu sudah dihapus (via exclude parameter)
+ * Jika proposedBalance < -0.00001 DAN lebih buruk dari currentBalance → tolak.
+ *
+ * @throws DomainException jika penghapusan akan memperburuk saldo negatif.
+ */
+if (!function_exists('cashflow_ensure_removing_pemasukan_wont_worsen_balance')) {
+    function cashflow_ensure_removing_pemasukan_wont_worsen_balance($con, $userId, $walletId, $pemasukanId)
+    {
+        if ($walletId <= 0 || $pemasukanId <= 0) {
+            return; // tidak ada wallet yang terdampak, aman
+        }
+        $currentBalance  = cashflow_calculate_wallet_balance($con, $userId, $walletId);
+        $proposedBalance = cashflow_calculate_wallet_balance($con, $userId, $walletId, null, null, $pemasukanId);
+        if ($proposedBalance < -0.00001 && $proposedBalance < $currentBalance - 0.00001) {
+            throw new DomainException(
+                'Tindakan ini akan membuat saldo wallet terkait menjadi negatif. Pastikan saldo cukup sebelum menghapus transaksi ini.'
+            );
+        }
+    }
+}
+
+/**
+ * Pastikan menghapus sebuah pengeluaran (excludePengeluaranId) dari wallet tertentu
+ * tidak menyebabkan saldo wallet menjadi (atau semakin) negatif.
+ * Menghapus pengeluaran justru menambah saldo, jadi pemeriksaan ini selalu lolos
+ * — namun tetap disediakan untuk konsistensi dan kemudahan ke depan.
+ */
+if (!function_exists('cashflow_ensure_removing_pengeluaran_wont_worsen_balance')) {
+    function cashflow_ensure_removing_pengeluaran_wont_worsen_balance($con, $userId, $walletId, $pengeluaranId)
+    {
+        // Menghapus pengeluaran selalu meningkatkan saldo, tidak perlu pemeriksaan.
+        // Fungsi ini ada untuk menjaga simetri dengan versi pemasukan.
+        return;
+    }
+}
