@@ -157,7 +157,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                         <?php } ?>
                     </div>
 
-                    <div class="d-flex flex-wrap justify-content-end gap-2 me-3 mt-3">
+                    <div class="cashflow-table-page-actions">
                         <form action="actions/aksi_recurring.php?act=g" method="post" class="d-inline">
                             <?= csrf_input() ?>
                             <button type="submit"
@@ -444,6 +444,8 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                     dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
         }
+
+        $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
 
         function filterRecurringCategoryOptions(selectedCategory) {
             var tipe = $('#tipe_transaksi').val();

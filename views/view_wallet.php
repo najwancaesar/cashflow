@@ -95,7 +95,7 @@ try {
                             Saldo wallet dihitung dari saldo awal dan aktivitas keuangan selesai pada setiap wallet.
                         </p>
                     </div>
-                    <div class="d-flex flex-wrap justify-content-end gap-2 me-3 mt-3 cashflow-page-actions">
+                    <div class="cashflow-table-page-actions">
                         <button type="button" class="btn btn-outline-info"
                             <?= $walletTypeFeatureReady ? 'data-bs-toggle="modal" data-bs-target="#modalWalletType"' : 'disabled' ?>
                             title="<?= $walletTypeFeatureReady ? 'Kelola tipe wallet kustom' : 'Jalankan migration Sprint 1 untuk mengaktifkan tipe kustom' ?>">
@@ -447,6 +447,8 @@ try {
                 dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
         }
+
+        $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
 
         $(document).on("click", ".btneditwallet", function() {
             $('#tipe_wallet option[data-wallet-type-active="0"]').prop('disabled', true);
