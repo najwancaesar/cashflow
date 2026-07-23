@@ -491,7 +491,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                             </div>
                         <?php } ?>
                     </div>
-                    <div class="text-end me-3 mt-3">
+                    <div class="cashflow-table-page-actions">
                         <button type="button" class="btn btn-secondary" id="btnTambahSavingGoal" data-bs-toggle="modal"
                             data-bs-target="#modalSavingGoal">
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Celengan
@@ -709,6 +709,10 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                 });
             }
         });
+
+        if ($('#datatableSavingGoal').length) {
+            $('.cashflow-table-page-actions').appendTo('#datatableSavingGoal_wrapper .cashflow-datatable-top');
+        }
 
         $('#btnTambahSavingGoal').on('click', function() {
             $('#saving_goal_modal_title').text('Tambah Celengan Virtual');

@@ -1084,59 +1084,7 @@ table.dataTable thead th.action-col {
     word-break: break-word;
 }
 
-.cashflow-datatable-top,
-.cashflow-datatable-bottom {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-}
 
-.cashflow-datatable-top {
-    margin-bottom: 1rem;
-}
-
-.cashflow-datatable-bottom {
-    margin-top: 1rem;
-}
-
-.cashflow-datatable-top .dataTables_length,
-.cashflow-datatable-top .dataTables_filter,
-.cashflow-datatable-bottom .dataTables_info,
-.cashflow-datatable-bottom .dataTables_paginate {
-    margin: 0 !important;
-}
-
-.cashflow-datatable-top .input-group {
-    width: min(100%, 420px);
-    margin-left: auto;
-}
-
-.cashflow-datatable-top .dataTables_filter,
-.cashflow-datatable-top .dataTables_filter label {
-    width: 100%;
-    margin-bottom: 0;
-}
-
-.cashflow-datatable-top .dataTables_filter label {
-    display: grid;
-    grid-template-columns: auto minmax(180px, 1fr);
-    align-items: center;
-    gap: 0.65rem;
-}
-
-.cashflow-datatable-top .dataTables_filter input {
-    width: 100% !important;
-    min-width: 0;
-    min-height: 42px;
-    margin-left: 0 !important;
-}
-
-.cashflow-datatable-bottom .dataTables_paginate .pagination {
-    margin-bottom: 0;
-    flex-wrap: wrap;
-}
 
 @media (max-width: 575.98px) {
     .archive-filter-form .cashflow-filter-field,
@@ -1154,29 +1102,7 @@ table.dataTable thead th.action-col {
         max-width: none;
     }
 
-    .cashflow-datatable-top,
-    .cashflow-datatable-bottom {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-    }
 
-    .cashflow-datatable-top .dataTables_length,
-    .cashflow-datatable-top .input-group,
-    .cashflow-datatable-bottom .dataTables_info,
-    .cashflow-datatable-bottom .dataTables_paginate {
-        width: 100%;
-        max-width: none;
-    }
-
-    .cashflow-datatable-top .dataTables_filter label {
-        grid-template-columns: 1fr;
-        gap: 0.4rem;
-    }
-
-    .cashflow-datatable-bottom .dataTables_paginate .pagination {
-        justify-content: center;
-    }
 }
 
 .app-main-content .dashboard-latest-scroll {
@@ -3125,27 +3051,67 @@ table.dataTable thead th.action-col {
     -moz-appearance: none;
 }
 
-/* Toolbar tabel: Show entries (kiri, fixed) - Search (tengah, MELEBAR) - Tombol (kanan, fixed) */
+/* ============================================================
+   Cashflow DataTable Toolbar — Show entries | Search | Tombol Aksi
+   SATU-SATUNYA blok CSS untuk .cashflow-datatable-top.
+   Jangan tambah blok override lain di tempat lain untuk selector ini.
+   ============================================================ */
 .cashflow-datatable-top {
-    display: flex !important;
+    display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem 1rem;
-    justify-content: flex-start;
 }
 
 .cashflow-datatable-top .dataTables_length {
-    flex: 0 0 auto;
     order: 1;
+    flex: 0 0 auto;
     margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_length label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.cashflow-datatable-top .dataTables_length select {
+    min-height: 42px;
+    margin: 0;
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
 }
 
 .cashflow-datatable-top .input-group.input-group-outline {
     order: 2;
-    flex: 1 1 240px;   /* INI KUNCINYA: search ikut melebar mengisi sisa ruang */
-    width: auto;        /* override aturan lama yang cap lebar ke 360px */
+    flex: 1 1 240px;
+    width: auto;
     max-width: none;
     margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_filter {
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_filter input {
+    flex: 1 1 auto;
+    width: 100% !important;
+    min-height: 42px;
+    margin-left: 0 !important;
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
 }
 
 .cashflow-datatable-top .cashflow-table-page-actions {
@@ -3154,7 +3120,7 @@ table.dataTable thead th.action-col {
     margin: 0;
 }
 
-@media (max-width: 576px) {
+@media (max-width: 575.98px) {
     .cashflow-datatable-top {
         flex-direction: column;
         align-items: stretch;

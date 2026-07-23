@@ -311,6 +311,7 @@ mysqli_stmt_close($transferStmt);
                 order: [[0, 'desc']],
                 dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
+            $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
         }
 
         $(document).on("click", ".btnedittransferwallet", function() {
