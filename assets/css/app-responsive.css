@@ -2754,10 +2754,9 @@ table.dataTable thead th.action-col {
     white-space: nowrap;
 }
 
-.cashflow-datatable-top .input-group {
+/* .cashflow-datatable-top .input-group {
     width: min(100%, 360px);
-}
-
+} */
 .cashflow-row-action-dropdown {
     position: relative;
     display: inline-flex;
@@ -3124,4 +3123,52 @@ table.dataTable thead th.action-col {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+}
+
+/* Toolbar tabel: Show entries (kiri, fixed) - Search (tengah, MELEBAR) - Tombol (kanan, fixed) */
+.cashflow-datatable-top {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    justify-content: flex-start;
+}
+
+.cashflow-datatable-top .dataTables_length {
+    flex: 0 0 auto;
+    order: 1;
+    margin: 0;
+}
+
+.cashflow-datatable-top .input-group.input-group-outline {
+    order: 2;
+    flex: 1 1 240px;   /* INI KUNCINYA: search ikut melebar mengisi sisa ruang */
+    width: auto;        /* override aturan lama yang cap lebar ke 360px */
+    max-width: none;
+    margin: 0;
+}
+
+.cashflow-datatable-top .cashflow-table-page-actions {
+    order: 3;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+@media (max-width: 576px) {
+    .cashflow-datatable-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cashflow-datatable-top .dataTables_length,
+    .cashflow-datatable-top .input-group.input-group-outline,
+    .cashflow-datatable-top .cashflow-table-page-actions {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .cashflow-datatable-top .cashflow-table-page-actions .btn,
+    .cashflow-datatable-top .add-transaction-btn {
+        width: 100%;
+    }
 }
