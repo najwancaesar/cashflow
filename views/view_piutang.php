@@ -370,9 +370,25 @@ $sql = $stmtPiutang->get_result();
 		$(document).on("click", ".btneditpiutang", function() {
 			$('#tanggal_jatuh_tempo').val($(this).attr("data-jatuh_tempo") || '');
 		});
-
 		$(document).on("click", 'button[data-bs-target="#modalTambah"]', function() {
 			$('#tanggal_jatuh_tempo').val('');
+		});
+
+		$('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
+
+		$(document).on("click", ".btneditpiutang", function() {
+			var id = $(this).data('id');
+			var debitur = $(this).data('debitur');
+			var jumlah = $(this).data('jumlah');
+			var tgl = $(this).data('tgl');
+			var ket = $(this).data('ket');
+
+			$("#edit_id_piutang").val(id);
+			$("#edit_debitur").val(debitur);
+			$("#edit_jumlah").val(jumlah);
+			$("#edit_tgl_piutang").val(tgl);
+			$("#edit_keterangan").val(ket);
+			$('#tanggal_jatuh_tempo').val($(this).attr("data-jatuh_tempo") || '');
 		});
 
 		$(document).on("click", ".btnlunaspiutang", function() {
@@ -386,9 +402,12 @@ $sql = $stmtPiutang->get_result();
 			var id = $(this).attr("data-id");
 			var debitur = $(this).attr("data-debitur") || '-';
 			if (!id) return;
+			
+			var safeDebitur = $('<div>').text(debitur).html();
+			
 			Swal.fire({
 				title: 'Batalkan pelunasan piutang?',
-				html: 'Membatalkan pelunasan piutang dari <strong>' + debitur + '</strong> akan <strong>menghapus catatan pemasukan terkait</strong> dan mengurangi saldo wallet penerimaan.<br><br>Status piutang akan kembali ke <em>Pending</em>.',
+				html: 'Membatalkan pelunasan piutang dari <strong>' + safeDebitur + '</strong> akan <strong>menghapus catatan pemasukan terkait</strong> dan mengurangi saldo wallet penerimaan.<br><br>Status piutang akan kembali ke <em>Pending</em>.',
 				icon: 'warning',
 				showCancelButton: true,
 				confirmButtonColor: '#d33',

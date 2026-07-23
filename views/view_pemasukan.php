@@ -469,6 +469,8 @@ $renderMobilePemasukanCard = function (array $row) use ($defaultWalletName, $def
             dom: datatableDom
         });
 
+        $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
+
         $(document).on("click", ".btneditpemasukan", function() {
             var walletId = $(this).attr("data-wallet") || defaultWalletId;
             $('#id_wallet').val(walletId);

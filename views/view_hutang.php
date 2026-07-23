@@ -372,6 +372,8 @@ $(document).ready(function() {
         dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
     });
 
+    $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
+
     $(document).on("click", ".btnedithutang", function() {
         $('#tanggal_jatuh_tempo').val($(this).attr("data-jatuh_tempo") || '');
     });
@@ -391,9 +393,12 @@ $(document).ready(function() {
         var id = $(this).attr("data-id");
         var kreditur = $(this).attr("data-kreditur") || '-';
         if (!id) return;
+        
+        var safeKreditur = $('<div>').text(kreditur).html();
+        
         Swal.fire({
             title: 'Batalkan pelunasan utang?',
-            html: 'Membatalkan pelunasan utang ke <strong>' + kreditur + '</strong> akan <strong>menghapus catatan pengeluaran terkait</strong> dan mengembalikan saldo wallet pembayaran.<br><br>Status utang akan kembali ke <em>Pending</em>.',
+            html: 'Membatalkan pelunasan utang ke <strong>' + safeKreditur + '</strong> akan <strong>menghapus catatan pengeluaran terkait</strong> dan mengembalikan saldo wallet pembayaran.<br><br>Status utang akan kembali ke <em>Pending</em>.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',

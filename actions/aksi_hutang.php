@@ -6,6 +6,7 @@ include __DIR__ . "/../includes/nominal_helper.php";
 include __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
 include_once __DIR__ . "/../includes/wallet_balance_helper.php";
+include_once __DIR__ . "/../includes/default_categories.php";
 $act = $_GET['act'] ?? '';
 $user = (int) ($_SESSION['id_user'] ?? 0);
 
@@ -99,37 +100,7 @@ function handle_hutang_transaction_failure($con, Throwable $error, $fallbackMess
 	show_sweetalert_and_redirect('Gagal', $fallbackMessage, 'error', 'main.php?module=hutang');
 }
 
-/**
- * Ambil id_kategori untuk kategori bernama $namaKategori milik user.
- * Jika belum ada, buat otomatis lalu kembalikan ID-nya.
- */
-function get_or_create_kategori_hutang($con, $userId, $namaKategori, $tipeKategori)
-{
-    $stmt = $con->prepare("SELECT id_kategori FROM kategori WHERE user_id = ? AND nama_kategori = ? AND tipe_kategori = ? LIMIT 1");
-    if (!$stmt) {
-        return null;
-    }
-    $stmt->bind_param("iss", $userId, $namaKategori, $tipeKategori);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result ? $result->fetch_assoc() : null;
-    $stmt->close();
 
-    if ($row) {
-        return (int) $row['id_kategori'];
-    }
-
-    // Belum ada — buat otomatis
-    $ins = $con->prepare("INSERT INTO kategori (user_id, nama_kategori, tipe_kategori) VALUES (?, ?, ?)");
-    if (!$ins) {
-        return null;
-    }
-    $ins->bind_param("iss", $userId, $namaKategori, $tipeKategori);
-    $ins->execute();
-    $newId = (int) $con->insert_id;
-    $ins->close();
-    return $newId ?: null;
-}
 
 if($act == 't'){
 	require_post_csrf_hutang();
@@ -255,7 +226,7 @@ if($act == 'l'){
 		$statusSelesai = 'selesai';
 
 		// Ambil/buat kategori "Utang" untuk user ini
-		$idKategori = get_or_create_kategori_hutang($con, $user, 'Utang', 'pengeluaran');
+		$idKategori = cashflow_find_or_create_category($con, $user, 'Utang', 'pengeluaran');
 
 		$stmtInsert = $con->prepare("INSERT INTO pengeluaran (tanggal, catatan, jumlah, user, status, id_kategori, id_wallet)
 			VALUES (?, ?, ?, ?, ?, ?, ?)");

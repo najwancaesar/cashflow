@@ -511,6 +511,8 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
             dom: datatableDom
         });
 
+        $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
+
         function budgetPeriodKey(categoryId, transactionDate) {
             var category = parseInt(categoryId, 10);
             var date = String(transactionDate || '');
