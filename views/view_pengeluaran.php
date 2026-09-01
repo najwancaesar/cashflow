@@ -500,7 +500,6 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                 "previous": "&lt"
             },
         };
-        var datatableDom = '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">';
 
         $('#datatablePengeluaranDesktop').DataTable({
             language: datatableLanguage,
@@ -508,7 +507,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                 { targets: -1, orderable: false, searchable: false }
             ],
             order: [[0, 'desc']],
-            dom: datatableDom
+            dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
         });
 
         $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');

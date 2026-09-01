@@ -30,54 +30,6 @@
         }
     }
 
-    function enhanceDataTableToolbar(table) {
-        if (!window.jQuery || !table) {
-            return;
-        }
-
-        var $ = window.jQuery;
-        var $table = $(table);
-        var $wrapper = $table.closest('.dataTables_wrapper');
-        var $tableArea = $wrapper.closest('.table-responsive');
-        var $cardBody = $tableArea.closest('.card-body');
-
-        if (!$wrapper.length || !$tableArea.length || !$cardBody.length) {
-            return;
-        }
-
-        if ($cardBody.find('.cashflow-table-toolbar').length) {
-            return;
-        }
-
-        var $controls = $wrapper.children('.d-flex').first();
-        if (!$controls.length) {
-            return;
-        }
-
-        // Cari tombol tambah — bisa di .cashflow-table-page-actions atau .text-end
-        var $action = $cardBody.find('.cashflow-table-page-actions').first();
-        if (!$action.length) {
-            $action = $cardBody.children('.text-end').filter(function () {
-                return $(this).find('button[data-bs-toggle="modal"], a[data-bs-toggle="modal"]').length > 0;
-            }).first();
-        }
-
-        var $toolbar = $('<div class="cashflow-table-toolbar"></div>');
-        $controls.addClass('cashflow-table-controls');
-
-        // Sisipkan toolbar tepat sebelum table-responsive
-        $tableArea.before($toolbar);
-        $toolbar.append($controls);
-
-        if ($action.length) {
-            $action.addClass('cashflow-table-action');
-            $toolbar.append($action);
-        }
-
-        $controls.find('.dataTables_filter input')
-            .attr('placeholder', 'Ketik untuk mencari data...');
-    }
-
     function annotateResponsiveTable(table) {
         if (!table || table.dataset.skipResponsive === 'true' || table.classList.contains('cashflow-responsive-table')) {
             return;
@@ -117,13 +69,11 @@
         var $ = window.jQuery;
 
         $(document).on('init.dt', function (event, settings) {
-            enhanceDataTableToolbar(settings.nTable);
             annotateResponsiveTable(settings.nTable);
         });
 
         $(function () {
             $('table.dataTable, table[id="datatable"]').each(function () {
-                enhanceDataTableToolbar(this);
                 annotateResponsiveTable(this);
             });
         });

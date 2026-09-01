@@ -414,7 +414,7 @@ $(document).ready(function() {
                     "previous": "&lt"
                 },
             },
-            dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+            dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
         });
     }
 });
