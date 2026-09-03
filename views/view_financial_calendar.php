@@ -10,17 +10,8 @@ if ($calendarUserId <= 0 || strtolower((string) ($_SESSION['role'] ?? '')) === '
 }
 
 $calendarToday = new DateTimeImmutable('today');
-$selectedMonth = isset($_GET['bulan']) ? (int) $_GET['bulan'] : (int) $calendarToday->format('n');
-$selectedYear = isset($_GET['tahun']) ? (int) $_GET['tahun'] : (int) $calendarToday->format('Y');
 $selectedType = trim((string) ($_GET['jenis'] ?? 'all'));
 $selectedStatus = trim((string) ($_GET['status'] ?? 'all'));
-
-if ($selectedMonth < 1 || $selectedMonth > 12) {
-    $selectedMonth = (int) $calendarToday->format('n');
-}
-if ($selectedYear < 2000 || $selectedYear > 2100) {
-    $selectedYear = (int) $calendarToday->format('Y');
-}
 
 $allowedTypes = ['all', 'hutang', 'piutang', 'recurring', 'saving_goal'];
 $allowedStatuses = ['all', 'overdue', 'today', 'next7', 'upcoming', 'no_due'];
@@ -31,9 +22,31 @@ if (!in_array($selectedStatus, $allowedStatuses, true)) {
     $selectedStatus = 'all';
 }
 
+// Default: awal bulan berjalan s/d akhir bulan berjalan
+$calendarDefaultStart = $calendarToday->modify('first day of this month')->format('Y-m-d');
+$calendarDefaultEnd   = $calendarToday->modify('last day of this month')->format('Y-m-d');
+
+$rawStart = trim((string) ($_GET['tanggal_awal'] ?? ''));
+$rawEnd   = trim((string) ($_GET['tanggal_akhir'] ?? ''));
+
+$parsedStart = DateTimeImmutable::createFromFormat('Y-m-d', $rawStart);
+$parsedEnd   = DateTimeImmutable::createFromFormat('Y-m-d', $rawEnd);
+
+// Pakai default kalau format tidak valid
+$dateStart = ($parsedStart !== false) ? $parsedStart->format('Y-m-d') : $calendarDefaultStart;
+$dateEnd   = ($parsedEnd   !== false) ? $parsedEnd->format('Y-m-d')   : $calendarDefaultEnd;
+
+// Auto-tukar kalau akhir < awal
+if ($dateEnd < $dateStart) {
+    [$dateStart, $dateEnd] = [$dateEnd, $dateStart];
+}
+
+$startTimestamp = strtotime($dateStart);
+$endTimestamp   = strtotime($dateEnd . ' 23:59:59');
+
 $calendarEvents = cashflow_get_financial_calendar_events($con, $calendarUserId, $calendarToday);
 $calendarSummary = cashflow_financial_calendar_summary($calendarEvents);
-$filteredCalendarEvents = array_values(array_filter($calendarEvents, static function (array $event) use ($selectedMonth, $selectedYear, $selectedType, $selectedStatus) {
+$filteredCalendarEvents = array_values(array_filter($calendarEvents, static function (array $event) use ($startTimestamp, $endTimestamp, $selectedType, $selectedStatus) {
     if ($selectedType !== 'all' && $event['type'] !== $selectedType) {
         return false;
     }
@@ -47,23 +60,9 @@ $filteredCalendarEvents = array_values(array_filter($calendarEvents, static func
 
     $timestamp = strtotime((string) $event['due_date']);
     return $timestamp !== false
-        && (int) date('n', $timestamp) === $selectedMonth
-        && (int) date('Y', $timestamp) === $selectedYear;
+        && $timestamp >= $startTimestamp
+        && $timestamp <= $endTimestamp;
 }));
-
-$calendarMonths = [
-    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
-];
-$calendarYears = [(int) $calendarToday->format('Y') - 1, (int) $calendarToday->format('Y'), (int) $calendarToday->format('Y') + 1];
-foreach ($calendarEvents as $event) {
-    if (!empty($event['due_date'])) {
-        $calendarYears[] = (int) substr($event['due_date'], 0, 4);
-    }
-}
-$calendarYears = array_values(array_unique(array_filter($calendarYears)));
-sort($calendarYears);
 ?>
 
 <div class="container-fluid py-4 financial-calendar-page">
@@ -96,25 +95,31 @@ sort($calendarYears);
                     <form method="get" action="main.php" class="calendar-filter-grid mb-4">
                         <input type="hidden" name="module" value="kalender_keuangan">
                         <div>
-                            <label for="calendarMonth" class="form-label">Bulan</label>
+                            <label for="calendarDateStart" class="form-label">Dari Tanggal</label>
                             <div class="input-group input-group-outline">
-                                <select id="calendarMonth" name="bulan" class="form-control">
-                                    <?php foreach ($calendarMonths as $monthNumber => $monthName) { ?>
-                                        <option value="<?= (int) $monthNumber ?>" <?= $selectedMonth === $monthNumber ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($monthName, ENT_QUOTES, 'UTF-8') ?>
-                                        </option>
-                                    <?php } ?>
-                                </select>
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="calendarDateStart"
+                                    name="tanggal_awal"
+                                    value="<?= htmlspecialchars($dateStart, ENT_QUOTES, 'UTF-8') ?>"
+                                    autocomplete="off"
+                                    aria-label="Dari tanggal"
+                                >
                             </div>
                         </div>
                         <div>
-                            <label for="calendarYear" class="form-label">Tahun</label>
+                            <label for="calendarDateEnd" class="form-label">Sampai Tanggal</label>
                             <div class="input-group input-group-outline">
-                                <select id="calendarYear" name="tahun" class="form-control">
-                                    <?php foreach ($calendarYears as $year) { ?>
-                                        <option value="<?= (int) $year ?>" <?= $selectedYear === $year ? 'selected' : '' ?>><?= (int) $year ?></option>
-                                    <?php } ?>
-                                </select>
+                                <input
+                                    type="date"
+                                    class="form-control"
+                                    id="calendarDateEnd"
+                                    name="tanggal_akhir"
+                                    value="<?= htmlspecialchars($dateEnd, ENT_QUOTES, 'UTF-8') ?>"
+                                    autocomplete="off"
+                                    aria-label="Sampai tanggal"
+                                >
                             </div>
                         </div>
                         <div>
