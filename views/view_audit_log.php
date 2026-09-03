@@ -331,7 +331,7 @@ if ($tableExists) {
                             </div>
                         </div>
                     <?php } ?>
-                    <div class="table-responsive p-4">
+                    <div class="table-responsive cashflow-table-scroll p-4">
                         <?php if (!$tableExists) { ?>
                             <div class="border border-radius-lg p-4 text-center">
                                 <i class="fa fa-history text-secondary mb-2" aria-hidden="true"></i>

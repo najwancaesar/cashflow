@@ -106,7 +106,7 @@ try {
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Wallet
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <?php if (empty($walletRows)) { ?>
                             <div class="border border-radius-lg p-4 text-center cashflow-empty-state">
                                 <i class="fa fa-credit-card text-secondary mb-2" aria-hidden="true"></i>

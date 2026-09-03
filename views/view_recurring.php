@@ -176,7 +176,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                         </button>
                     </div>
 
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <?php if (empty($recurringRows)) { ?>
                             <div class="border border-radius-lg p-4 text-center">
                                 <i class="fa fa-refresh text-secondary mb-2" aria-hidden="true"></i>

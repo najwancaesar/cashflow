@@ -190,7 +190,7 @@ while ($row = mysqli_fetch_assoc($userResult)) {
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Pengguna
                         </button>
                     </div>
-                    <div class="table-responsive p-4">
+                    <div class="table-responsive cashflow-table-scroll p-4">
                         <table class="table align-items-center mb-0 cashflow-user-table cashflow-responsive-data cashflow-table-xl" id="datatable">
                             <thead>
                                 <tr>

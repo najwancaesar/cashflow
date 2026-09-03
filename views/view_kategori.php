@@ -180,7 +180,7 @@ mysqli_stmt_close($budgetHistoryStmt);
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Kategori
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <table class="table align-items-center mb-0" id="datatable">
                             <thead>
                                 <tr>

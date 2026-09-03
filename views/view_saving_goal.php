@@ -255,7 +255,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                         <?php if (empty($goalMutasi)) { ?>
                             <p class="text-sm text-secondary mb-0">Belum ada riwayat mutasi untuk celengan ini.</p>
                         <?php } else { ?>
-                            <div class="table-responsive">
+                            <div class="table-responsive cashflow-table-scroll">
                                 <table class="table align-items-center mb-0">
                                     <thead>
                                         <tr>
@@ -497,7 +497,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Celengan
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2 saving-goal-table-responsive">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2 saving-goal-table-responsive">
                         <?php render_saving_goal_table('datatableSavingGoal', $goalAktif, $mutasiByGoal, 'Belum ada celengan virtual. Mulai buat celengan pertamamu, misalnya Dana Darurat atau Beli Laptop.', $hasWalletAktif); ?>
                     </div>
                 </div>
@@ -515,7 +515,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                         </div>
                     </div>
                     <div class="card-body px-0 pb-2">
-                        <div class="table-responsive p-4 mx-2 saving-goal-table-responsive">
+                        <div class="table-responsive cashflow-table-scroll p-4 mx-2 saving-goal-table-responsive">
                             <?php render_saving_goal_table('datatableSavingGoalArchive', $goalArsip, $mutasiByGoal, 'Belum ada celengan virtual yang diarsipkan.', $hasWalletAktif); ?>
                         </div>
                     </div>
