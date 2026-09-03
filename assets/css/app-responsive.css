@@ -966,7 +966,12 @@ table.dataTable thead th.action-col {
     width: auto;
     max-width: 100%;
     overflow-x: auto;
-    overflow-y: visible;
+    /* overflow-y: visible tidak valid berdampingan dengan overflow-x: auto (CSS spec
+       akan upgrade otomatis ke overflow-y: auto), sehingga menyebabkan scrollbar
+       vertikal lokal yang tidak diinginkan di dalam kotak tabel.
+       Gunakan overflow-y: clip untuk menekan scrollbar vertikal lokal
+       tanpa memotong konten yang melampaui batas (mis. dropdown menu Bootstrap). */
+    overflow-y: clip;
     -webkit-overflow-scrolling: touch;
 }
 
