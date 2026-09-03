@@ -62,15 +62,14 @@ while ($walletRow = $walletResult ? $walletResult->fetch_assoc() : null) {
 $stmtWallet->close();
 $hasActiveWallet = !empty($activeWallets);
 
-$stmtPiutang = $con->prepare("SELECT piutang.*, user.nama,
+$stmtPiutang = $con->prepare("SELECT piutang.*,
 		wallet.nama_wallet AS wallet_penerimaan_nama,
 		wallet.tipe_wallet AS wallet_penerimaan_tipe,
 		pemasukan.id_pemasukan AS linked_pemasukan_id
 	FROM piutang
-	INNER JOIN user ON piutang.user = user.id_user
 	LEFT JOIN wallet ON piutang.id_wallet_penerimaan = wallet.id_wallet AND wallet.user_id = piutang.user
 	LEFT JOIN pemasukan ON piutang.id_pemasukan = pemasukan.id_pemasukan AND pemasukan.user = piutang.user
-	WHERE user.id_user = ?
+	WHERE piutang.user = ?
 	ORDER BY piutang.tanggal DESC, piutang.id_piutang DESC");
 $stmtPiutang->bind_param("i", $userYangSedangLogin);
 $stmtPiutang->execute();
@@ -114,7 +113,6 @@ $sql = $stmtPiutang->get_result();
 										Catatan
 									</th>
 									<th>Jatuh Tempo</th>
-									<th>User</th>
 									<th>Status</th>
 									<th class="cashflow-action-col">Aksi</th>
 								</tr>
@@ -142,9 +140,6 @@ $sql = $stmtPiutang->get_result();
 									</td>
 								<td data-order="<?= htmlspecialchars((string) ($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
 									<p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_piutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-									</td>
-									<td>
-										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
 									<td class="align-middle text-center text-sm">
 										<?php if (($row['status'] ?? '') === 'selesai') { ?>
