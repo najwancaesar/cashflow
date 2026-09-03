@@ -62,15 +62,14 @@ while ($walletRow = $walletResult ? $walletResult->fetch_assoc() : null) {
 $stmtWallet->close();
 $hasActiveWallet = !empty($activeWallets);
 
-$stmtHutang = $con->prepare("SELECT hutang.*, user.nama,
+$stmtHutang = $con->prepare("SELECT hutang.*,
         wallet.nama_wallet AS wallet_pembayaran_nama,
         wallet.tipe_wallet AS wallet_pembayaran_tipe,
         pengeluaran.id_pengeluaran AS linked_pengeluaran_id
     FROM hutang
-    INNER JOIN user ON hutang.user = user.id_user
     LEFT JOIN wallet ON hutang.id_wallet_pembayaran = wallet.id_wallet AND wallet.user_id = hutang.user
     LEFT JOIN pengeluaran ON hutang.id_pengeluaran = pengeluaran.id_pengeluaran AND pengeluaran.user = hutang.user
-    WHERE user.id_user = ?
+    WHERE hutang.user = ?
     ORDER BY hutang.tanggal DESC, hutang.id_hutang DESC");
 $stmtHutang->bind_param("i", $userYangSedangLogin);
 $stmtHutang->execute();
@@ -114,8 +113,6 @@ $sql = $stmtHutang->get_result();
                                         Catatan
                                     </th>
                                     <th>Jatuh Tempo</th>
-                                    <th>Status Jatuh Tempo</th>
-                                    <th>User</th>
                                     <th>Status</th>
                                     <th class="cashflow-action-col">Aksi</th>
                                 </tr>
@@ -145,14 +142,6 @@ $sql = $stmtHutang->get_result();
                                     <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_hutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
                                 </td>
                                 <td class="align-middle text-center text-sm">
-                                    <span class="badge badge-sm <?= htmlspecialchars($dueBadge['class'], ENT_QUOTES, 'UTF-8') ?>">
-                                        <?= htmlspecialchars($dueBadge['label'], ENT_QUOTES, 'UTF-8') ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?></p>
-                                </td>
-                                <td class="align-middle text-center text-sm">
                                     <?php if (($row['status'] ?? '') === 'selesai') { ?>
                                         <span class="badge badge-sm bg-gradient-success" style="cursor:pointer;"
                                             data-hutang-revert="true"
@@ -174,14 +163,14 @@ $sql = $stmtHutang->get_result();
                                         <?php } ?>
                                     <?php } else { ?>
                                         <button type="button"
-                                            class="badge badge-sm bg-gradient-warning border-0 text-white btnlunashutang"
+                                            class="badge badge-sm <?= htmlspecialchars($dueBadge['class'], ENT_QUOTES, 'UTF-8') ?> border-0 text-white btnlunashutang"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modalLunasHutang"
                                             data-id="<?= (int) $row['id_hutang'] ?>"
                                             data-kreditur="<?= htmlspecialchars($row['kreditur'], ENT_QUOTES, 'UTF-8') ?>"
                                             data-jumlah="<?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>"
                                             <?= !$hasActiveWallet ? 'disabled' : '' ?>>
-                                            Pending
+                                            <?= htmlspecialchars($dueBadge['label'], ENT_QUOTES, 'UTF-8') ?>
                                         </button>
                                         <?php if (!$hasActiveWallet) { ?>
                                             <small class="d-block text-xs text-danger mt-1">Buat/aktifkan wallet terlebih dahulu.</small>
