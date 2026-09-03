@@ -2912,6 +2912,13 @@ table.dataTable thead th.action-col {
    SATU-SATUNYA blok CSS untuk .cashflow-datatable-top.
    Jangan tambah blok override lain di tempat lain untuk selector ini.
    ============================================================ */
+/* Pastikan wrapper Datatables merenggang mengikuti tabel jika tabel lebih lebar (scroll horizontal),
+   sehingga toolbar atas dan bawah ikut sejajar lebarnya dengan tabel. */
+.cashflow-table-scroll .dataTables_wrapper {
+    min-width: 100%;
+    width: max-content;
+}
+
 .cashflow-datatable-top {
     display: flex;
     flex-wrap: wrap;
