@@ -2994,3 +2994,15 @@ table.dataTable thead th.action-col {
         width: 100%;
     }
 }
+
+/* Sembunyikan scrollbar vertikal di sidebar dan konten utama, tanpa hilangkan fungsinya */
+.sidenav,
+body.g-sidenav-show {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE/Edge lama */
+}
+
+.sidenav::-webkit-scrollbar,
+body.g-sidenav-show::-webkit-scrollbar {
+    display: none;               /* Chrome, Edge, Safari */
+}
