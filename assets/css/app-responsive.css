@@ -1,8 +1,6 @@
 /* Responsive layer for the internal dashboard pages. */
 html {
     overflow-x: hidden;
-    scrollbar-width: none;       /* Firefox */
-    -ms-overflow-style: none;    /* IE/Edge lama */
 }
 
 /* Financial calendar and read-only reminders */
@@ -3005,14 +3003,12 @@ table.dataTable thead th.action-col {
 }
 
 /* Sembunyikan scrollbar vertikal di sidebar dan konten utama, tanpa hilangkan fungsinya */
-html,
 .sidenav,
 body.g-sidenav-show {
     scrollbar-width: none;       /* Firefox */
     -ms-overflow-style: none;    /* IE/Edge lama */
 }
 
-html::-webkit-scrollbar,
 .sidenav::-webkit-scrollbar,
 body.g-sidenav-show::-webkit-scrollbar {
     display: none;               /* Chrome, Edge, Safari */
