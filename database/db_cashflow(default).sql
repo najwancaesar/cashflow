@@ -1,1393 +1,574 @@
--- MariaDB dump 10.19  Distrib 10.6.17-MariaDB, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 8.0.30, for Win64 (x86_64)
 --
 -- Host: localhost    Database: cashflow
 -- ------------------------------------------------------
--- Server version	10.6.17-MariaDB-cll-lve
+-- Server version	8.0.30
+
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-
-/*!40101 SET NAMES utf8mb4 */;
-
+/*!50503 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-
 /*!40103 SET TIME_ZONE='+00:00' */;
-
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `hutang`
+-- Table structure for table `activity_log`
 --
-DROP TABLE IF EXISTS `hutang`;
 
+DROP TABLE IF EXISTS `activity_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `hutang` (
-    `id_hutang` int (11) NOT NULL AUTO_INCREMENT,
-    `tanggal` date NOT NULL,
-    `tanggal_jatuh_tempo` date DEFAULT NULL COMMENT 'Tanggal jatuh tempo hutang',
-    `tanggal_lunas` date DEFAULT NULL,
-    `kreditur` varchar(100) NOT NULL,
-    `catatan` text NOT NULL,
-    `jumlah` int (11) NOT NULL,
-    `user` int (11) NOT NULL,
-    `id_wallet_pembayaran` int (11) DEFAULT NULL,
-    `id_pengeluaran` int (11) DEFAULT NULL,
-    `status` enum ('pending', 'selesai') NOT NULL,
-    PRIMARY KEY (`id_hutang`),
-    KEY `idx_hutang_wallet_pembayaran` (`id_wallet_pembayaran`),
-    UNIQUE KEY `uniq_hutang_pengeluaran` (`id_pengeluaran`),
-    KEY `idx_hutang_user_status` (`user`, `status`)
-  ) ENGINE = InnoDB AUTO_INCREMENT = 16 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `activity_log` (
+  `id_log` int NOT NULL AUTO_INCREMENT,
+  `user_id` int DEFAULT NULL,
+  `role` enum('admin','user') COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `module` varchar(80) COLLATE utf8mb4_general_ci NOT NULL,
+  `aksi` varchar(120) COLLATE utf8mb4_general_ci NOT NULL,
+  `deskripsi` text COLLATE utf8mb4_general_ci,
+  `ip_address` varchar(45) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `user_agent` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_log`),
+  KEY `idx_activity_user` (`user_id`),
+  KEY `idx_activity_module` (`module`),
+  KEY `idx_activity_created` (`created_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=610 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `hutang`
+-- Dumping data for table `activity_log`
 --
-LOCK TABLES `hutang` WRITE;
 
-/*!40000 ALTER TABLE `hutang` DISABLE KEYS */;
-
-INSERT INTO
-  `hutang` (
-    `id_hutang`,
-    `tanggal`,
-    `tanggal_jatuh_tempo`,
-    `tanggal_lunas`,
-    `kreditur`,
-    `catatan`,
-    `jumlah`,
-    `user`,
-    `id_wallet_pembayaran`,
-    `id_pengeluaran`,
-    `status`
-  )
-VALUES
-  (
-    8,
-    '2025-01-11',
-    NULL,
-    NULL,
-    'fadlan',
-    'ok',
-    90000,
-    32,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    9,
-    '2025-01-13',
-    NULL,
-    NULL,
-    'Bank Ganesha',
-    'Peminjaman untuk dana darurat\r\n',
-    10000,
-    2,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    10,
-    '2025-01-13',
-    NULL,
-    NULL,
-    'ferdi',
-    'mixue',
-    10000,
-    39,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    13,
-    '2025-01-15',
-    NULL,
-    NULL,
-    'myself',
-    'oke',
-    15000,
-    40,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    14,
-    '2025-01-16',
-    NULL,
-    NULL,
-    'ok',
-    'tst',
-    6555500,
-    41,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    15,
-    '2025-02-27',
-    NULL,
-    NULL,
-    'Sakila',
-    'peminjaman untuk beli kebutuhan di indomaret\r\n',
-    50000,
-    52,
-    NULL,
-    NULL,
-    'pending'
-  );
-
-/*!40000 ALTER TABLE `hutang` ENABLE KEYS */;
-
-UNLOCK TABLES;
-
---
--- Table structure for table `kategori`
---
-DROP TABLE IF EXISTS `kategori`;
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `kategori` (
-    `id_kategori` int (11) NOT NULL AUTO_INCREMENT,
-    `user_id` int (11) NOT NULL,
-    `nama_kategori` varchar(100) NOT NULL,
-    `tipe_kategori` enum ('pemasukan', 'pengeluaran') NOT NULL,
-    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-    PRIMARY KEY (`id_kategori`),
-    KEY `idx_kategori_user` (`user_id`),
-    KEY `idx_kategori_tipe` (`tipe_kategori`)
-  ) ENGINE = InnoDB AUTO_INCREMENT = 61 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `kategori`
---
-LOCK TABLES `kategori` WRITE;
-
-/*!40000 ALTER TABLE `kategori` DISABLE KEYS */;
-
-INSERT INTO
-  `kategori` (
-    `id_kategori`,
-    `user_id`,
-    `nama_kategori`,
-    `tipe_kategori`,
-    `created_at`
-  )
-VALUES
-  (1, 2, 'Gaji', 'pemasukan', '2025-02-27 02:00:00'),
-  (2, 2, 'Bonus', 'pemasukan', '2025-02-27 02:00:00'),
-  (
-    3,
-    2,
-    'Freelance',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    4,
-    2,
-    'Investasi',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    5,
-    2,
-    'Hadiah',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    6,
-    2,
-    'Lain-lain',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    7,
-    2,
-    'Kebutuhan Hidup',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    8,
-    2,
-    'Makan & Minum',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    9,
-    2,
-    'Transportasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    10,
-    2,
-    'Tagihan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    11,
-    2,
-    'Hiburan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    12,
-    2,
-    'Investasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    13,
-    2,
-    'Kesehatan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    14,
-    2,
-    'Pendidikan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    15,
-    2,
-    'Lain-lain',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (16, 3, 'Gaji', 'pemasukan', '2025-02-27 02:00:00'),
-  (
-    17,
-    3,
-    'Bonus',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    18,
-    3,
-    'Freelance',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    19,
-    3,
-    'Investasi',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    20,
-    3,
-    'Hadiah',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    21,
-    3,
-    'Lain-lain',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    22,
-    3,
-    'Kebutuhan Hidup',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    23,
-    3,
-    'Makan & Minum',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    24,
-    3,
-    'Transportasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    25,
-    3,
-    'Tagihan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    26,
-    3,
-    'Hiburan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    27,
-    3,
-    'Investasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    28,
-    3,
-    'Kesehatan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    29,
-    3,
-    'Pendidikan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    30,
-    3,
-    'Lain-lain',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    31,
-    52,
-    'Gaji',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    32,
-    52,
-    'Bonus',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    33,
-    52,
-    'Freelance',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    34,
-    52,
-    'Investasi',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    35,
-    52,
-    'Hadiah',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    36,
-    52,
-    'Lain-lain',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    37,
-    52,
-    'Kebutuhan Hidup',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    38,
-    52,
-    'Makan & Minum',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    39,
-    52,
-    'Transportasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    40,
-    52,
-    'Tagihan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    41,
-    52,
-    'Hiburan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    42,
-    52,
-    'Investasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    43,
-    52,
-    'Kesehatan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    44,
-    52,
-    'Pendidikan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    45,
-    52,
-    'Lain-lain',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    46,
-    53,
-    'Gaji',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    47,
-    53,
-    'Bonus',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    48,
-    53,
-    'Freelance',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    49,
-    53,
-    'Investasi',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    50,
-    53,
-    'Hadiah',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    51,
-    53,
-    'Lain-lain',
-    'pemasukan',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    52,
-    53,
-    'Kebutuhan Hidup',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    53,
-    53,
-    'Makan & Minum',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    54,
-    53,
-    'Transportasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    55,
-    53,
-    'Tagihan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    56,
-    53,
-    'Hiburan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    57,
-    53,
-    'Investasi',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    58,
-    53,
-    'Kesehatan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    59,
-    53,
-    'Pendidikan',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  ),
-  (
-    60,
-    53,
-    'Lain-lain',
-    'pengeluaran',
-    '2025-02-27 02:00:00'
-  );
-
-/*!40000 ALTER TABLE `kategori` ENABLE KEYS */;
-
+LOCK TABLES `activity_log` WRITE;
+/*!40000 ALTER TABLE `activity_log` DISABLE KEYS */;
+INSERT INTO `activity_log` VALUES (1,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:13:28'),(2,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:14:26'),(3,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:14:34'),(4,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:14:39'),(5,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:14:45'),(6,3,'user','auth','login_success','Login berhasil.','192.168.110.88','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:19:15'),(7,3,'user','saving_goal','setor','Mencatat setor celengan ID 2, mutasi ID 9.','192.168.110.88','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:19:55'),(8,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:25:25'),(9,3,'user','auth','logout','Logout dari aplikasi.','192.168.110.88','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:25:38'),(10,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 16:26:04'),(11,3,'user','saving_goal','edit_goal','Mengubah celengan ID 2.','::1','Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1','2026-05-22 16:29:13'),(12,3,'user','transfer_wallet','edit','Mengubah transfer wallet ID 3.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-22 19:16:19'),(13,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:27:56'),(14,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:28:33'),(15,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:28:42'),(16,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:28:51'),(17,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:29:03'),(18,3,'user','saving_goal','tambah_goal','Menambahkan celengan ID 3.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:29:41'),(19,3,'user','saving_goal','ubah_status','Mengubah status celengan ID 1 menjadi selesai.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:29:46'),(20,3,'user','pemasukan','tambah','Menambahkan pemasukan ID 58.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:30:35'),(21,3,'user','saving_goal','setor','Mencatat setor celengan ID 3, mutasi ID 10.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:31:01'),(22,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:35:34'),(23,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:35:39'),(24,1,'admin','backup','export_user_backup','Admin membackup data user ID 3.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:36:04'),(25,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:37:17'),(26,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 11:37:23'),(27,3,'user','pemasukan','tambah','Menambahkan pemasukan ID 59.','::1','Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1','2026-05-23 14:46:32'),(28,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 18:26:21'),(29,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 18:26:35'),(30,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 18:26:43'),(31,1,'admin','auth','login_success','Login berhasil.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-23 21:59:48'),(32,1,'admin','auth','logout','Logout dari aplikasi.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-23 22:00:29'),(33,3,'user','auth','login_success','Login berhasil.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-23 22:00:39'),(34,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:06:55'),(35,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:07:02'),(36,1,'admin','backup','export_user_backup','Admin membackup data user ID 3.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:08:02'),(37,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:45:16'),(38,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:45:23'),(39,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:48:48'),(40,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:48:53'),(41,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:49:09'),(42,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 22:49:15'),(43,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 23:04:14'),(44,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 23:04:20'),(45,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 23:13:51'),(46,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 23:13:58'),(47,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 23:14:27'),(48,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-23 23:45:08'),(49,54,'user','auth','login_success','Login berhasil.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:28:03'),(50,54,'user','wallet','edit','Mengubah wallet ID 12.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:28:26'),(51,54,'user','wallet','tambah','Menambahkan wallet ID 15.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:28:43'),(52,54,'user','wallet','tambah','Menambahkan wallet ID 16.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:29:03'),(53,54,'user','wallet','tambah','Menambahkan wallet ID 17.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:29:11'),(54,54,'user','wallet','tambah','Menambahkan wallet ID 18.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:30:32'),(55,54,'user','wallet','tambah','Menambahkan wallet ID 19.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:30:56'),(56,54,'user','pemasukan','hapus','Menghapus pemasukan ID 54.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:31:19'),(57,54,'user','saving_goal','tambah_goal','Menambahkan celengan ID 4.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:32:39'),(58,54,'user','recurring','tambah','Menambahkan template recurring ID 5.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:35:55'),(59,54,'user','recurring','tambah','Menambahkan template recurring ID 6.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:37:32'),(60,54,'user','saving_goal','tambah_goal','Menambahkan celengan ID 5.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:45:14'),(61,54,'user','recurring','edit','Mengubah template recurring ID 5.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:45:46'),(62,54,'user','recurring','edit','Mengubah template recurring ID 6.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:45:56'),(63,54,'user','wallet','edit','Mengubah wallet ID 18.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:49:12'),(64,54,'user','recurring','tambah','Menambahkan template recurring ID 7.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:52:11'),(65,54,'user','auth','logout','Logout dari aplikasi.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:53:32'),(66,54,'user','auth','login_success','Login berhasil.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:53:46'),(67,54,'user','auth','logout','Logout dari aplikasi.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 04:54:20'),(68,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 04:54:29'),(69,54,'user','wallet','edit','Mengubah wallet ID 15.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 04:54:54'),(70,54,'user','wallet','edit','Mengubah wallet ID 12.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 04:55:25'),(71,54,'user','recurring','tambah','Menambahkan template recurring ID 8.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 04:57:02'),(72,54,'user','wallet','edit','Mengubah wallet ID 17.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 04:57:37'),(73,54,'user','wallet','edit','Mengubah wallet ID 16.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 04:58:15'),(74,54,'user','wallet','edit','Mengubah wallet ID 6.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:00:24'),(75,54,'user','recurring','generate','Generate bulan ini: 4 dibuat, 0 dilewati, 0 gagal.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:06:13'),(76,54,'user','recurring','toggle','Mengubah template recurring ID 7 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:07:09'),(77,54,'user','recurring','toggle','Mengubah template recurring ID 8 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:07:11'),(78,54,'user','pengeluaran','hapus','Menghapus pengeluaran ID 44.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:07:32'),(79,54,'user','recurring','toggle','Mengubah template recurring ID 5 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:07:40'),(80,54,'user','recurring','toggle','Mengubah template recurring ID 5 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:07:44'),(81,54,'user','recurring','toggle','Mengubah template recurring ID 6 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:07:49'),(82,54,'user','pemasukan','edit','Mengubah pemasukan ID 61.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:08:09'),(83,54,'user','pemasukan','hapus','Menghapus pemasukan ID 61.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:08:13'),(84,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:17:40'),(85,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:17:45'),(86,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 365 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:37:58'),(87,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 180 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:38:03'),(88,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 180 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:39:15'),(89,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 180 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:44:05'),(90,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 365 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:44:11'),(91,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 180 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:47:06'),(92,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 30 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:51:06'),(93,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 90 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:51:08'),(94,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 180 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:51:24'),(95,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:51:59'),(96,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 30 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:58:08'),(97,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 90 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:58:12'),(98,1,'admin','audit_log','cleanup','Admin menghapus 0 log lebih lama dari 180 hari.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-24 05:58:14'),(99,54,'user','auth','login_success','Login berhasil.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 14:23:00'),(100,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 45.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 14:27:21'),(101,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 62.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 14:31:40'),(102,54,'user','pemasukan','edit','Mengubah pemasukan ID 62.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 14:34:14'),(103,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 8.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 14:35:29'),(104,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 46.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 14:49:38'),(105,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 9.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 14:57:21'),(106,54,'user','auth','login_success','Login berhasil.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 23:12:16'),(107,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 47.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 23:12:53'),(108,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 63.','192.168.0.7','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-24 23:14:00'),(109,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 05:53:15'),(110,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 47.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 05:54:11'),(111,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 10:10:26'),(112,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 48.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 10:15:41'),(113,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 64.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 10:16:13'),(114,54,'user','piutang','lunas','Melunasi piutang ID 24 ke wallet ID 12; pemasukan ID 65.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 10:16:42'),(115,54,'user','piutang','edit','Mengubah data piutang ID 24.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 10:17:31'),(116,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 10:18:11'),(117,54,'user','piutang','hapus','Menghapus piutang ID 24 beserta pemasukan otomatis ID 65.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 10:18:25'),(118,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 14:14:46'),(119,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 14:22:15'),(120,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 14:22:26'),(121,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 14:52:28'),(122,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 14:52:37'),(123,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 66.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-25 15:07:20'),(124,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 01:17:29'),(125,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:32:33'),(126,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 49.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:34:16'),(127,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 67.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:42:13'),(128,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 68.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:42:44'),(129,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 69.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:43:07'),(130,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 50.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:44:07'),(131,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:47:28'),(132,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 08:48:33'),(133,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 12:42:34'),(134,54,'user','piutang','lunas','Melunasi piutang ID 27 ke wallet ID 6; pemasukan ID 70.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 12:42:52'),(135,54,'user','piutang','lunas','Melunasi piutang ID 28 ke wallet ID 6; pemasukan ID 71.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 12:43:23'),(136,54,'user','pemasukan','edit','Mengubah pemasukan ID 63.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 12:45:24'),(137,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 51.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 12:46:17'),(138,54,'user','pemasukan','ubah_status','Mengubah status pemasukan ID 69 menjadi selesai.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 13:08:40'),(139,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 18:52:35'),(140,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 18:52:39'),(141,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 18:52:45'),(142,1,'admin','backup','export_user_backup','Admin membackup data user ID 3.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 18:52:57'),(143,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 19:25:49'),(144,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 10.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-26 19:26:08'),(145,54,'user','auth','login_success','Login berhasil.','192.168.0.4','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-26 22:09:53'),(146,54,'user','piutang','tambah','Menambahkan data piutang.','192.168.0.4','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-26 22:11:02'),(147,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 52.','192.168.0.4','Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36','2026-05-26 22:11:55'),(148,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-27 21:46:27'),(149,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 53.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-27 21:47:01'),(150,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 52.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-27 21:51:10'),(151,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 49.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-27 21:51:18'),(152,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:43:27'),(153,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 54.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:44:04'),(154,54,'user','pemasukan','edit','Mengubah pemasukan ID 60.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:44:30'),(155,54,'user','piutang','lunas','Melunasi piutang ID 29 ke wallet ID 6; pemasukan ID 72.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:45:37'),(156,54,'user','recurring','toggle','Mengubah template recurring ID 5 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:47:38'),(157,54,'user','hutang','edit','Mengubah data utang ID 23.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:49:28'),(158,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 43.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:54:06'),(159,54,'user','pengeluaran','hapus','Menghapus pengeluaran ID 43.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 15:54:20'),(160,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:25:27'),(161,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 11.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:27:37'),(162,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 55.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:35:13'),(163,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 12.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:36:32'),(164,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 56.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:38:05'),(165,54,'user','transfer_wallet','edit','Mengubah transfer wallet ID 11.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:38:44'),(166,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 13.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:39:15'),(167,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:43:56'),(168,54,'user','piutang','edit','Mengubah data piutang ID 26.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-28 22:44:30'),(169,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-29 17:29:38'),(170,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 57.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-29 17:30:38'),(171,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 58.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-29 17:30:57'),(172,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-29 18:44:39'),(173,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 59.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-29 18:44:55'),(174,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 60.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-29 18:45:49'),(175,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 61.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-05-29 18:46:56'),(176,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:20:27'),(177,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 62.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:22:12'),(178,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 63.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:23:19'),(179,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 62.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:23:47'),(180,54,'user','recurring','toggle','Mengubah template recurring ID 8 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:24:29'),(181,54,'user','recurring','toggle','Mengubah template recurring ID 5 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:24:32'),(182,54,'user','recurring','toggle','Mengubah template recurring ID 6 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:25:10'),(183,54,'user','recurring','generate','Generate bulan ini: 3 dibuat, 0 dilewati, 0 gagal.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:25:15'),(184,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 56.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:33:49'),(185,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 56.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 15:34:05'),(186,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:07:23'),(187,54,'user','piutang','edit','Mengubah data piutang ID 26.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:12:24'),(188,54,'user','piutang','lunas','Melunasi piutang ID 26 ke wallet ID 12; pemasukan ID 75.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:14:29'),(189,54,'user','piutang','edit','Mengubah data piutang ID 30.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:17:04'),(190,54,'user','piutang','lunas','Melunasi piutang ID 30 ke wallet ID 12; pemasukan ID 76.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:17:33'),(191,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:46:29'),(192,54,'user','piutang','edit','Mengubah data piutang ID 30.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:48:05'),(193,54,'user','piutang','edit','Mengubah data piutang ID 26.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:48:12'),(194,54,'user','wallet','ubah_status','Mengubah wallet ID 18 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:51:57'),(195,54,'user','wallet','ubah_status','Mengubah wallet ID 19 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 18:52:02'),(196,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 14.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 19:01:45'),(197,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 65.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 19:02:40'),(198,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 15.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-01 19:15:18'),(199,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-02 08:33:29'),(200,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-02 20:28:24'),(201,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 66.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-02 20:29:14'),(202,54,'user','transfer_wallet','batal','Membatalkan transfer wallet ID 15.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-02 20:30:02'),(203,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:17:01'),(204,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 67.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:17:23'),(205,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 68.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:18:06'),(206,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 69.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:18:24'),(207,54,'user','pemasukan','edit','Mengubah pemasukan ID 76.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:18:49'),(208,54,'user','pemasukan','edit','Mengubah pemasukan ID 75.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:19:06'),(209,54,'user','pemasukan','edit','Mengubah pemasukan ID 72.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:19:21'),(210,54,'user','pemasukan','edit','Mengubah pemasukan ID 71.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:19:52'),(211,54,'user','pemasukan','edit','Mengubah pemasukan ID 70.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:20:03'),(212,54,'user','pemasukan','edit','Mengubah pemasukan ID 62.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:20:26'),(213,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 77.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-03 22:21:11'),(214,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-04 08:38:37'),(215,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 70.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-04 08:39:00'),(216,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-04 22:15:10'),(217,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 71.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-04 22:15:32'),(218,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 72.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-04 22:16:02'),(219,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 78.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-04 22:22:04'),(220,54,'user','pemasukan','edit','Mengubah pemasukan ID 78.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-04 22:22:29'),(221,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-05 08:51:27'),(222,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 73.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-05 08:51:58'),(223,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 64.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-05 08:54:06'),(224,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-06 14:26:39'),(225,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 21:43:04'),(226,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 74.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 21:43:53'),(227,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 16.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 21:45:58'),(228,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 75.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 21:49:33'),(229,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:07:52'),(230,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:07:59'),(231,1,'admin','backup','export_user_backup','Admin membackup data user ID 54.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:08:03'),(232,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:23:23'),(233,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 74.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:24:11'),(234,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 60.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:24:23'),(235,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:26:03'),(236,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-07 22:27:08'),(237,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 08:24:01'),(238,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 20:39:39'),(239,54,'user','pemasukan','edit','Mengubah pemasukan ID 74.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:36:33'),(240,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 17.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:37:43'),(241,54,'user','transfer_wallet','edit','Mengubah transfer wallet ID 17.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:38:04'),(242,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 18.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:38:56'),(243,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 76.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:39:32'),(244,54,'user','piutang','lunas','Melunasi piutang ID 31 ke wallet ID 6; pemasukan ID 79.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:39:47'),(245,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 80.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:41:52'),(246,54,'user','pemasukan','edit','Mengubah pemasukan ID 79.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:46:23'),(247,54,'user','pemasukan','edit','Mengubah pemasukan ID 76.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:46:31'),(248,54,'user','pemasukan','edit','Mengubah pemasukan ID 75.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36','2026-06-08 21:46:38'),(249,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-09 06:16:31'),(250,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 19.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-09 06:17:01'),(251,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 77.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-09 06:18:03'),(252,54,'user','transfer_wallet','edit','Mengubah transfer wallet ID 19.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-09 06:18:31'),(253,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-10 21:32:04'),(254,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 78.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-10 21:32:26'),(255,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-10 22:36:35'),(256,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 79.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-10 22:37:02'),(257,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-11 08:33:53'),(258,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-11 18:48:24'),(259,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 80.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-11 18:56:13'),(260,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-13 18:08:28'),(261,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 81.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-13 18:09:11'),(262,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 82.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-13 18:17:22'),(263,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-14 14:04:57'),(264,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 83.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-14 14:05:21'),(265,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-14 21:22:10'),(266,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-14 21:22:49'),(267,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 01:30:10'),(268,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 20.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 01:30:31'),(269,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 84.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 01:31:02'),(270,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 85.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 01:35:24'),(271,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 01:36:34'),(272,54,'user','pemasukan','edit','Mengubah pemasukan ID 73.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 01:39:13'),(273,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 14:36:42'),(274,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 86.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 14:37:31'),(275,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 18:58:10'),(276,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 87.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 18:59:30'),(277,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 87.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 19:02:26'),(278,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 80.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 19:02:50'),(279,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 87.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 19:03:36'),(280,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 87.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 19:04:05'),(281,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 66.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 19:05:02'),(282,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 22:40:19'),(283,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 88.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-16 22:41:26'),(284,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-17 20:05:11'),(285,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 89.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-17 20:05:43'),(286,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 90.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-17 20:06:14'),(287,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-18 11:33:54'),(288,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 91.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-18 11:34:28'),(289,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-19 00:02:54'),(290,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 92.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-19 00:03:13'),(291,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 92.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-19 00:03:22'),(292,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 93.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-19 00:05:44'),(293,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-21 15:47:39'),(294,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 94.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-21 15:48:38'),(295,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 95.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-21 15:49:31'),(296,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 21.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-21 15:50:05'),(297,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 81.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-21 15:51:57'),(298,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 96.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-21 15:56:41'),(299,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 82.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-21 15:57:11'),(300,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-22 08:13:29'),(301,54,'user','piutang','lunas','Melunasi piutang ID 32 ke wallet ID 6; pemasukan ID 83.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-22 08:13:49'),(302,54,'user','piutang','lunas','Melunasi piutang ID 33 ke wallet ID 6; pemasukan ID 84.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-22 08:14:11'),(303,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 85.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-22 08:14:48'),(304,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 97.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-22 08:15:18'),(305,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-23 22:59:32'),(306,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 98.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-23 23:00:04'),(307,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 86.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-23 23:00:39'),(308,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 99.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-23 23:01:00'),(309,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 22.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-23 23:01:20'),(310,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:45:20'),(311,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 23.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:46:02'),(312,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 87.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:48:19'),(313,54,'user','pemasukan','edit','Mengubah pemasukan ID 84.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:48:57'),(314,54,'user','pemasukan','edit','Mengubah pemasukan ID 83.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:49:09'),(315,54,'user','pemasukan','edit','Mengubah pemasukan ID 84.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:49:17'),(316,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 100.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:50:10'),(317,54,'user','pengeluaran','ubah_status','Mengubah status pengeluaran ID 64 menjadi selesai.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:51:12'),(318,54,'user','pengeluaran','hapus','Menghapus pengeluaran ID 64.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 08:52:41'),(319,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 21:37:10'),(320,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 101.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 21:37:47'),(321,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 102.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-24 21:38:26'),(322,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-25 19:16:20'),(323,54,'user','transfer_wallet','batal','Membatalkan transfer wallet ID 23.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-25 19:16:58'),(324,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 14:25:15'),(325,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 24.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 14:25:37'),(326,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 103.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 14:26:13'),(327,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 15:50:02'),(328,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 104.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 15:57:16'),(329,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 105.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 16:05:58'),(330,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:29:04'),(331,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 88.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:29:59'),(332,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 106.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:31:19'),(333,54,'user','piutang','edit','Mengubah data piutang ID 30.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:32:47'),(334,54,'user','piutang','edit','Mengubah data piutang ID 26.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:33:03'),(335,54,'user','piutang','tambah','Menambahkan data piutang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:34:10'),(336,54,'user','hutang','edit','Mengubah data utang ID 21.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:34:58'),(337,54,'user','hutang','edit','Mengubah data utang ID 22.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:35:14'),(338,54,'user','hutang','edit','Mengubah data utang ID 23.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-26 23:35:24'),(339,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-27 21:02:48'),(340,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 107.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-27 21:03:34'),(341,54,'user','wallet','ubah_status','Mengubah wallet ID 18 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-27 21:18:34'),(342,54,'user','wallet','ubah_status','Mengubah wallet ID 19 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-27 21:18:37'),(343,54,'user','wallet','edit','Mengubah wallet ID 18.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-27 21:19:30'),(344,54,'user','wallet','edit','Mengubah wallet ID 19.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-27 21:20:11'),(345,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 108.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-27 21:35:20'),(346,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-28 17:55:11'),(347,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 109.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-28 18:10:18'),(348,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 89.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-28 18:11:28'),(349,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 110.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-28 18:11:42'),(350,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-29 09:52:13'),(351,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 90.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-29 09:52:48'),(352,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 111.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-29 09:53:14'),(353,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-29 22:16:58'),(354,54,'user','pemasukan','edit','Mengubah pemasukan ID 73.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-29 22:17:12'),(355,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 25.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-29 22:17:52'),(356,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-30 11:32:31'),(357,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-30 23:12:17'),(358,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 112.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-30 23:12:41'),(359,54,'user','pengeluaran','hapus','Menghapus pengeluaran ID 93.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-06-30 23:12:49'),(360,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-01 13:03:43'),(361,54,'user','wallet','ubah_status','Mengubah wallet ID 12 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-01 13:05:01'),(362,54,'user','wallet','ubah_status','Mengubah wallet ID 12 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-01 13:05:12'),(363,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 08:18:21'),(364,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 113.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 08:18:57'),(365,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 114.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 08:19:24'),(366,54,'user','recurring','edit','Mengubah template recurring ID 8.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 08:23:02'),(367,54,'user','recurring','generate','Generate bulan ini: 3 dibuat, 0 dilewati, 0 gagal.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 08:23:11'),(368,54,'user','pengeluaran','ubah_status','Mengubah status pengeluaran ID 115 menjadi selesai.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 08:23:28'),(369,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 22:13:10'),(370,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 116.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-02 22:25:06'),(371,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-03 07:51:05'),(372,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-03 19:17:19'),(373,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 117.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-03 19:22:12'),(374,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 93.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-03 19:23:17'),(375,54,'user','piutang','hapus','Menghapus piutang ID 34.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-03 19:27:10'),(376,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 11:54:45'),(377,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 26.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 11:55:21'),(378,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 94.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 11:56:01'),(379,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 118.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 11:56:15'),(380,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 15:20:04'),(381,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 27.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 15:20:45'),(382,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 119.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 15:21:00'),(383,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 15:31:50'),(384,54,'user','transfer_wallet','tambah','Menambahkan transfer wallet ID 28.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 15:33:26'),(385,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 120.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-04 15:33:56'),(386,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-06 08:21:21'),(387,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-06 23:23:45'),(388,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 121.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-06 23:24:32'),(389,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 122.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-06 23:27:00'),(390,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 123.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-06 23:32:54'),(391,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-07 15:40:39'),(392,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-07 15:43:16'),(393,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-07 18:38:21'),(394,54,'user','auth','login_success','Login berhasil.','127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 15:01:48'),(395,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 124.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 15:04:21'),(396,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 124.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 15:10:39'),(397,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 125.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 15:12:22'),(398,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 18:31:31'),(399,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 95.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 18:32:08'),(400,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 126.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 18:32:40'),(401,54,'user','hutang','tambah','Menambahkan data utang.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 18:35:38'),(402,54,'user','pemasukan','edit','Mengubah pemasukan ID 92.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36','2026-07-08 18:36:06'),(403,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-09 13:59:54'),(404,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 127.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-09 14:00:28'),(405,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 128.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-09 14:01:23'),(406,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-10 02:17:17'),(407,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 129.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-10 02:17:46'),(408,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-10 20:13:07'),(409,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 130.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-10 20:13:32'),(410,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 00:35:04'),(411,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:20:08'),(412,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:20:43'),(413,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:20:51'),(414,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:20:59'),(415,1,'admin','pengguna','reset_password_user','Reset password user ID 3.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:21:15'),(416,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:21:19'),(417,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:21:22'),(418,3,'user','pemasukan','tambah','Menambahkan pemasukan ID 96.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:21:47'),(419,3,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 131.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:22:08'),(420,3,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 132.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 01:22:47'),(421,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-12 21:43:31'),(422,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-13 13:16:09'),(423,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-13 13:30:11'),(424,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-13 13:30:55'),(471,54,'user','wallet','tambah','Menambahkan wallet ID 26.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-13 15:57:48'),(472,54,'user','pengeluaran','tambah','Menambahkan pengeluaran ID 164.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-13 16:01:13'),(473,54,'user','pengeluaran','hapus','Menghapus pengeluaran ID 164.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-13 16:01:21'),(528,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 00:33:00'),(529,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 00:33:39'),(530,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 00:33:44'),(531,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 01:37:31'),(532,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 01:37:37'),(533,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 01:52:04'),(534,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 01:52:18'),(535,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 10:51:12'),(536,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 14:33:23'),(537,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 15:23:59'),(538,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 15:24:08'),(539,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 20:57:58'),(540,54,'user','wallet_type','tambah','Menambahkan tipe wallet ID 1.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:01:06'),(541,54,'user','wallet','tambah','Menambahkan wallet ID 44.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:01:18'),(542,54,'user','wallet','ubah_status','Mengubah wallet ID 44 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:38:47'),(543,54,'user','wallet_type','ubah_status','Mengubah tipe wallet ID 1 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:39:11'),(544,54,'user','wallet_type','edit','Mengubah tipe wallet ID 1.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:41:31'),(545,54,'user','wallet_type','ubah_status','Mengubah tipe wallet ID 1 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:41:41'),(546,54,'user','wallet_type','ubah_status','Mengubah tipe wallet ID 1 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:41:46'),(547,54,'user','wallet','ubah_status','Mengubah wallet ID 44 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:41:49'),(548,54,'user','wallet_type','ubah_status','Mengubah tipe wallet ID 1 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:41:56'),(549,54,'user','wallet','ubah_status','Mengubah wallet ID 44 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:42:06'),(550,54,'user','piutang','arsip','Mengarsipkan piutang ID 33 beserta transaksi linked.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:46:15'),(551,54,'user','piutang','restore','Memulihkan piutang ID 33 beserta transaksi linked.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:47:56'),(552,54,'user','pengeluaran','arsip','Mengarsipkan pengeluaran ID 51.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:57:01'),(553,54,'user','pengeluaran','restore','Memulihkan pengeluaran ID 51.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 21:57:16'),(554,54,'user','pemasukan','arsip','Mengarsipkan pemasukan ID 62.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:06:04'),(555,54,'user','pemasukan','arsip','Mengarsipkan pemasukan ID 63.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:06:16'),(556,54,'user','transfer_wallet','arsip','Mengarsipkan transfer wallet ID 25.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:08:05'),(557,54,'user','transfer_wallet','restore','Memulihkan transfer wallet ID 25.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:08:19'),(558,54,'user','transfer_wallet','batal','Membatalkan transfer wallet ID 14.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:08:44'),(559,54,'user','transfer_wallet','arsip','Mengarsipkan transfer wallet ID 15.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:08:51'),(560,54,'user','wallet','ubah_status','Mengubah wallet ID 12 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:41:08'),(561,54,'user','wallet','ubah_status','Mengubah wallet ID 12 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:41:11'),(562,54,'user','wallet','edit','Mengubah wallet ID 19.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:41:29'),(563,54,'user','wallet','edit','Mengubah wallet ID 18.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:41:38'),(564,54,'user','wallet','hapus','Menghapus wallet ID 44 yang tidak memiliki relasi finansial.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:41:41'),(565,54,'user','wallet','hapus','Menghapus wallet ID 26 yang tidak memiliki relasi finansial.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:41:44'),(566,54,'user','wallet_type','hapus','Menghapus tipe wallet ID 1 yang belum digunakan.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:42:02'),(567,54,'user','wallet','hapus','Menghapus wallet ID 18 yang tidak memiliki relasi finansial.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:42:41'),(568,54,'user','wallet','tambah','Menambahkan wallet ID 45.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:43:39'),(569,54,'user','wallet','ubah_status','Mengubah wallet ID 45 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:54:40'),(570,54,'user','wallet','ubah_status','Mengubah wallet ID 45 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 22:54:47'),(571,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 23:58:42'),(572,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-14 23:59:43'),(573,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 117.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:01:59'),(574,54,'user','pemasukan','edit','Mengubah pemasukan ID 117.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:03:58'),(575,54,'user','wallet_type','tambah','Menambahkan tipe wallet ID 2.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:09:33'),(576,54,'user','recurring','toggle','Mengubah template recurring ID 7 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:12:21'),(577,54,'user','recurring','toggle','Mengubah template recurring ID 7 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:12:26'),(578,54,'user','pemasukan','edit','Mengubah pemasukan ID 91.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:14:32'),(579,54,'user','wallet_type','ubah_status','Mengubah tipe wallet ID 2 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:19:12'),(580,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:19:45'),(581,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:19:51'),(582,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:24:18'),(583,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 00:24:23'),(584,54,'user','wallet','ubah_status','Mengubah wallet ID 16 menjadi nonaktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 01:37:55'),(585,54,'user','wallet','ubah_status','Mengubah wallet ID 16 menjadi aktif.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-15 01:38:00'),(586,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-20 08:45:16'),(587,54,'user','hutang','edit','Mengubah data utang ID 24.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-20 08:47:22'),(588,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-20 08:55:39'),(589,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-20 08:55:46'),(590,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-20 08:57:42'),(591,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 08:47:36'),(592,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 11:00:10'),(593,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 11:00:16'),(594,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 14:40:33'),(595,3,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 14:40:39'),(596,3,'user','pemasukan','ubah_status','Mengubah status pemasukan ID 96 menjadi pending.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 14:41:31'),(597,3,'user','pemasukan','ubah_status','Mengubah status pemasukan ID 55 menjadi pending.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 14:41:38'),(598,3,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 14:42:21'),(599,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 14:42:28'),(600,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 118.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 15:15:53'),(601,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 119.','::1','Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36','2026-07-21 15:18:19'),(602,54,'user','pemasukan','tambah','Menambahkan pemasukan ID 120.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 15:19:08'),(603,54,'user','pengeluaran','edit','Mengubah pengeluaran ID 125.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-21 15:34:21'),(604,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-22 14:20:41'),(605,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-22 14:21:03'),(606,1,'admin','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-22 14:21:09'),(607,1,'admin','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-22 14:31:01'),(608,54,'user','auth','login_success','Login berhasil.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-22 14:51:26'),(609,54,'user','auth','logout','Logout dari aplikasi.','::1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36','2026-07-22 15:49:13');
+/*!40000 ALTER TABLE `activity_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
 -- Table structure for table `budget_kategori`
 --
+
 DROP TABLE IF EXISTS `budget_kategori`;
-
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `budget_kategori` (
-    `id_budget` int (11) NOT NULL AUTO_INCREMENT,
-    `user_id` int (11) NOT NULL,
-    `id_kategori` int (11) NOT NULL,
-    `bulan` tinyint unsigned NOT NULL,
-    `tahun` smallint unsigned NOT NULL,
-    `nominal_budget` bigint unsigned NOT NULL DEFAULT 0,
-    `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-    `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (`id_budget`),
-    UNIQUE KEY `uniq_budget_periode` (`user_id`, `id_kategori`, `bulan`, `tahun`),
-    KEY `idx_budget_user_periode` (`user_id`, `bulan`, `tahun`),
-    KEY `idx_budget_kategori` (`id_kategori`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `budget_kategori` (
+  `id_budget` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `id_kategori` int NOT NULL,
+  `bulan` tinyint unsigned NOT NULL,
+  `tahun` smallint unsigned NOT NULL,
+  `nominal_budget` bigint unsigned NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_budget`),
+  UNIQUE KEY `uniq_budget_periode` (`user_id`,`id_kategori`,`bulan`,`tahun`),
+  KEY `idx_budget_user_periode` (`user_id`,`bulan`,`tahun`),
+  KEY `idx_budget_kategori` (`id_kategori`)
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `budget_kategori`
 --
+
 LOCK TABLES `budget_kategori` WRITE;
-
 /*!40000 ALTER TABLE `budget_kategori` DISABLE KEYS */;
-
+INSERT INTO `budget_kategori` VALUES (1,3,23,5,2026,25000,'2026-05-18 01:51:24','2026-05-18 01:51:24'),(2,3,29,5,2026,510000,'2026-05-18 01:51:54','2026-05-18 07:01:04'),(3,3,26,5,2026,720000,'2026-05-18 06:26:21','2026-05-23 04:31:50'),(5,3,30,5,2026,155000,'2026-05-18 07:00:33','2026-05-20 15:24:13'),(7,3,25,5,2026,15000,'2026-05-18 07:35:34','2026-05-18 07:35:34'),(10,3,27,5,2026,50000,'2026-05-18 07:57:28','2026-05-20 11:56:25'),(11,3,22,5,2026,100000,'2026-05-19 05:53:20','2026-05-19 06:12:39'),(14,54,71,5,2026,100000,'2026-05-19 07:41:17','2026-05-19 07:44:38'),(18,3,24,5,2026,90000,'2026-05-20 15:25:17','2026-05-20 15:25:17'),(20,54,73,5,2026,250000,'2026-05-23 21:39:40','2026-05-23 21:39:40'),(21,54,69,5,2026,200000,'2026-05-23 21:40:46','2026-05-23 22:01:45'),(22,54,68,5,2026,50000,'2026-05-23 21:41:14','2026-05-23 21:41:14'),(23,54,70,5,2026,50000,'2026-05-23 21:42:30','2026-05-23 21:42:30'),(24,54,72,5,2026,400000,'2026-05-23 21:42:55','2026-05-23 21:42:55'),(25,54,109,5,2026,100000,'2026-05-23 21:50:40','2026-05-27 14:53:00'),(26,54,110,5,2026,100000,'2026-05-23 22:01:16','2026-05-23 22:01:16'),(30,54,110,6,2026,100000,'2026-06-01 10:46:14','2026-06-01 10:46:14'),(31,54,73,6,2026,200000,'2026-06-01 10:46:21','2026-06-01 10:46:21'),(32,54,109,6,2026,50000,'2026-06-01 10:46:29','2026-06-01 10:46:29'),(33,54,68,6,2026,50000,'2026-06-01 10:46:37','2026-06-01 10:46:37'),(34,54,69,6,2026,240000,'2026-06-01 10:47:07','2026-06-21 09:03:12'),(35,54,72,6,2026,100000,'2026-06-01 10:47:20','2026-06-24 14:41:08'),(36,54,71,6,2026,50000,'2026-06-01 10:47:30','2026-06-14 14:23:56'),(37,54,70,6,2026,50000,'2026-06-01 10:47:54','2026-06-01 10:47:54'),(38,54,115,6,2026,50000,'2026-06-07 15:24:03','2026-06-14 14:24:08'),(42,54,116,6,2026,100000,'2026-06-16 12:02:08','2026-06-16 12:02:08'),(45,54,73,7,2026,100000,'2026-07-03 12:24:40','2026-07-03 12:24:40'),(46,54,109,7,2026,50000,'2026-07-03 12:24:51','2026-07-03 12:24:51'),(47,54,68,7,2026,50000,'2026-07-03 12:24:57','2026-07-03 12:24:57'),(48,54,110,7,2026,50000,'2026-07-03 12:25:06','2026-07-03 12:25:06'),(49,54,70,7,2026,50000,'2026-07-03 12:25:39','2026-07-03 12:25:39'),(50,54,116,7,2026,50000,'2026-07-03 12:25:47','2026-07-03 12:25:47'),(51,54,69,7,2026,200000,'2026-07-03 12:25:58','2026-07-03 12:25:58'),(52,54,72,7,2026,50000,'2026-07-03 12:26:06','2026-07-03 12:26:06'),(53,54,115,7,2026,25000,'2026-07-03 12:26:14','2026-07-03 12:26:14'),(54,54,71,7,2026,100000,'2026-07-03 12:26:25','2026-07-03 12:26:25');
 /*!40000 ALTER TABLE `budget_kategori` ENABLE KEYS */;
+UNLOCK TABLES;
 
+--
+-- Table structure for table `hutang`
+--
+
+DROP TABLE IF EXISTS `hutang`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `hutang` (
+  `id_hutang` int NOT NULL AUTO_INCREMENT,
+  `tanggal` date NOT NULL,
+  `tanggal_jatuh_tempo` date DEFAULT NULL,
+  `tanggal_lunas` date DEFAULT NULL,
+  `kreditur` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `catatan` text COLLATE utf8mb4_general_ci NOT NULL,
+  `jumlah` int NOT NULL,
+  `user` int NOT NULL,
+  `id_wallet_pembayaran` int DEFAULT NULL,
+  `id_pengeluaran` int DEFAULT NULL,
+  `status` enum('pending','selesai') COLLATE utf8mb4_general_ci NOT NULL,
+  `archived_at` datetime DEFAULT NULL,
+  `archived_by` int DEFAULT NULL,
+  PRIMARY KEY (`id_hutang`),
+  UNIQUE KEY `uniq_hutang_pengeluaran` (`id_pengeluaran`),
+  KEY `idx_hutang_wallet_pembayaran` (`id_wallet_pembayaran`),
+  KEY `idx_hutang_user_status` (`user`,`status`),
+  KEY `idx_hutang_user_archive` (`user`,`archived_at`),
+  CONSTRAINT `fk_hutang_pengeluaran` FOREIGN KEY (`id_pengeluaran`) REFERENCES `pengeluaran` (`id_pengeluaran`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_hutang_user` FOREIGN KEY (`user`) REFERENCES `user` (`id_user`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `hutang`
+--
+
+LOCK TABLES `hutang` WRITE;
+/*!40000 ALTER TABLE `hutang` DISABLE KEYS */;
+INSERT INTO `hutang` VALUES (9,'2025-01-13',NULL,NULL,'Bank Ganesha','Peminjaman untuk dana darurat\r\n',10000,2,NULL,NULL,'pending',NULL,NULL),(15,'2025-02-27',NULL,NULL,'Sakila','peminjaman untuk beli kebutuhan di indomaret\r\n',50000,52,NULL,NULL,'pending',NULL,NULL),(17,'2026-05-16','2026-05-17',NULL,'Myself','Gara gara dia',10000,3,NULL,NULL,'pending',NULL,NULL),(18,'2026-05-15','2026-05-16',NULL,'Myself','Gggrg',25000,3,NULL,NULL,'selesai',NULL,NULL),(19,'2026-05-29','2026-05-31',NULL,'Myself','Ggg',35000,3,NULL,NULL,'pending',NULL,NULL),(20,'2026-05-18',NULL,NULL,'Myself','Gtw janji kapan',250000,3,NULL,NULL,'pending',NULL,NULL),(21,'2026-05-11','2027-12-31',NULL,'Ayah','Pas itu minjem duit buat kebutuhan sehari - hari karena kurang',100000,54,NULL,NULL,'pending',NULL,NULL),(22,'2026-05-16','2027-12-31',NULL,'Ayah','Buat service motor scoopy (musibah)',660000,54,NULL,NULL,'pending',NULL,NULL),(23,'2026-05-24','2027-12-31',NULL,'Ayah','Buat beli kuronami ',150000,54,NULL,NULL,'pending',NULL,NULL),(24,'2026-06-20','2026-12-31',NULL,'Mamah','Pinjem duit uang kas kodamar perantara mamah buat beli kursi geming',200000,54,NULL,NULL,'pending',NULL,NULL);
+/*!40000 ALTER TABLE `hutang` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `kategori`
+--
+
+DROP TABLE IF EXISTS `kategori`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `kategori` (
+  `id_kategori` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `nama_kategori` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `tipe_kategori` enum('pemasukan','pengeluaran') COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_kategori`),
+  KEY `idx_kategori_user` (`user_id`),
+  KEY `idx_kategori_tipe` (`tipe_kategori`)
+) ENGINE=InnoDB AUTO_INCREMENT=129 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `kategori`
+--
+
+LOCK TABLES `kategori` WRITE;
+/*!40000 ALTER TABLE `kategori` DISABLE KEYS */;
+INSERT INTO `kategori` VALUES (1,2,'Gaji','pemasukan','2025-02-27 02:00:00'),(2,2,'Bonus','pemasukan','2025-02-27 02:00:00'),(3,2,'Freelance','pemasukan','2025-02-27 02:00:00'),(4,2,'Investasi','pemasukan','2025-02-27 02:00:00'),(5,2,'Hadiah','pemasukan','2025-02-27 02:00:00'),(6,2,'Lain-lain','pemasukan','2025-02-27 02:00:00'),(7,2,'Kebutuhan Hidup','pengeluaran','2025-02-27 02:00:00'),(8,2,'Makan & Minum','pengeluaran','2025-02-27 02:00:00'),(9,2,'Transportasi','pengeluaran','2025-02-27 02:00:00'),(10,2,'Tagihan','pengeluaran','2025-02-27 02:00:00'),(11,2,'Hiburan','pengeluaran','2025-02-27 02:00:00'),(12,2,'Investasi','pengeluaran','2025-02-27 02:00:00'),(13,2,'Kesehatan','pengeluaran','2025-02-27 02:00:00'),(14,2,'Pendidikan','pengeluaran','2025-02-27 02:00:00'),(15,2,'Lain-lain','pengeluaran','2025-02-27 02:00:00'),(16,3,'Gaji','pemasukan','2025-02-27 02:00:00'),(17,3,'Bonus','pemasukan','2025-02-27 02:00:00'),(19,3,'Investasi','pemasukan','2025-02-27 02:00:00'),(20,3,'Hadiah','pemasukan','2025-02-27 02:00:00'),(21,3,'Lain-lain','pemasukan','2025-02-27 02:00:00'),(22,3,'Kebutuhan Hidup','pengeluaran','2025-02-27 02:00:00'),(23,3,'Makan & Minum','pengeluaran','2025-02-27 02:00:00'),(24,3,'Transportasi','pengeluaran','2025-02-27 02:00:00'),(25,3,'Tagihan','pengeluaran','2025-02-27 02:00:00'),(26,3,'Hiburan','pengeluaran','2025-02-27 02:00:00'),(27,3,'Investasi','pengeluaran','2025-02-27 02:00:00'),(28,3,'Kesehatan','pengeluaran','2025-02-27 02:00:00'),(29,3,'Pendidikan','pengeluaran','2025-02-27 02:00:00'),(30,3,'Lain-lain','pengeluaran','2025-02-27 02:00:00'),(31,52,'Gaji','pemasukan','2025-02-27 02:00:00'),(32,52,'Bonus','pemasukan','2025-02-27 02:00:00'),(33,52,'Freelance','pemasukan','2025-02-27 02:00:00'),(34,52,'Investasi','pemasukan','2025-02-27 02:00:00'),(35,52,'Hadiah','pemasukan','2025-02-27 02:00:00'),(36,52,'Lain-lain','pemasukan','2025-02-27 02:00:00'),(37,52,'Kebutuhan Hidup','pengeluaran','2025-02-27 02:00:00'),(38,52,'Makan & Minum','pengeluaran','2025-02-27 02:00:00'),(39,52,'Transportasi','pengeluaran','2025-02-27 02:00:00'),(40,52,'Tagihan','pengeluaran','2025-02-27 02:00:00'),(41,52,'Hiburan','pengeluaran','2025-02-27 02:00:00'),(42,52,'Investasi','pengeluaran','2025-02-27 02:00:00'),(43,52,'Kesehatan','pengeluaran','2025-02-27 02:00:00'),(44,52,'Pendidikan','pengeluaran','2025-02-27 02:00:00'),(45,52,'Lain-lain','pengeluaran','2025-02-27 02:00:00'),(46,53,'Gaji','pemasukan','2025-02-27 02:00:00'),(47,53,'Bonus','pemasukan','2025-02-27 02:00:00'),(48,53,'Freelance','pemasukan','2025-02-27 02:00:00'),(49,53,'Investasi','pemasukan','2025-02-27 02:00:00'),(50,53,'Hadiah','pemasukan','2025-02-27 02:00:00'),(51,53,'Lain-lain','pemasukan','2025-02-27 02:00:00'),(52,53,'Kebutuhan Hidup','pengeluaran','2025-02-27 02:00:00'),(53,53,'Makan & Minum','pengeluaran','2025-02-27 02:00:00'),(54,53,'Transportasi','pengeluaran','2025-02-27 02:00:00'),(55,53,'Tagihan','pengeluaran','2025-02-27 02:00:00'),(56,53,'Hiburan','pengeluaran','2025-02-27 02:00:00'),(57,53,'Investasi','pengeluaran','2025-02-27 02:00:00'),(58,53,'Kesehatan','pengeluaran','2025-02-27 02:00:00'),(59,53,'Pendidikan','pengeluaran','2025-02-27 02:00:00'),(60,53,'Lain-lain','pengeluaran','2025-02-27 02:00:00'),(61,54,'Gaji','pemasukan','2026-05-17 14:42:48'),(62,54,'Uang Saku','pengeluaran','2026-05-17 14:42:48'),(66,54,'Business','pemasukan','2026-05-17 14:42:48'),(68,54,'Jajan','pengeluaran','2026-05-17 14:42:48'),(69,54,'Transportasi','pengeluaran','2026-05-17 14:42:48'),(70,54,'Makan/Minum','pengeluaran','2026-05-17 14:42:48'),(71,54,'Refreshing/Healing','pengeluaran','2026-05-17 14:42:48'),(72,54,'Top up / Pulsa','pengeluaran','2026-05-17 14:42:48'),(73,54,'Belanja Online','pengeluaran','2026-05-17 14:42:48'),(76,55,'Gaji','pemasukan','2026-05-18 07:19:59'),(77,55,'Bonus','pemasukan','2026-05-18 07:19:59'),(78,55,'Freelance','pemasukan','2026-05-18 07:19:59'),(79,55,'Investasi','pemasukan','2026-05-18 07:19:59'),(80,55,'Hadiah','pemasukan','2026-05-18 07:19:59'),(81,55,'Lain-lain','pemasukan','2026-05-18 07:19:59'),(82,55,'Kebutuhan Hidup','pengeluaran','2026-05-18 07:19:59'),(83,55,'Makan & Minum','pengeluaran','2026-05-18 07:19:59'),(84,55,'Transportasi','pengeluaran','2026-05-18 07:19:59'),(85,55,'Tagihan','pengeluaran','2026-05-18 07:19:59'),(86,55,'Hiburan','pengeluaran','2026-05-18 07:19:59'),(87,55,'Investasi','pengeluaran','2026-05-18 07:19:59'),(88,55,'Kesehatan','pengeluaran','2026-05-18 07:19:59'),(89,55,'Pendidikan','pengeluaran','2026-05-18 07:19:59'),(90,55,'Lain-lain','pengeluaran','2026-05-18 07:19:59'),(91,3,'Uang Jajan','pemasukan','2026-05-18 07:35:13'),(92,3,'Sudah di jumlahkan','pemasukan','2026-05-18 10:01:05'),(93,56,'Gaji','pemasukan','2026-05-20 11:55:03'),(94,56,'Bonus','pemasukan','2026-05-20 11:55:03'),(95,56,'Freelance','pemasukan','2026-05-20 11:55:03'),(96,56,'Investasi','pemasukan','2026-05-20 11:55:03'),(97,56,'Hadiah','pemasukan','2026-05-20 11:55:03'),(98,56,'Lain-lain','pemasukan','2026-05-20 11:55:03'),(99,56,'Kebutuhan Hidup','pengeluaran','2026-05-20 11:55:03'),(100,56,'Makan & Minum','pengeluaran','2026-05-20 11:55:03'),(101,56,'Transportasi','pengeluaran','2026-05-20 11:55:03'),(102,56,'Tagihan','pengeluaran','2026-05-20 11:55:03'),(103,56,'Hiburan','pengeluaran','2026-05-20 11:55:03'),(104,56,'Investasi','pengeluaran','2026-05-20 11:55:03'),(105,56,'Kesehatan','pengeluaran','2026-05-20 11:55:03'),(106,56,'Pendidikan','pengeluaran','2026-05-20 11:55:03'),(107,56,'Lain-lain','pengeluaran','2026-05-20 11:55:03'),(108,54,'Jajan dari ortu','pemasukan','2026-05-23 21:43:17'),(109,54,'Business','pengeluaran','2026-05-23 21:50:28'),(110,54,'Lain - lain','pengeluaran','2026-05-23 22:00:50'),(112,54,'Bonus/Rejeki/Hadiah','pemasukan','2026-05-23 22:15:04'),(113,54,'Piutang','pemasukan','2026-05-24 07:32:59'),(114,54,'Lain - lain','pemasukan','2026-05-27 14:53:46'),(115,54,'Sedekah/Beramal','pengeluaran','2026-06-07 15:23:47'),(116,54,'Perkuliahan/Patungan','pengeluaran','2026-06-16 12:01:49');
+/*!40000 ALTER TABLE `kategori` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
 -- Table structure for table `pemasukan`
 --
+
 DROP TABLE IF EXISTS `pemasukan`;
-
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `pemasukan` (
-    `id_pemasukan` int (11) NOT NULL AUTO_INCREMENT,
-    `tanggal` date NOT NULL,
-    `catatan` text NOT NULL,
-    `jumlah` int (11) NOT NULL,
-    `user` int (11) NOT NULL,
-    `id_kategori` int (11) DEFAULT NULL,
-    `id_wallet` int (11) DEFAULT NULL,
-    `status` enum ('pending', 'selesai') NOT NULL,
-    PRIMARY KEY (`id_pemasukan`),
-    KEY `idx_pemasukan_user` (`user`),
-    KEY `idx_pemasukan_kategori` (`id_kategori`),
-    KEY `idx_pemasukan_wallet` (`id_wallet`)
-  ) ENGINE = InnoDB AUTO_INCREMENT = 44 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pemasukan` (
+  `id_pemasukan` int NOT NULL AUTO_INCREMENT,
+  `tanggal` date NOT NULL,
+  `catatan` text COLLATE utf8mb4_general_ci NOT NULL,
+  `jumlah` int NOT NULL,
+  `user` int NOT NULL,
+  `id_kategori` int DEFAULT NULL,
+  `id_wallet` int DEFAULT NULL,
+  `status` enum('pending','selesai') COLLATE utf8mb4_general_ci NOT NULL,
+  `archived_at` datetime DEFAULT NULL,
+  `archived_by` int DEFAULT NULL,
+  PRIMARY KEY (`id_pemasukan`),
+  KEY `idx_pemasukan_user` (`user`),
+  KEY `idx_pemasukan_kategori` (`id_kategori`),
+  KEY `idx_pemasukan_wallet` (`id_wallet`),
+  KEY `idx_pemasukan_user_archive` (`user`,`archived_at`),
+  CONSTRAINT `fk_pemasukan_kategori` FOREIGN KEY (`id_kategori`) REFERENCES `kategori` (`id_kategori`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_pemasukan_user` FOREIGN KEY (`user`) REFERENCES `user` (`id_user`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_pemasukan_wallet` FOREIGN KEY (`id_wallet`) REFERENCES `wallet` (`id_wallet`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=121 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `pemasukan`
 --
+
 LOCK TABLES `pemasukan` WRITE;
-
 /*!40000 ALTER TABLE `pemasukan` DISABLE KEYS */;
-
-INSERT INTO
-  `pemasukan` (
-    `id_pemasukan`,
-    `tanggal`,
-    `catatan`,
-    `jumlah`,
-    `user`,
-    `status`
-  )
-VALUES
-  (
-    11,
-    '2025-01-15',
-    'gaji bulanan',
-    1000000,
-    '28',
-    'selesai'
-  ),
-  (
-    15,
-    '2025-01-07',
-    'Restock gaji',
-    200000,
-    '27',
-    'selesai'
-  ),
-  (17, '2025-01-09', 'test', 100000, '28', 'pending'),
-  (22, '2025-01-09', 'fsfs', 121212, '30', 'selesai'),
-  (28, '2025-01-11', 'ewfew', 20000, '32', 'selesai'),
-  (
-    29,
-    '2025-01-13',
-    'Uang kas',
-    10000,
-    '2',
-    'pending'
-  ),
-  (31, '2025-01-13', 'oke', 100000, '2', 'selesai'),
-  (
-    32,
-    '2025-01-13',
-    'uang saku',
-    500000,
-    '39',
-    'selesai'
-  ),
-  (
-    33,
-    '2024-11-14',
-    'jersey',
-    150000,
-    '39',
-    'selesai'
-  ),
-  (
-    34,
-    '2025-01-13',
-    'uang kas',
-    50000,
-    '39',
-    'selesai'
-  ),
-  (
-    36,
-    '2025-01-15',
-    'testing',
-    400000,
-    '40',
-    'pending'
-  ),
-  (
-    37,
-    '2025-01-15',
-    'Gaji freelance',
-    150000,
-    '41',
-    'selesai'
-  ),
-  (
-    38,
-    '2025-01-16',
-    'Nemu dikantong',
-    1000000,
-    '43',
-    'selesai'
-  ),
-  (
-    39,
-    '2025-01-07',
-    'apani',
-    1000000,
-    '41',
-    'selesai'
-  ),
-  (
-    40,
-    '2025-01-27',
-    'Gajian sampingan',
-    50000000,
-    '49',
-    'pending'
-  ),
-  (
-    41,
-    '2025-01-25',
-    'duit',
-    1000000,
-    '50',
-    'selesai'
-  ),
-  (
-    42,
-    '2025-01-29',
-    'duit',
-    1000000,
-    '51',
-    'selesai'
-  ),
-  (
-    43,
-    '2025-02-27',
-    'Pemasukan hari ini uang jajan',
-    20000,
-    '52',
-    'selesai'
-  );
-
+INSERT INTO `pemasukan` VALUES (29,'2025-01-13','Uang kas',10000,2,NULL,2,'pending',NULL,NULL),(31,'2025-01-13','oke',100000,2,NULL,2,'selesai',NULL,NULL),(43,'2025-02-27','Pemasukan hari ini uang jajan',20000,52,NULL,4,'selesai',NULL,NULL),(44,'2026-05-17','Uang jajan dari ayah',100000,3,17,8,'selesai',NULL,NULL),(45,'2026-04-29','Uang Gtech',420000,3,16,8,'selesai',NULL,NULL),(46,'2026-05-31','Uang gtech',525000,3,16,8,'pending',NULL,NULL),(47,'2026-05-18','Uang jajan dari mamah',50000,3,17,8,'selesai',NULL,NULL),(48,'2026-05-20','Hasil Murni Uang Jualan',380000,3,20,8,'selesai',NULL,NULL),(49,'2026-05-18','Hasil Jualan hari ini',270000,3,20,8,'pending',NULL,NULL),(50,'2026-06-02','Bulan depan masih lama',150000,3,19,8,'pending',NULL,NULL),(51,'2026-05-31','Akhir bulan',70000,3,19,9,'pending',NULL,NULL),(52,'2026-05-27','Uang apa ni',90000,3,NULL,3,'selesai',NULL,NULL),(53,'2026-05-18','Random',10000,3,92,8,'pending',NULL,NULL),(55,'2026-05-19','Surveyor',25000,3,17,11,'pending',NULL,NULL),(56,'2026-05-21','qwdqwdq',25000,3,92,9,'selesai',NULL,NULL),(57,'2026-05-22','woekfwok',90000,3,20,11,'selesai',NULL,NULL),(58,'2026-07-11','rejeki',5000000,3,17,3,'selesai',NULL,NULL),(59,'2026-05-01','2dqdqwd',32000,3,92,14,'selesai',NULL,NULL),(60,'2026-05-28','Alhamdulillah uang saku dari PKL di PT. Gtech Digital Asia',525000,54,62,15,'selesai',NULL,NULL),(62,'2026-05-24','Minjem duit ayah',150000,54,66,6,'selesai','2026-07-14 22:06:04',54),(63,'2026-05-24','Duit dari Jamil bayar roti',20000,54,66,17,'selesai','2026-07-14 22:06:16',54),(64,'2026-05-25','uang roti dari mutia',10000,54,66,6,'selesai',NULL,NULL),(66,'2026-05-25','uang roti dari syawal',10000,54,66,6,'selesai',NULL,NULL),(67,'2026-05-26','Uang roti dari tia',10000,54,66,6,'selesai',NULL,NULL),(68,'2026-05-26','Uang roti dari hagi',10000,54,66,6,'selesai',NULL,NULL),(69,'2026-05-26','Uang roti dari danar',5000,54,66,6,'selesai',NULL,NULL),(70,'2026-05-26','Pelunasan piutang dari Ibnu: Uang roti pizza choco',10000,54,113,6,'selesai',NULL,NULL),(71,'2026-05-26','Pelunasan piutang dari Naila: Uang roti pizza beef',10000,54,113,6,'selesai',NULL,NULL),(72,'2026-05-28','Pelunasan piutang dari Rehan: Buat nambah billing warnet',20000,54,113,6,'selesai',NULL,NULL),(73,'2026-06-29','Alhamdulillah uang saku dari PKL di PT. Gtech Digital Asia',525000,54,62,15,'selesai',NULL,NULL),(74,'2026-06-08','Alhamdulillah uang saku dari poltek untuk kebutuhan sehari hari',500000,54,62,15,'selesai',NULL,NULL),(75,'2026-06-01','Pelunasan piutang dari Perdi: Uang bensin bulan Mei minggu ke 3 dari tgl 18 - 22',20000,54,66,12,'selesai',NULL,NULL),(76,'2026-06-01','Pelunasan piutang dari Perdi: Uang bensin bulan Mei minggu ke 4 dari tgl 25 - 29',20000,54,66,12,'selesai',NULL,NULL),(77,'2026-06-03','Hasil bantu bantu mas rikza buat masang kabel wifi di poltek ke ruang adm..',25000,54,112,6,'selesai',NULL,NULL),(78,'2026-06-04','ntah dari mana nih goceng maybe i salah perhitungan',4000,54,112,6,'selesai',NULL,NULL),(79,'2026-06-08','Pelunasan piutang dari Perdi: Buat bayar bensin minggu pertama bulan juni',20000,54,66,6,'selesai',NULL,NULL),(80,'2026-06-08','Dari mamah upah ongkir beli selada xD',2000,54,112,6,'selesai',NULL,NULL),(81,'2026-06-21','Perhitungan meleset kelebihan 1k',1000,54,114,6,'selesai',NULL,NULL),(82,'2026-06-20','Dapet subsidi bensin dari ayah 24k',24000,54,112,6,'selesai',NULL,NULL),(83,'2026-06-22','Pelunasan piutang dari Perdi: Buat bayar bensin minggu ke dua bulan juni',30000,54,66,6,'selesai',NULL,NULL),(84,'2026-06-22','Pelunasan piutang dari Perdi: Uang bensin minggu ke 3 bulan Juni',20000,54,66,6,'selesai',NULL,NULL),(85,'2026-06-22','Dapet subsidi beli lauk tambahan dari mamah',5000,54,112,6,'selesai',NULL,NULL),(86,'2026-06-23','Dapet subsidi beli makan dari mamah (beli nasduk + gorengan)',9000,54,112,6,'selesai',NULL,NULL),(87,'2026-06-24','Dapet subsidi buat beli lauk tambahan di warteg (sayur pare + kerupupuk)',5000,54,112,6,'selesai',NULL,NULL),(88,'2026-06-26','Dapet subsidi dari ayah alhamdulillah survive akhir bulan',100000,54,112,6,'selesai',NULL,NULL),(89,'2026-06-28','Dapet subsidi dari ayah uang buat beli bensin scoopy (pertalite)',25000,54,112,6,'selesai',NULL,NULL),(90,'2026-06-29','Dapet bonus tambahan buat beli lauk dari mamah sarapan pagi (sayur kangkung di warteg)',5000,54,112,6,'selesai',NULL,NULL),(91,'2026-07-30','Alhamdulillah uang saku dari PKL di PT. Gtech Digital Asia',500000,54,61,15,'pending',NULL,NULL),(92,'2026-07-08','Alhamdulillah uang saku dari poltek untuk kebutuhan sehari hari',500000,54,62,15,'selesai',NULL,NULL),(93,'2026-07-03','Perdi bayar bensin dari tgl 22 Juni - 03 July (2 minggu 10 hari kerja)',70000,54,112,15,'selesai',NULL,NULL),(94,'2026-07-04','Dapet subsidi dari ayah uang buat beli bensin scoopy (pertalite)',22000,54,112,6,'selesai',NULL,NULL),(95,'2026-07-08','Mas al beli kupon 4 (promo mas al) 1 kupon 5k',20000,54,66,6,'selesai',NULL,NULL),(96,'2026-07-12','1233123',100000,3,17,9,'pending',NULL,NULL),(117,'2026-07-15','Pemasukan dana untuk menyesuaikan yang ada',46000,54,114,17,'selesai',NULL,NULL),(118,'2026-07-15','Pemasukan dana untuk menyesuaikan yang ada',10000,54,114,15,'pending',NULL,NULL),(119,'2026-07-15','Pemasukan dana untuk menyesuaikan yang ada',10000,54,114,6,'pending',NULL,NULL),(120,'2026-07-21','test saja',10000,54,112,45,'selesai',NULL,NULL);
 /*!40000 ALTER TABLE `pemasukan` ENABLE KEYS */;
-
 UNLOCK TABLES;
 
 --
 -- Table structure for table `pengeluaran`
 --
+
 DROP TABLE IF EXISTS `pengeluaran`;
-
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `pengeluaran` (
-    `id_pengeluaran` int (11) NOT NULL AUTO_INCREMENT,
-    `tanggal` date NOT NULL,
-    `catatan` text NOT NULL,
-    `jumlah` int (11) NOT NULL,
-    `user` int (11) NOT NULL,
-    `id_kategori` int (11) DEFAULT NULL,
-    `id_wallet` int (11) DEFAULT NULL,
-    `status` enum ('pending', 'selesai') NOT NULL,
-    PRIMARY KEY (`id_pengeluaran`),
-    KEY `idx_pengeluaran_user` (`user`),
-    KEY `idx_pengeluaran_kategori` (`id_kategori`),
-    KEY `idx_pengeluaran_wallet` (`id_wallet`)
-  ) ENGINE = InnoDB AUTO_INCREMENT = 30 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pengeluaran` (
+  `id_pengeluaran` int NOT NULL AUTO_INCREMENT,
+  `tanggal` date NOT NULL,
+  `catatan` text COLLATE utf8mb4_general_ci NOT NULL,
+  `jumlah` int NOT NULL,
+  `user` int NOT NULL,
+  `id_kategori` int DEFAULT NULL,
+  `id_wallet` int DEFAULT NULL,
+  `status` enum('pending','selesai') COLLATE utf8mb4_general_ci NOT NULL,
+  `archived_at` datetime DEFAULT NULL,
+  `archived_by` int DEFAULT NULL,
+  PRIMARY KEY (`id_pengeluaran`),
+  KEY `idx_pengeluaran_user` (`user`),
+  KEY `idx_pengeluaran_kategori` (`id_kategori`),
+  KEY `idx_pengeluaran_wallet` (`id_wallet`),
+  KEY `idx_pengeluaran_user_archive` (`user`,`archived_at`),
+  CONSTRAINT `fk_pengeluaran_kategori` FOREIGN KEY (`id_kategori`) REFERENCES `kategori` (`id_kategori`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_pengeluaran_user` FOREIGN KEY (`user`) REFERENCES `user` (`id_user`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_pengeluaran_wallet` FOREIGN KEY (`id_wallet`) REFERENCES `wallet` (`id_wallet`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=173 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `pengeluaran`
 --
+
 LOCK TABLES `pengeluaran` WRITE;
-
 /*!40000 ALTER TABLE `pengeluaran` DISABLE KEYS */;
-
-INSERT INTO
-  `pengeluaran` (
-    `id_pengeluaran`,
-    `tanggal`,
-    `catatan`,
-    `jumlah`,
-    `user`,
-    `status`
-  )
-VALUES
-  (22, '2025-01-11', 'oke', 20000, 32, 'selesai'),
-  (
-    23,
-    '2025-01-13',
-    'Kebutuhan bulanan',
-    500000,
-    2,
-    'pending'
-  ),
-  (24, '2025-01-13', 'makrab', 180000, 39, 'selesai'),
-  (
-    25,
-    '2025-01-15',
-    'Jajan mie goreng',
-    15000,
-    41,
-    'selesai'
-  ),
-  (26, '2025-01-16', 'okok', 9000000, 41, 'pending'),
-  (
-    27,
-    '2025-01-20',
-    'Jajan seblak',
-    10000,
-    49,
-    'selesai'
-  ),
-  (
-    28,
-    '2025-02-17',
-    'Beli perintilan rubicon',
-    130000000,
-    49,
-    'pending'
-  ),
-  (
-    29,
-    '2025-02-27',
-    'Pengeluaran untuk jajan di kantin',
-    10000,
-    52,
-    'selesai'
-  );
-
+INSERT INTO `pengeluaran` VALUES (23,'2025-01-13','Kebutuhan bulanan',500000,2,NULL,2,'pending',NULL,NULL),(29,'2025-02-27','Pengeluaran untuk jajan di kantin',10000,52,NULL,4,'selesai',NULL,NULL),(30,'2026-05-17','Beli jajan',35000,3,26,8,'pending',NULL,NULL),(31,'2026-05-08','Top up',150000,3,30,3,'selesai',NULL,NULL),(32,'2026-05-30','Beli kursi',250000,3,25,8,'pending',NULL,NULL),(33,'2026-05-18','Beli naspad',50000,3,23,8,'selesai',NULL,NULL),(34,'2026-05-29','Bayar kuliah',500000,3,29,8,'pending',NULL,NULL),(36,'2026-05-19','Schedular',15000,3,23,9,'selesai',NULL,NULL),(37,'2026-05-22','Biaya per minggu co',100000,3,24,11,'selesai',NULL,NULL),(38,'2026-05-21','qwedf2ef',10000,3,25,9,'selesai',NULL,NULL),(39,'2026-05-26','Ini buat sehari hari transaksi bayar aer',700000,3,26,10,'selesai',NULL,NULL),(40,'2026-05-22','bpjs',15000,3,28,3,'selesai',NULL,NULL),(41,'2026-05-22','owefowkefk',10000,3,29,11,'selesai',NULL,NULL),(42,'2026-05-28','paan nih bang',25000,3,22,3,'selesai',NULL,NULL),(45,'2026-05-24','Beli bensin',16000,54,69,6,'selesai',NULL,NULL),(46,'2026-05-24','Beli kuronami cuy top up valo',142000,54,72,12,'selesai',NULL,NULL),(47,'2026-05-24','Bayar roti ke mamah',30000,54,110,6,'selesai',NULL,NULL),(48,'2026-05-25','Sayur kangkung warteg daffa',4000,54,70,6,'selesai',NULL,NULL),(49,'2026-05-26','Bayar roti ke mamah',45000,54,109,6,'selesai',NULL,NULL),(50,'2026-05-26','Beli yt premium',4500,54,72,17,'selesai',NULL,NULL),(51,'2026-05-24','Buat adek seikhlasnya aja',3000,54,110,16,'selesai',NULL,NULL),(52,'2026-05-26','Nambah billing rehan',21000,54,109,17,'selesai',NULL,NULL),(53,'2026-05-27','Beli bensin pertamax buat scoopy 2.37 liter',30000,54,69,6,'selesai',NULL,NULL),(54,'2026-05-28','Beli sayur kacang panjang di warteg + tempe',5000,54,70,6,'selesai',NULL,NULL),(55,'2026-05-28','Buat top up valo 2100 vp co wkkw prepare spectrum xD',206000,54,72,12,'selesai',NULL,NULL),(56,'2026-05-28','Beli mouse baru mofii sama action figure luffy gear V',248500,54,73,16,'selesai',NULL,NULL),(57,'2026-05-29','Beli Minum air, es nutrisarijajan nabati dan coki coki',13000,54,68,6,'selesai',NULL,NULL),(58,'2026-05-29','bayar parkir',3000,54,69,6,'selesai',NULL,NULL),(59,'2026-05-29','Beli pop ice coklat',12000,54,68,6,'selesai',NULL,NULL),(60,'2026-05-29','Kotak amal jumatan',5000,54,115,6,'selesai',NULL,NULL),(61,'2026-05-29','Beli bubur kacang ijo + ketan item (sarapan pagi)',5000,54,70,6,'selesai',NULL,NULL),(62,'2026-05-30','Beli pop ice coklat buat jajan minuman',10000,54,68,6,'selesai',NULL,NULL),(63,'2026-06-01','Buat belii bensin minggu pertama bulan juni',25000,54,69,6,'selesai',NULL,NULL),(65,'2026-06-01','Buat beli paket data myxl 28 hari 10GB',41500,54,72,17,'selesai',NULL,NULL),(66,'2026-06-02','Ngeprint di fcp arah gebang buat gapin',1000,54,116,6,'selesai',NULL,NULL),(67,'2026-06-03','Beli bensin minggu pertama bulan Juni yang ke dua x nya',15000,54,69,6,'selesai',NULL,NULL),(68,'2026-06-03','Beli bubur kacang ijo + ketan item buat sarapan',5000,54,68,6,'selesai',NULL,NULL),(69,'2026-06-03','Bayar parkir di bibi bawah',3000,54,69,6,'selesai',NULL,NULL),(70,'2026-06-04','Beli lauk tambahan buat makan di warteg : Kikil',4000,54,70,6,'selesai',NULL,NULL),(71,'2026-06-04','Beli kikil di warteg daffa tadi pagi buat sarapan nambah lauk',4000,54,70,6,'selesai',NULL,NULL),(72,'2026-06-04','Isi bensin prepare buat jumat sampe akhir weekend minggu pertama',12000,54,69,6,'selesai',NULL,NULL),(73,'2026-06-05','Beli lauk tambahan sayur singkong buat makan pagi',4000,54,70,6,'selesai',NULL,NULL),(74,'2026-06-05','Beramal kotak amal Jumatan di Gtech',5000,54,115,6,'selesai',NULL,NULL),(75,'2026-06-07','Bensin minggu ke dua bulan juni',30000,54,69,6,'selesai',NULL,NULL),(76,'2026-06-08','Isi bensin mecahin duit gocapan sekalian',10000,54,69,6,'selesai',NULL,NULL),(77,'2026-06-08','Beli aksesoris dan kebutuhan lainnya (Spray, Sarung tangan, Finger Sleeve etc..)',83500,54,73,16,'selesai',NULL,NULL),(78,'2026-06-10','Bayar parkir di bibi bawah',3000,54,69,6,'selesai',NULL,NULL),(79,'2026-06-10','Buat beli bensin di minggu ke dua bulan juni ini (pertamax)',20000,54,69,6,'selesai',NULL,NULL),(80,'2026-06-11','Patungan buat bakar bakar di rumah bu anis malam sabtu ini',20000,54,116,6,'selesai',NULL,NULL),(81,'2026-06-12','Kotak amal jumatan',5000,54,115,6,'selesai',NULL,NULL),(82,'2026-06-13','Bensin pertalite buat sabtu minggu weekend',25000,54,69,6,'selesai',NULL,NULL),(83,'2026-06-14','Main warnet 3 jam cuy di nurland net',17000,54,71,6,'selesai',NULL,NULL),(84,'2026-06-15','Beli martabak langganan full rasa',25000,54,68,6,'selesai',NULL,NULL),(85,'2026-06-15','Jajanin anak anak YIIA healing tipis tipis ke tang city mall',29500,54,68,6,'selesai',NULL,NULL),(86,'2026-06-16','Ngisi bensin sama sekalian isi angin (nitrogen) di ban belakang',17000,54,69,6,'selesai',NULL,NULL),(87,'2026-06-16','Buat patungan tanaman 70k kirim ke alvin admin 2500',72000,54,116,12,'selesai',NULL,NULL),(88,'2026-06-16','Buat benerin jaket resleting sama ngejahit... Jaket kenangan masa lalu (Never buy a new one)',35000,54,110,6,'selesai',NULL,NULL),(89,'2026-06-17','Bantu ekonomi teman , jajan di april beli keripik sama usus goreng',9000,54,68,6,'selesai',NULL,NULL),(90,'2026-06-17','Bayar parkir di bibi bawah',3000,54,69,6,'selesai',NULL,NULL),(91,'2026-06-18','Buat beli makan di warteg + uang kembalian nya perdi 1k',12000,54,70,6,'selesai',NULL,NULL),(92,'2026-06-18','Beli bensin tambahan buat penutup di minggu ke 3 bulan juni',10000,54,69,6,'selesai',NULL,NULL),(94,'2026-06-19','Sedekah mingguan kotak amal jumat masjid deket kantor Gtech',5000,54,115,6,'selesai',NULL,NULL),(95,'2026-06-21','Main warnet refreshing + sembari kelarin quest discord obrs (gope subsidi ayah)',16500,54,71,6,'selesai',NULL,NULL),(96,'2026-06-20','Dapet subsidi bensin dari ayah 24k',24000,54,69,6,'selesai',NULL,NULL),(97,'2026-06-22','Buat beli lauk tambahan telur ceplok + kerupuk (subsidi dari mamah)',5000,54,70,6,'selesai',NULL,NULL),(98,'2026-06-23','Beli bensin di minggu ke - 4 bulan juni (pertalite)',20000,54,69,6,'selesai',NULL,NULL),(99,'2026-06-23','Dapet subsidi beli makan dari mamah (beli nasduk + gorengan)',9000,54,70,6,'selesai',NULL,NULL),(100,'2026-06-24','Dapet subsidi buat beli lauk tambahan di warteg (sayur pare + kerupupuk)',5000,54,70,6,'selesai',NULL,NULL),(101,'2026-06-24','Beli Onde2 buat keluarga',20000,54,68,6,'selesai',NULL,NULL),(102,'2026-06-24','Isi bensin pertalite (penutupan weekend)',10000,54,69,6,'selesai',NULL,NULL),(103,'2026-06-26','Weekly beramal 5k saja di masjid deket kantor Gtech (Jumatan)',5000,54,115,6,'selesai',NULL,NULL),(104,'2026-06-26','Membeli youtube premium murah meriah cuy sebulan bae di akun guatemalasosiara@gmail.com',4500,54,72,17,'selesai',NULL,NULL),(105,'2026-06-26','Beli VP 1k buat battlepass maybe this is the last BP that i bought broo..',110000,54,72,12,'selesai',NULL,NULL),(106,'2026-06-26','Buat beli bensin pertalite untuk motor beat',10000,54,69,6,'selesai',NULL,NULL),(107,'2026-06-27','Dahlah cuy pokoknya liburan ke ancol bareng temen temen wkwk',35000,54,71,6,'selesai',NULL,NULL),(108,'2026-06-27','Perdi minta buat gopay',4000,54,109,15,'selesai',NULL,NULL),(109,'2026-06-28','Billing  nurland net mabar sama arya &amp; tangguh 6 jam sisa &lt;3 jam lagi',34000,54,71,6,'selesai',NULL,NULL),(110,'2026-06-28','Dapet subsidi dari ayah uang buat beli bensin scoopy (pertalite)',25000,54,69,6,'selesai',NULL,NULL),(111,'2026-06-29','Dapet bonus tambahan buat beli lauk dari mamah sarapan pagi (sayur kangkung di warteg)',3000,54,70,6,'selesai',NULL,NULL),(112,'2026-06-30','Buat beli bensin akhir bulan Juni Pertalite',25000,54,69,6,'selesai',NULL,NULL),(113,'2026-07-02','Buat beli kerupuk dua tambahan lauk tipis - tipis',2000,54,70,6,'selesai',NULL,NULL),(114,'2026-07-02','Buat patungan uang kas bayar ke kelas (bendahara)',5000,54,116,6,'selesai',NULL,NULL),(115,'2026-07-01','Saldo BCA otomatis kepotong 10k - 15k buat bayar biaya admin BCA',13000,54,110,12,'selesai',NULL,NULL),(116,'2026-07-02','Isi bensin pertalite ga perlu banyak banyak yang penting ada',10000,54,69,6,'selesai',NULL,NULL),(117,'2026-07-03','Jumat beramal supaya seterusnya menjadi jumat berkah',5000,54,115,6,'selesai',NULL,NULL),(118,'2026-07-04','Dapet subsidi dari ayah uang buat beli bensin scoopy (pertalite)',22000,54,69,6,'selesai',NULL,NULL),(119,'2026-07-04','Top up shopee pay buat beli semprotan sama moyu cube timer',115000,54,73,16,'selesai',NULL,NULL),(120,'2026-07-04','Buat beli paket data selama sebulan 8gb XL dari dana provider',41500,54,72,17,'selesai',NULL,NULL),(121,'2026-07-06','Isi bensin scoopy pertalite di minggu pertama',17000,54,69,6,'selesai',NULL,NULL),(122,'2026-07-06','Buat ngeprint makalah + jilid + lem + pulpen + print dll..',36000,54,116,6,'selesai',NULL,NULL),(123,'2026-07-06','Buat bayar uang kas pas semesster 3 ngelunasin sisa yang belum (bendahara : pauji)',15000,54,116,6,'selesai',NULL,NULL),(124,'2026-07-07','Bayar parkir di bibi bawah',3000,54,69,6,'selesai',NULL,NULL),(125,'2026-07-07','Beli bubur kacang ijo buat sarapan',5000,54,68,6,'selesai',NULL,NULL),(126,'2026-07-08','Buat bayar parkir motor di bibi bawah 3k pulang kampus',3000,54,69,6,'selesai',NULL,NULL),(127,'2026-07-09','Beli merchandise angkatan Engineer (Kenang - kenangan)',10000,54,116,6,'selesai',NULL,NULL),(128,'2026-07-09','Bayar parkir di bibi sepeda motor pulang kuliah',3000,54,69,6,'selesai',NULL,NULL),(129,'2026-07-09','Beli bensin minggu pertama (pertalite) buat scoopy',12000,54,69,6,'selesai',NULL,NULL),(130,'2026-07-10','Beramal di masjid deket kantor Gtech weekly',5000,54,115,6,'selesai',NULL,NULL),(131,'2026-07-12','12313213',40000,3,23,9,'selesai',NULL,NULL),(132,'2026-07-12','wefsdfwef',20000,3,27,9,'selesai',NULL,NULL);
 /*!40000 ALTER TABLE `pengeluaran` ENABLE KEYS */;
-
 UNLOCK TABLES;
 
 --
 -- Table structure for table `piutang`
 --
+
 DROP TABLE IF EXISTS `piutang`;
-
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `piutang` (
-    `id_piutang` int (11) NOT NULL AUTO_INCREMENT,
-    `tanggal` date NOT NULL,
-    `tanggal_jatuh_tempo` date DEFAULT NULL COMMENT 'Tanggal jatuh tempo piutang',
-    `tanggal_lunas` date DEFAULT NULL,
-    `debitur` varchar(100) NOT NULL,
-    `catatan` text NOT NULL,
-    `jumlah` int (11) NOT NULL,
-    `user` int (11) NOT NULL,
-    `id_wallet_penerimaan` int (11) DEFAULT NULL,
-    `id_pemasukan` int (11) DEFAULT NULL,
-    `status` enum ('pending', 'selesai') NOT NULL,
-    PRIMARY KEY (`id_piutang`),
-    KEY `idx_piutang_wallet_penerimaan` (`id_wallet_penerimaan`),
-    UNIQUE KEY `uniq_piutang_pemasukan` (`id_pemasukan`),
-    KEY `idx_piutang_user_status` (`user`, `status`)
-  ) ENGINE = InnoDB AUTO_INCREMENT = 19 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `piutang` (
+  `id_piutang` int NOT NULL AUTO_INCREMENT,
+  `tanggal` date NOT NULL,
+  `tanggal_jatuh_tempo` date DEFAULT NULL,
+  `tanggal_lunas` date DEFAULT NULL,
+  `debitur` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `catatan` text COLLATE utf8mb4_general_ci NOT NULL,
+  `jumlah` int NOT NULL,
+  `user` int NOT NULL,
+  `id_wallet_penerimaan` int DEFAULT NULL,
+  `id_pemasukan` int DEFAULT NULL,
+  `status` enum('pending','selesai') COLLATE utf8mb4_general_ci NOT NULL,
+  `archived_at` datetime DEFAULT NULL,
+  `archived_by` int DEFAULT NULL,
+  PRIMARY KEY (`id_piutang`),
+  UNIQUE KEY `uniq_piutang_pemasukan` (`id_pemasukan`),
+  KEY `idx_piutang_wallet_penerimaan` (`id_wallet_penerimaan`),
+  KEY `idx_piutang_user_status` (`user`,`status`),
+  KEY `idx_piutang_user_archive` (`user`,`archived_at`),
+  CONSTRAINT `fk_piutang_pemasukan` FOREIGN KEY (`id_pemasukan`) REFERENCES `pemasukan` (`id_pemasukan`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_piutang_user` FOREIGN KEY (`user`) REFERENCES `user` (`id_user`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=47 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `piutang`
 --
+
 LOCK TABLES `piutang` WRITE;
-
 /*!40000 ALTER TABLE `piutang` DISABLE KEYS */;
-
-INSERT INTO
-  `piutang` (
-    `id_piutang`,
-    `tanggal`,
-    `tanggal_jatuh_tempo`,
-    `tanggal_lunas`,
-    `debitur`,
-    `catatan`,
-    `jumlah`,
-    `user`,
-    `id_wallet_penerimaan`,
-    `id_pemasukan`,
-    `status`
-  )
-VALUES
-  (
-    10,
-    '2025-01-11',
-    NULL,
-    NULL,
-    'adad',
-    'ok',
-    90000,
-    32,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    11,
-    '2025-01-13',
-    NULL,
-    NULL,
-    'bank bca',
-    'award winner',
-    100000,
-    2,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    12,
-    '2025-01-13',
-    NULL,
-    NULL,
-    'tangguh',
-    'nasi bungkus',
-    10000,
-    39,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    14,
-    '2025-01-15',
-    NULL,
-    NULL,
-    'tama',
-    'oke saja',
-    100000,
-    40,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    15,
-    '2025-01-15',
-    NULL,
-    NULL,
-    'oooo',
-    'okkkkkkkkkkkkkk',
-    800000,
-    40,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    16,
-    '2025-01-16',
-    NULL,
-    NULL,
-    'okk',
-    'okgtgyu',
-    800000,
-    41,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    17,
-    '2025-01-31',
-    NULL,
-    NULL,
-    'select',
-    'omset',
-    500000,
-    50,
-    NULL,
-    NULL,
-    'pending'
-  ),
-  (
-    18,
-    '2025-02-27',
-    NULL,
-    NULL,
-    'Sakila',
-    'biaya operasional rumah sakit',
-    100000,
-    52,
-    NULL,
-    NULL,
-    'pending'
-  );
-
+INSERT INTO `piutang` VALUES (11,'2025-01-13',NULL,NULL,'bank bca','award winner',100000,2,NULL,NULL,'pending',NULL,NULL),(18,'2025-02-27',NULL,NULL,'Sakila','biaya operasional rumah sakit',100000,52,NULL,NULL,'pending',NULL,NULL),(20,'2026-05-08','2026-05-15',NULL,'Myself','Jjdjeix',25000,3,NULL,NULL,'pending',NULL,NULL),(21,'2026-05-17','2026-05-31',NULL,'Myself','Kdoeklz',30000,3,NULL,NULL,'pending',NULL,NULL),(22,'2026-05-30','2026-05-31',NULL,'Myself','Kejeozidd',60000,3,NULL,NULL,'selesai',NULL,NULL),(23,'2026-05-28',NULL,NULL,'Myself','Odiwksixd',20000,3,NULL,NULL,'pending',NULL,NULL),(25,'2026-05-22','2026-05-29',NULL,'Jamil','Uang roti Jamil mesen pizza sama abon',10000,54,NULL,NULL,'selesai',NULL,NULL),(26,'2026-05-22','2026-06-05','2026-06-01','Perdi','Uang bensin bulan Mei minggu ke 3 dari tgl 18 - 22 (Ternyata kepotong saldo admin BCA)',20000,54,12,75,'selesai',NULL,NULL),(27,'2026-05-26','2026-05-30','2026-05-26','Ibnu','Uang roti pizza choco',10000,54,6,70,'selesai',NULL,NULL),(28,'2026-05-26','2026-05-30','2026-05-26','Naila','Uang roti pizza beef',10000,54,6,71,'selesai',NULL,NULL),(29,'2026-05-26','2026-05-30','2026-05-28','Rehan','Buat nambah billing warnet',20000,54,6,72,'selesai',NULL,NULL),(30,'2026-05-25','2026-05-29','2026-06-01','Perdi','Uang bensin bulan Mei minggu ke 4 dari tgl 25 - 29 (Ternyata kepotong saldo admin BCA)',20000,54,12,76,'selesai',NULL,NULL),(31,'2026-06-05','2026-06-12','2026-06-08','Perdi','Buat bayar bensin minggu pertama bulan juni',20000,54,6,79,'selesai',NULL,NULL),(32,'2026-06-12','2026-06-19','2026-06-22','Perdi','Buat bayar bensin minggu ke dua bulan juni',30000,54,6,83,'selesai',NULL,NULL),(33,'2026-06-19','2026-06-26','2026-06-22','Perdi','Uang bensin minggu ke 3 bulan Juni ',20000,54,6,84,'selesai',NULL,NULL);
 /*!40000 ALTER TABLE `piutang` ENABLE KEYS */;
+UNLOCK TABLES;
 
+--
+-- Table structure for table `recurring_generation_log`
+--
+
+DROP TABLE IF EXISTS `recurring_generation_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `recurring_generation_log` (
+  `id_log` int NOT NULL AUTO_INCREMENT,
+  `id_recurring` int NOT NULL,
+  `user_id` int NOT NULL,
+  `periode_bulan` tinyint NOT NULL,
+  `periode_tahun` int NOT NULL,
+  `tipe_transaksi` enum('pemasukan','pengeluaran') COLLATE utf8mb4_general_ci NOT NULL,
+  `id_transaksi` int NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_log`),
+  UNIQUE KEY `uniq_recurring_period` (`id_recurring`,`periode_bulan`,`periode_tahun`),
+  KEY `idx_log_user` (`user_id`),
+  KEY `idx_log_recurring` (`id_recurring`),
+  KEY `idx_log_period` (`periode_bulan`,`periode_tahun`)
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `recurring_generation_log`
+--
+
+LOCK TABLES `recurring_generation_log` WRITE;
+/*!40000 ALTER TABLE `recurring_generation_log` DISABLE KEYS */;
+INSERT INTO `recurring_generation_log` VALUES (1,1,3,5,2026,'pengeluaran',39,'2026-05-22 13:06:42'),(2,5,54,5,2026,'pemasukan',60,'2026-05-24 05:06:13'),(3,6,54,5,2026,'pemasukan',61,'2026-05-24 05:06:13'),(4,7,54,5,2026,'pengeluaran',43,'2026-05-24 05:06:13'),(5,8,54,5,2026,'pengeluaran',44,'2026-05-24 05:06:13'),(6,5,54,6,2026,'pemasukan',73,'2026-06-01 15:25:15'),(7,6,54,6,2026,'pemasukan',74,'2026-06-01 15:25:15'),(8,8,54,6,2026,'pengeluaran',64,'2026-06-01 15:25:15'),(9,5,54,7,2026,'pemasukan',91,'2026-07-02 08:23:11'),(10,6,54,7,2026,'pemasukan',92,'2026-07-02 08:23:11'),(11,8,54,7,2026,'pengeluaran',115,'2026-07-02 08:23:11');
+/*!40000 ALTER TABLE `recurring_generation_log` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `recurring_transaction`
+--
+
+DROP TABLE IF EXISTS `recurring_transaction`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `recurring_transaction` (
+  `id_recurring` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `tipe_transaksi` enum('pemasukan','pengeluaran') COLLATE utf8mb4_general_ci NOT NULL,
+  `id_kategori` int DEFAULT NULL,
+  `id_wallet` int NOT NULL,
+  `nama_recurring` varchar(150) COLLATE utf8mb4_general_ci NOT NULL,
+  `catatan` text COLLATE utf8mb4_general_ci,
+  `jumlah` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `frekuensi` enum('bulanan') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'bulanan',
+  `tanggal_generate` tinyint NOT NULL DEFAULT '1',
+  `status_transaksi_default` enum('pending','selesai') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
+  `mulai_dari` date NOT NULL,
+  `berakhir_pada` date DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_recurring`),
+  KEY `idx_recurring_user` (`user_id`),
+  KEY `idx_recurring_active` (`user_id`,`is_active`),
+  KEY `idx_recurring_wallet` (`id_wallet`),
+  KEY `idx_recurring_kategori` (`id_kategori`)
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `recurring_transaction`
+--
+
+LOCK TABLES `recurring_transaction` WRITE;
+/*!40000 ALTER TABLE `recurring_transaction` DISABLE KEYS */;
+INSERT INTO `recurring_transaction` VALUES (1,3,'pengeluaran',26,10,'bayar aer','Ini buat sehari hari transaksi bayar aer',700000.00,'bulanan',26,'selesai','2026-05-01','2026-07-31',1,'2026-05-22 13:00:50','2026-05-22 14:16:44'),(2,3,'pemasukan',17,10,'oqjojdo','ojqwodqjoj',100000.00,'bulanan',1,'pending','2026-05-22',NULL,0,'2026-05-22 14:06:18','2026-05-22 14:16:15'),(3,3,'pemasukan',19,3,'weijfijaweifj','owiejfiwjeifj',900000.00,'bulanan',1,'selesai','2026-06-06','2029-11-22',0,'2026-05-22 14:17:24','2026-05-22 14:17:55'),(4,3,'pengeluaran',26,10,'23reww','wefwewef',60000.00,'bulanan',1,'pending','2026-05-22',NULL,1,'2026-05-22 14:18:14','2026-05-22 14:18:14'),(5,54,'pemasukan',62,15,'Rejeki dari Gtech','Alhamdulillah uang saku dari PKL di PT. Gtech Digital Asia',500000.00,'bulanan',30,'pending','2026-05-24','2027-03-03',1,'2026-05-24 04:35:55','2026-06-01 15:24:32'),(6,54,'pemasukan',62,15,'Rejeki dari Poltek','Alhamdulillah uang saku dari poltek untuk kebutuhan sehari hari',500000.00,'bulanan',10,'pending','2026-05-24','2027-10-01',1,'2026-05-24 04:37:32','2026-06-01 15:25:10'),(7,54,'pengeluaran',73,17,'Beli Paketan','Buat internetan kudu beli paket data pake pulsa / dana',50000.00,'bulanan',30,'pending','2026-05-24','2027-05-01',0,'2026-05-24 04:52:11','2026-07-15 00:12:26'),(8,54,'pengeluaran',110,12,'Biaya admin BCA','Saldo BCA otomatis kepotong 10k - 15k buat bayar biaya admin BCA',13000.00,'bulanan',1,'pending','2026-05-24','2028-01-01',1,'2026-05-24 04:57:02','2026-07-02 08:23:02');
+/*!40000 ALTER TABLE `recurring_transaction` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `saving_goal`
+--
+
+DROP TABLE IF EXISTS `saving_goal`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `saving_goal` (
+  `id_goal` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `nama_goal` varchar(150) COLLATE utf8mb4_general_ci NOT NULL,
+  `target_nominal` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `target_tanggal` date DEFAULT NULL,
+  `status` enum('aktif','selesai','arsip') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'aktif',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_goal`),
+  KEY `idx_goal_user` (`user_id`),
+  KEY `idx_goal_status` (`status`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `saving_goal`
+--
+
+LOCK TABLES `saving_goal` WRITE;
+/*!40000 ALTER TABLE `saving_goal` DISABLE KEYS */;
+INSERT INTO `saving_goal` VALUES (1,3,'beli hp',2000000.00,'2028-02-01','selesai','2026-05-20 23:25:43','2026-05-23 11:29:46'),(2,3,'beli motor',14000000.00,'2027-07-29','arsip','2026-05-22 10:41:25','2026-05-22 16:29:13'),(3,3,'Buat beli motor',15000000.00,'2033-07-29','aktif','2026-05-23 11:29:41','2026-05-23 11:29:41'),(4,54,'Beli HP baru',3000000.00,'2027-01-01','aktif','2026-05-24 04:32:39','2026-05-24 04:32:39'),(5,54,'Tabungan (Uang Dingin)',1000000.00,'2027-10-04','aktif','2026-05-24 04:45:14','2026-05-24 04:45:14');
+/*!40000 ALTER TABLE `saving_goal` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `saving_goal_mutasi`
+--
+
+DROP TABLE IF EXISTS `saving_goal_mutasi`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `saving_goal_mutasi` (
+  `id_mutasi` int NOT NULL AUTO_INCREMENT,
+  `id_goal` int NOT NULL,
+  `user_id` int NOT NULL,
+  `id_wallet` int DEFAULT NULL,
+  `tanggal` date NOT NULL,
+  `tipe` enum('setor','tarik') COLLATE utf8mb4_general_ci NOT NULL,
+  `jumlah` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `catatan` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_mutasi`),
+  KEY `idx_mutasi_goal` (`id_goal`),
+  KEY `idx_mutasi_user` (`user_id`),
+  KEY `idx_mutasi_tanggal` (`tanggal`),
+  KEY `idx_mutasi_wallet` (`id_wallet`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `saving_goal_mutasi`
+--
+
+LOCK TABLES `saving_goal_mutasi` WRITE;
+/*!40000 ALTER TABLE `saving_goal_mutasi` DISABLE KEYS */;
+INSERT INTO `saving_goal_mutasi` VALUES (1,1,3,NULL,'2026-05-20','setor',500000.00,'alhamdulillah','2026-05-20 23:26:11'),(2,1,3,NULL,'2026-05-27','setor',1000000.00,'okok','2026-05-20 23:26:30'),(3,1,3,NULL,'2026-05-31','tarik',300000.00,'oke bosq','2026-05-20 23:26:55'),(4,1,3,NULL,'2026-05-21','setor',1000000.00,'oooo','2026-05-21 10:40:32'),(5,1,3,NULL,'2026-05-21','tarik',100000.00,'loooo','2026-05-21 10:41:04'),(6,1,3,8,'2026-05-21','setor',50000.00,'okwekwk','2026-05-21 23:11:30'),(7,1,3,3,'2026-05-21','tarik',20000.00,'opkqwepqp','2026-05-21 23:12:19'),(8,1,3,3,'2026-05-22','tarik',130000.00,'okokoakwoa','2026-05-22 10:41:56'),(9,2,3,9,'2026-05-22','setor',10000.00,'powekpwke','2026-05-22 16:19:55'),(10,3,3,3,'2026-05-23','setor',4500000.00,'Nabung dulu lah','2026-05-23 11:31:01');
+/*!40000 ALTER TABLE `saving_goal_mutasi` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `transfer_wallet`
+--
+
+DROP TABLE IF EXISTS `transfer_wallet`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `transfer_wallet` (
+  `id_transfer` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `wallet_asal_id` int NOT NULL,
+  `wallet_tujuan_id` int NOT NULL,
+  `tanggal` date NOT NULL,
+  `jumlah` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `catatan` text COLLATE utf8mb4_general_ci,
+  `status` enum('pending','selesai','batal') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'selesai',
+  `archived_at` datetime DEFAULT NULL,
+  `archived_by` int DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_transfer`),
+  KEY `idx_transfer_user` (`user_id`),
+  KEY `idx_transfer_tanggal` (`tanggal`),
+  KEY `idx_transfer_wallet_asal` (`wallet_asal_id`),
+  KEY `idx_transfer_wallet_tujuan` (`wallet_tujuan_id`),
+  KEY `idx_transfer_status` (`status`),
+  KEY `idx_transfer_user_archive` (`user_id`,`archived_at`),
+  CONSTRAINT `fk_transfer_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id_user`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_transfer_wallet_asal` FOREIGN KEY (`wallet_asal_id`) REFERENCES `wallet` (`id_wallet`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `fk_transfer_wallet_tujuan` FOREIGN KEY (`wallet_tujuan_id`) REFERENCES `wallet` (`id_wallet`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `transfer_wallet`
+--
+
+LOCK TABLES `transfer_wallet` WRITE;
+/*!40000 ALTER TABLE `transfer_wallet` DISABLE KEYS */;
+INSERT INTO `transfer_wallet` VALUES (1,3,8,10,'2026-05-20',250000.00,'apa aja dah','batal',NULL,NULL,'2026-05-20 22:50:05','2026-05-22 10:33:13'),(3,3,9,8,'2026-05-20',10000.00,'okkkk','selesai',NULL,NULL,'2026-05-20 22:53:26','2026-05-22 19:16:19'),(4,3,8,9,'2026-05-20',200000.00,'coba coba','selesai',NULL,NULL,'2026-05-20 23:04:17','2026-05-20 23:05:43'),(5,3,9,10,'2026-05-21',100000.00,'okwokewfke','selesai',NULL,NULL,'2026-05-21 23:10:45','2026-05-21 23:10:45'),(6,3,10,11,'2026-05-22',10000.00,'wewfew','pending',NULL,NULL,'2026-05-22 12:58:14','2026-05-22 12:58:14'),(7,3,8,3,'2026-05-22',25000.00,'pooooo','selesai',NULL,NULL,'2026-05-22 14:50:40','2026-05-22 14:50:40'),(8,54,6,12,'2026-05-24',100000.00,'Tf buat top up valorant','selesai',NULL,NULL,'2026-05-24 14:35:29','2026-05-24 14:35:29'),(9,54,17,12,'2026-05-24',12000.00,'Kurang top up buat valo','selesai',NULL,NULL,'2026-05-24 14:57:21','2026-05-24 14:57:21'),(10,54,6,15,'2026-05-26',20000.00,'Parid nuker duit xD','selesai',NULL,NULL,'2026-05-26 19:26:08','2026-05-26 19:26:08'),(11,54,15,12,'2026-05-28',500000.00,'Transfer uang cair dari gtech langsung ke bca','selesai',NULL,NULL,'2026-05-28 22:27:37','2026-05-28 22:38:44'),(12,54,12,16,'2026-05-28',235000.00,'Buat top up shopee pay beli mouse sama actioin figure cuy xD','selesai',NULL,NULL,'2026-05-28 22:36:32','2026-05-28 22:36:32'),(13,54,15,6,'2026-05-28',50000.00,'Simpen buat kebutuhan sehari - hari cuy pegangan offline','selesai',NULL,NULL,'2026-05-28 22:39:15','2026-05-28 22:39:15'),(14,54,12,17,'2026-06-01',46000.00,'Buat beli paket data di dana myxl','batal',NULL,NULL,'2026-06-01 19:01:45','2026-07-14 22:08:44'),(15,54,12,6,'2026-06-01',50000.00,'Buat pegangan sampe uang saku poltek turun cuy','batal','2026-07-14 22:08:51',54,'2026-06-01 19:15:18','2026-07-14 22:08:51'),(16,54,12,6,'2026-06-07',50000.00,'Buat pegangan minggu ke dua bulan juni','selesai',NULL,NULL,'2026-06-07 21:45:58','2026-06-07 21:45:58'),(17,54,15,12,'2026-06-08',450000.00,'TF bca buat kebutuhan online','selesai',NULL,NULL,'2026-06-08 21:37:43','2026-06-08 21:38:04'),(18,54,15,6,'2026-06-08',50000.00,'Buat pegangan sehari hari','selesai',NULL,NULL,'2026-06-08 21:38:56','2026-06-08 21:38:56'),(19,54,12,16,'2026-06-08',80000.00,'Top up buat beli belanja online','selesai',NULL,NULL,'2026-06-09 06:17:01','2026-06-09 06:18:31'),(20,54,12,6,'2026-06-15',150000.00,'Buat pegangan cash','selesai',NULL,NULL,'2026-06-16 01:30:31','2026-06-16 01:30:31'),(21,54,12,6,'2026-06-20',100000.00,'Buat pegangan sampe akhir bulan juni','selesai',NULL,NULL,'2026-06-21 15:50:05','2026-06-21 15:50:05'),(22,54,6,12,'2026-06-23',50000.00,'Pindaahin dana saja','selesai',NULL,NULL,'2026-06-23 23:01:20','2026-06-23 23:01:20'),(23,54,6,12,'2026-06-24',15000.00,'Pemindahan saldo dari cash ke bca (buat top up vp again)','batal',NULL,NULL,'2026-06-24 08:46:02','2026-06-25 19:16:58'),(24,54,6,12,'2026-06-26',15000.00,'Untung ada alwi yang punya BCA jadi bisa nuker','selesai',NULL,NULL,'2026-06-26 14:25:37','2026-06-26 14:25:37'),(25,54,15,12,'2026-06-29',527000.00,'Tf ke bca 524.500 sisa nya biaya admin (2500)','selesai',NULL,NULL,'2026-06-29 22:17:52','2026-07-14 22:08:19'),(26,54,15,6,'2026-07-04',70000.00,'Buat pegangan sehari hari minta ayah buat transfer dari ganesha ke cash','selesai',NULL,NULL,'2026-07-04 11:55:21','2026-07-04 11:55:21'),(27,54,12,16,'2026-07-04',115000.00,'Top up shopee pay buat beli semprotan sama moyu cube timer','selesai',NULL,NULL,'2026-07-04 15:20:45','2026-07-04 15:20:45'),(28,54,12,17,'2026-07-04',50000.00,'Tf ke dana dari bca buat beli pulsa dan juga simpenan di e wallet','selesai',NULL,NULL,'2026-07-04 15:33:26','2026-07-04 15:33:26');
+/*!40000 ALTER TABLE `transfer_wallet` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
 -- Table structure for table `user`
 --
+
 DROP TABLE IF EXISTS `user`;
-
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `user` (
-    `id_user` int (11) NOT NULL AUTO_INCREMENT,
-    `username` varchar(20) NOT NULL,
-    `nama` varchar(50) NOT NULL,
-    `email` varchar(50) NOT NULL,
-    `password` varchar(255) NOT NULL,
-    `no_telp` varchar(13) NOT NULL,
-    `foto` varchar(255) NOT NULL DEFAULT 'default.png',
-    `role` enum ('admin', 'user') NOT NULL DEFAULT 'user',
-    `create_at` timestamp NOT NULL DEFAULT current_timestamp(),
-    `last_login_at` datetime DEFAULT NULL,
-    `last_profile_update_at` datetime DEFAULT NULL,
-    `is_active` enum ('0', '1') NOT NULL DEFAULT '1',
-    PRIMARY KEY (`id_user`)
-  ) ENGINE = InnoDB AUTO_INCREMENT = 54 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user` (
+  `id_user` int NOT NULL AUTO_INCREMENT,
+  `username` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `nama` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `password` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `no_telp` varchar(13) COLLATE utf8mb4_general_ci NOT NULL,
+  `foto` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'default.png',
+  `role` enum('admin','user') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'user',
+  `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_login_at` datetime DEFAULT NULL,
+  `last_profile_update_at` datetime DEFAULT NULL,
+  `is_active` enum('0','1') COLLATE utf8mb4_general_ci NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id_user`)
+) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `user`
 --
+
 LOCK TABLES `user` WRITE;
-
 /*!40000 ALTER TABLE `user` DISABLE KEYS */;
-
-INSERT INTO
-  `user` (
-    `id_user`,
-    `username`,
-    `nama`,
-    `email`,
-    `password`,
-    `no_telp`,
-    `foto`,
-    `role`,
-    `create_at`,
-    `is_active`
-  )
-VALUES
-  (
-    1,
-    'admin',
-    'Administrator',
-    'admin@gmail.com',
-    '$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e',
-    '0823893244',
-    '1736232522_Js-removebg-preview.png',
-    'admin',
-    '2022-07-21 05:25:10',
-    '1'
-  ),
-  (
-    2,
-    'Pak Ridwan',
-    'Pak Ridwan Arif Cahyono',
-    'Ridwan@gmail.com',
-    '$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e',
-    '082389324',
-    '1736212833_Gajah.png',
-    'user',
-    '2022-07-21 05:25:10',
-    '1'
-  ),
-  (
-    3,
-    'Pak Sandhika',
-    'Pak Sandhika Galih',
-    'Sandhika@gmail.com',
-    '$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e',
-    '082295644497',
-    '1736212884_Information Technology 38.png',
-    'user',
-    '2022-07-21 05:25:10',
-    '1'
-  ),
-  (
-    52,
-    'Kin123',
-    'Kevin Ibnu Najwan',
-    'kin123@gmail.com',
-    '$2y$10$RiaOK08NnUOl0.ZL16EFNOGbV/yaqSt.4GWgl0SMZINMwnkIIdDKm',
-    '21839487263',
-    '1740621110_481a033e-bc58-472d-bb7f-374f32e671fd.jpg',
-    'user',
-    '2025-02-20 09:26:41',
-    '1'
-  ),
-  (
-    53,
-    'tamu',
-    'tamu123',
-    'tamu@gmail.com',
-    '$2y$10$q3yj59LqG2R6ueUmuc868e0VwD3trfOqhCY4TmhOnrh81dPPYBJsq',
-    '9899090990',
-    'default.png',
-    'user',
-    '2025-02-27 01:59:10',
-    '1'
-  );
-
+INSERT INTO `user` VALUES (1,'admin','Administrator','admin@gmail.com','$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e','0823893244','1736232522_Js-removebg-preview.png','admin','2022-07-21 05:25:10','2026-07-22 14:21:09',NULL,'1'),(2,'Pak Ridwan','Pak Ridwan Arif Cahyono','Ridwan@gmail.com','$2y$10$76Aszr64wHj9Hqdf5hwj1eL6wBdaz2GYVC2NANjhzx6dmBmRjjQ8e','082389324','1736212833_Gajah.png','user','2022-07-21 05:25:10',NULL,'2026-05-17 16:59:55','0'),(3,'Laurens','Lauren Judi Utomo','Sandhika@gmail.com','$2y$10$nQhMYWDDjxkl1xFDe8xJweA/ethyL6eBkMqsIwjeRIgDYHbZ1BajG','082295644497','9d078769214edfe1ff9f053e76e84b6b.jpg','user','2022-07-21 05:25:10','2026-07-21 14:40:39','2026-07-12 01:21:15','1'),(52,'Kin123','Kevin Ibnu Najwan','kin123@gmail.com','$2y$10$RiaOK08NnUOl0.ZL16EFNOGbV/yaqSt.4GWgl0SMZINMwnkIIdDKm','21839487263','1740621110_481a033e-bc58-472d-bb7f-374f32e671fd.jpg','user','2025-02-20 09:26:41',NULL,'2026-05-18 14:15:32','0'),(53,'tamu','tamu123','tamu@gmail.com','$2y$10$q3yj59LqG2R6ueUmuc868e0VwD3trfOqhCY4TmhOnrh81dPPYBJsq','9899090990','default.png','user','2025-02-27 01:59:10',NULL,'2026-05-18 15:54:12','0'),(54,'NajwanCF','Najwan Caesar Firstiansyah','najwan12311@gmail.com','$2y$10$tvJx4jOKv6e1xdBmGElIHOi1kzVlxAe62G9AJ4B9GPFSALY.ZOn2e','087884839384','6cffb5604e487b667d1ade473bd77d63.png','user','2026-05-17 14:42:48','2026-07-22 14:51:26','2026-07-20 08:55:33','1'),(55,'Jasonweb','Jason','jason@gmail.com','$2y$10$/EfZs8Bo1nx7bAkUA26mBewhTSI8ylkJ/LsZ3c8k6X9Kl0NsM.6uq','087283727382','team-4.jpg','user','2026-05-18 07:19:59',NULL,'2026-05-18 14:19:59','1');
 /*!40000 ALTER TABLE `user` ENABLE KEYS */;
-
 UNLOCK TABLES;
-
---
--- Table structure for table `activity_log`
---
-CREATE TABLE
-  IF NOT EXISTS `activity_log` (
-    `id_log` int (11) NOT NULL AUTO_INCREMENT,
-    `user_id` int (11) DEFAULT NULL,
-    `role` enum ('admin', 'user') DEFAULT NULL,
-    `module` varchar(80) NOT NULL,
-    `aksi` varchar(120) NOT NULL,
-    `deskripsi` text DEFAULT NULL,
-    `ip_address` varchar(45) DEFAULT NULL,
-    `user_agent` text DEFAULT NULL,
-    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-    PRIMARY KEY (`id_log`),
-    KEY `idx_activity_user` (`user_id`),
-    KEY `idx_activity_module` (`module`),
-    KEY `idx_activity_created` (`created_at`),
-    KEY `idx_activity_aksi` (`aksi`),
-    KEY `idx_activity_user_created` (`user_id`, `created_at`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
 --
 -- Table structure for table `wallet`
 --
+
 DROP TABLE IF EXISTS `wallet`;
-
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-
-/*!40101 SET character_set_client = utf8 */;
-
-CREATE TABLE
-  `wallet` (
-    `id_wallet` int (11) NOT NULL AUTO_INCREMENT,
-    `user_id` int (11) NOT NULL,
-    `nama_wallet` varchar(100) NOT NULL,
-    `tipe_wallet` enum ('cash', 'bank', 'e_wallet', 'tabungan', 'lainnya') NOT NULL DEFAULT 'lainnya',
-    `saldo_awal` decimal(15, 2) NOT NULL DEFAULT 0.00,
-    `is_default` tinyint (1) NOT NULL DEFAULT 0,
-    `is_active` tinyint (1) NOT NULL DEFAULT 1,
-    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-    `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (`id_wallet`),
-    KEY `idx_wallet_user` (`user_id`),
-    KEY `idx_wallet_user_active` (`user_id`, `is_active`),
-    UNIQUE KEY `uniq_wallet_user_name` (`user_id`, `nama_wallet`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `wallet` (
+  `id_wallet` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `nama_wallet` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `tipe_wallet` enum('cash','bank','e_wallet','tabungan','kartu','lainnya') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'lainnya',
+  `id_wallet_type` int DEFAULT NULL,
+  `saldo_awal` decimal(15,2) NOT NULL DEFAULT '0.00',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_wallet`),
+  UNIQUE KEY `uniq_wallet_user_name` (`user_id`,`nama_wallet`),
+  KEY `idx_wallet_user` (`user_id`),
+  KEY `idx_wallet_user_active` (`user_id`,`is_active`),
+  KEY `idx_wallet_custom_type_owner` (`id_wallet_type`,`user_id`),
+  CONSTRAINT `fk_wallet_custom_type_owner` FOREIGN KEY (`id_wallet_type`, `user_id`) REFERENCES `wallet_type` (`id_wallet_type`, `user_id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Dumping data for table `wallet`
 --
-INSERT INTO
-  `wallet` (
-    `user_id`,
-    `nama_wallet`,
-    `tipe_wallet`,
-    `saldo_awal`,
-    `is_default`,
-    `is_active`
-  )
-SELECT
-  u.`id_user`,
-  'Dompet Utama',
-  'cash',
-  0.00,
-  1,
-  1
-FROM
-  `user` u
-WHERE
-  u.`role` = 'user'
-  AND NOT EXISTS (
-    SELECT
-      1
-    FROM
-      `wallet` w
-    WHERE
-      w.`user_id` = u.`id_user`
-  );
 
-UPDATE `pemasukan` p
-JOIN `wallet` w ON w.`user_id` = p.`user`
-AND w.`is_default` = 1
-SET
-  p.`id_wallet` = w.`id_wallet`
-WHERE
-  p.`id_wallet` IS NULL;
-
-UPDATE `pengeluaran` p
-JOIN `wallet` w ON w.`user_id` = p.`user`
-AND w.`is_default` = 1
-SET
-  p.`id_wallet` = w.`id_wallet`
-WHERE
-  p.`id_wallet` IS NULL;
+LOCK TABLES `wallet` WRITE;
+/*!40000 ALTER TABLE `wallet` DISABLE KEYS */;
+INSERT INTO `wallet` VALUES (1,1,'Dompet Utama','cash',NULL,0.00,1,1,'2026-05-18 18:49:06','2026-05-18 18:49:06'),(2,2,'Dompet Utama','cash',NULL,0.00,1,1,'2026-05-18 18:49:06','2026-05-18 18:49:06'),(3,3,'Dompet Utama','cash',NULL,0.00,0,1,'2026-05-18 18:49:06','2026-05-18 23:07:26'),(4,52,'Dompet Utama','cash',NULL,0.00,1,1,'2026-05-18 18:49:06','2026-05-18 18:49:06'),(5,53,'Dompet Utama','cash',NULL,0.00,1,1,'2026-05-18 18:49:06','2026-05-18 18:49:06'),(6,54,'Dompet Utama','cash',NULL,96000.00,1,1,'2026-05-18 18:49:06','2026-05-24 05:00:24'),(7,55,'Dompet Utama','cash',NULL,0.00,1,1,'2026-05-18 18:49:06','2026-05-18 18:49:06'),(8,3,'Bank BCA','bank',NULL,0.00,0,1,'2026-05-18 19:05:38','2026-05-18 22:19:02'),(9,3,'Spay','e_wallet',NULL,0.00,0,1,'2026-05-18 19:05:53','2026-05-18 22:19:02'),(10,3,'celengan','tabungan',NULL,10000.00,1,1,'2026-05-18 22:08:47','2026-05-18 22:19:02'),(11,3,'Dari mana saja','lainnya',NULL,300000.00,0,1,'2026-05-18 22:19:30','2026-05-18 22:19:30'),(12,54,'BCA','bank',NULL,30000.00,0,1,'2026-05-18 22:25:06','2026-07-14 22:41:11'),(13,56,'Dompet Utama','cash',NULL,0.00,1,1,'2026-05-20 18:55:03','2026-05-20 18:55:03'),(14,3,'Ganesha','bank',NULL,2000000.00,0,1,'2026-05-22 14:56:32','2026-05-22 14:56:32'),(15,54,'Ganesha','bank',NULL,11000.00,0,1,'2026-05-24 04:28:43','2026-05-24 04:54:54'),(16,54,'Shopee Pay','e_wallet',NULL,20000.00,0,1,'2026-05-24 04:29:03','2026-07-15 01:38:00'),(17,54,'Dana','e_wallet',NULL,18000.00,0,1,'2026-05-24 04:29:11','2026-05-24 04:57:37'),(19,54,'KAI Card','kartu',NULL,11500.00,0,1,'2026-05-24 04:30:56','2026-07-14 22:41:29'),(45,54,'BCA Flazz','kartu',NULL,14500.00,0,1,'2026-07-14 22:43:39','2026-07-14 22:54:47');
+/*!40000 ALTER TABLE `wallet` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
--- Table structure for table `transfer_wallet`
+-- Table structure for table `wallet_type`
 --
-CREATE TABLE
-  IF NOT EXISTS `transfer_wallet` (
-    `id_transfer` int (11) NOT NULL AUTO_INCREMENT,
-    `user_id` int (11) NOT NULL,
-    `wallet_asal_id` int (11) NOT NULL,
-    `wallet_tujuan_id` int (11) NOT NULL,
-    `tanggal` date NOT NULL,
-    `jumlah` decimal(15, 2) NOT NULL DEFAULT 0.00,
-    `catatan` text DEFAULT NULL,
-    `status` enum ('pending', 'selesai', 'batal') NOT NULL DEFAULT 'selesai',
-    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-    `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (`id_transfer`),
-    KEY `idx_transfer_user` (`user_id`),
-    KEY `idx_transfer_tanggal` (`tanggal`),
-    KEY `idx_transfer_wallet_asal` (`wallet_asal_id`),
-    KEY `idx_transfer_wallet_tujuan` (`wallet_tujuan_id`),
-    KEY `idx_transfer_status` (`status`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
 
-CREATE TABLE
-  IF NOT EXISTS `saving_goal` (
-    `id_goal` int (11) NOT NULL AUTO_INCREMENT,
-    `user_id` int (11) NOT NULL,
-    `nama_goal` varchar(150) NOT NULL,
-    `target_nominal` decimal(15, 2) NOT NULL DEFAULT 0.00,
-    `target_tanggal` date DEFAULT NULL,
-    `status` enum ('aktif', 'selesai', 'arsip') NOT NULL DEFAULT 'aktif',
-    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-    `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-    PRIMARY KEY (`id_goal`),
-    KEY `idx_goal_user` (`user_id`),
-    KEY `idx_goal_status` (`status`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
-CREATE TABLE
-  IF NOT EXISTS `saving_goal_mutasi` (
-    `id_mutasi` int (11) NOT NULL AUTO_INCREMENT,
-    `id_goal` int (11) NOT NULL,
-    `user_id` int (11) NOT NULL,
-    `id_wallet` int (11) DEFAULT NULL,
-    `tanggal` date NOT NULL,
-    `tipe` enum ('setor', 'tarik') NOT NULL,
-    `jumlah` decimal(15, 2) NOT NULL DEFAULT 0.00,
-    `catatan` text DEFAULT NULL,
-    `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-    PRIMARY KEY (`id_mutasi`),
-    KEY `idx_mutasi_goal` (`id_goal`),
-    KEY `idx_mutasi_user` (`user_id`),
-    KEY `idx_mutasi_wallet` (`id_wallet`),
-    KEY `idx_mutasi_tanggal` (`tanggal`)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `recurring_transaction` (
-  `id_recurring` int(11) NOT NULL AUTO_INCREMENT,
-  `user_id` int(11) NOT NULL,
-  `tipe_transaksi` enum('pemasukan','pengeluaran') NOT NULL,
-  `id_kategori` int(11) DEFAULT NULL,
-  `id_wallet` int(11) NOT NULL,
-  `nama_recurring` varchar(150) NOT NULL,
-  `catatan` text DEFAULT NULL,
-  `jumlah` decimal(15,2) NOT NULL DEFAULT 0.00,
-  `frekuensi` enum('bulanan') NOT NULL DEFAULT 'bulanan',
-  `tanggal_generate` tinyint(2) NOT NULL DEFAULT 1,
-  `status_transaksi_default` enum('pending','selesai') NOT NULL DEFAULT 'pending',
-  `mulai_dari` date NOT NULL,
-  `berakhir_pada` date DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id_recurring`),
-  KEY `idx_recurring_user` (`user_id`),
-  KEY `idx_recurring_active` (`user_id`, `is_active`),
-  KEY `idx_recurring_wallet` (`id_wallet`),
-  KEY `idx_recurring_kategori` (`id_kategori`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-CREATE TABLE IF NOT EXISTS `recurring_generation_log` (
-  `id_log` int(11) NOT NULL AUTO_INCREMENT,
-  `id_recurring` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `periode_bulan` tinyint(2) NOT NULL,
-  `periode_tahun` int(4) NOT NULL,
-  `tipe_transaksi` enum('pemasukan','pengeluaran') NOT NULL,
-  `id_transaksi` int(11) NOT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_log`),
-  UNIQUE KEY `uniq_recurring_period` (`id_recurring`, `periode_bulan`, `periode_tahun`),
-  KEY `idx_log_user` (`user_id`),
-  KEY `idx_log_recurring` (`id_recurring`),
-  KEY `idx_log_period` (`periode_bulan`, `periode_tahun`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+DROP TABLE IF EXISTS `wallet_type`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `wallet_type` (
+  `id_wallet_type` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `nama_tipe` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `icon` varchar(32) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'credit-card',
+  `warna` char(7) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '#64748B',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_wallet_type`),
+  UNIQUE KEY `uniq_wallet_type_user_name` (`user_id`,`nama_tipe`),
+  UNIQUE KEY `uniq_wallet_type_owner` (`id_wallet_type`,`user_id`),
+  KEY `idx_wallet_type_user_active` (`user_id`,`is_active`),
+  CONSTRAINT `fk_wallet_type_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id_user`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping events for database 'cashflow'
+-- Dumping data for table `wallet_type`
 --
---
--- Dumping routines for database 'cashflow'
---
+
+LOCK TABLES `wallet_type` WRITE;
+/*!40000 ALTER TABLE `wallet_type` DISABLE KEYS */;
+INSERT INTO `wallet_type` VALUES (2,54,'w','credit-card','#52F455',0,'2026-07-15 00:09:33','2026-07-15 00:19:12');
+/*!40000 ALTER TABLE `wallet_type` ENABLE KEYS */;
+UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-01 15:37:52
+-- Dump completed on 2026-07-22 16:07:15

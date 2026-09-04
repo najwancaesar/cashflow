@@ -6,7 +6,7 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /cashflow/
+    RewriteBase /
 
     RewriteRule ^database/ - [F,L,NC]
 
@@ -14,5 +14,5 @@ Options -Indexes
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    RewriteRule ^(home|dashboard|wallet|transfer_wallet|saving_goal|recurring|pemasukan|pengeluaran|kategori|hutang|piutang|laporan|profile|pengguna)/?$ main.php?module=$1 [L,QSA,NC]
+    RewriteRule ^(home|dashboard|wallet|transfer_wallet|saving_goal|recurring|kalender_keuangan|pemasukan|pengeluaran|kategori|hutang|piutang|laporan|profile|pengguna|audit_log)/?$ main.php?module=$1 [L,QSA,NC]
 </IfModule>

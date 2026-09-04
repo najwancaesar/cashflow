@@ -1,6 +1,8 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -13,12 +15,8 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 }
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $tanggalHariIni = date('Y-m-d');
-
-function saving_goal_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
 
 function saving_goal_format_date($value)
 {
@@ -53,20 +51,7 @@ function saving_goal_status_meta($status, $saldo, $target)
 
 function saving_goal_mutasi_badge($tipe)
 {
-    return $tipe === 'tarik' ? 'bg-gradient-warning' : 'bg-gradient-success';
-}
-
-function saving_goal_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'Cash',
-        'bank' => 'Bank',
-        'e_wallet' => 'E-Wallet',
-        'tabungan' => 'Tabungan',
-        'lainnya' => 'Lainnya',
-    ];
-
-    return $labels[$type] ?? 'Lainnya';
+    return 'bg-gradient-info';
 }
 
 function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMessage, $hasWalletAktif)
@@ -79,14 +64,14 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
         <?php return;
     }
     ?>
-    <table class="table align-items-center mb-0 saving-goal-table" id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>">
+    <table class="table align-items-center mb-0 saving-goal-table cashflow-responsive-data cashflow-table-md" id="<?= htmlspecialchars($tableId, ENT_QUOTES, 'UTF-8') ?>">
         <thead>
             <tr>
                 <th>Celengan</th>
                 <th>Progress</th>
                 <th>Target Tanggal</th>
                 <th>Status</th>
-                <th></th>
+                <th class="cashflow-action-col">Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -105,10 +90,10 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                     <td>
                         <p class="text-xs font-weight-bold mb-1"><?= htmlspecialchars($row['nama_goal'], ENT_QUOTES, 'UTF-8') ?></p>
                         <p class="text-xs text-secondary mb-0">
-                            <?= saving_goal_rupiah($saldoTerkumpul) ?> dari <?= saving_goal_rupiah($targetNominal) ?>
+                            <?= cashflow_format_rupiah($saldoTerkumpul) ?> dari <?= cashflow_format_rupiah($targetNominal) ?>
                         </p>
                     </td>
-                    <td style="min-width: 180px;">
+                    <td data-order="<?= htmlspecialchars((string) $progressRaw, ENT_QUOTES, 'UTF-8') ?>" style="min-width: 180px;">
                         <div class="d-flex align-items-center">
                             <span class="text-xs font-weight-bold me-2"><?= number_format($progressRaw, 1) ?>%</span>
                             <div class="progress w-100">
@@ -119,7 +104,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                             </div>
                         </div>
                     </td>
-                    <td>
+                    <td data-order="<?= htmlspecialchars((string) ($row['target_tanggal'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
                         <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(saving_goal_format_date($row['target_tanggal']), ENT_QUOTES, 'UTF-8') ?></p>
                     </td>
                     <td>
@@ -127,7 +112,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                             <?= htmlspecialchars($statusMeta['label'], ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </td>
-                    <td class="align-middle saving-goal-action-cell">
+                    <td class="align-middle saving-goal-action-cell cashflow-action-col">
                         <div class="dropdown saving-goal-action-dropdown">
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle mb-0" type="button"
                                 id="savingGoalAction<?= $goalId ?>" data-bs-toggle="dropdown"
@@ -270,7 +255,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                         <?php if (empty($goalMutasi)) { ?>
                             <p class="text-sm text-secondary mb-0">Belum ada riwayat mutasi untuk celengan ini.</p>
                         <?php } else { ?>
-                            <div class="table-responsive">
+                            <div class="table-responsive cashflow-table-scroll">
                                 <table class="table align-items-center mb-0">
                                     <thead>
                                         <tr>
@@ -278,7 +263,7 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                             <th>Tipe</th>
                                             <th>Wallet</th>
                                             <th>Jumlah</th>
-                                            <th>Catatan</th>
+                                            <th class="cashflow-long-text-col">Catatan</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -299,8 +284,8 @@ function render_saving_goal_table($tableId, $goalRows, $mutasiByGoal, $emptyMess
                                                         <?php } ?>
                                                     </p>
                                                 </td>
-                                                <td><p class="text-xs font-weight-bold mb-0"><?= saving_goal_rupiah($mutasi['jumlah']) ?></p></td>
-                                                <td><p class="text-xs text-secondary mb-0"><?= htmlspecialchars($mutasi['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p></td>
+                                                <td><p class="text-xs font-weight-bold mb-0"><?= cashflow_format_rupiah($mutasi['jumlah']) ?></p></td>
+                                                <td class="cashflow-long-text-col"><p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($mutasi['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p></td>
                                             </tr>
                                         <?php } ?>
                                     </tbody>
@@ -458,7 +443,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                     </div>
                     <div class="text-end pt-1">
                         <p class="text-sm mb-0 text-capitalize">Saldo Terkumpul</p>
-                        <h4 class="mb-0"><?= saving_goal_rupiah($totalSaldoAktif) ?></h4>
+                        <h4 class="mb-0"><?= cashflow_format_rupiah($totalSaldoAktif) ?></h4>
                     </div>
                 </div>
                 <hr class="dark horizontal my-0">
@@ -478,7 +463,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                 </div>
                 <hr class="dark horizontal my-0">
                 <div class="card-footer p-3">
-                    <p class="mb-0 text-sm text-secondary">Dari target <?= saving_goal_rupiah($totalTargetAktif) ?></p>
+                    <p class="mb-0 text-sm text-secondary">Dari target <?= cashflow_format_rupiah($totalTargetAktif) ?></p>
                 </div>
             </div>
         </div>
@@ -506,13 +491,13 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                             </div>
                         <?php } ?>
                     </div>
-                    <div class="text-end me-3 mt-3">
+                    <div class="cashflow-table-page-actions">
                         <button type="button" class="btn btn-secondary" id="btnTambahSavingGoal" data-bs-toggle="modal"
                             data-bs-target="#modalSavingGoal">
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Celengan
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2 saving-goal-table-responsive">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2 saving-goal-table-responsive">
                         <?php render_saving_goal_table('datatableSavingGoal', $goalAktif, $mutasiByGoal, 'Belum ada celengan virtual. Mulai buat celengan pertamamu, misalnya Dana Darurat atau Beli Laptop.', $hasWalletAktif); ?>
                     </div>
                 </div>
@@ -530,7 +515,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                         </div>
                     </div>
                     <div class="card-body px-0 pb-2">
-                        <div class="table-responsive p-4 mx-2 saving-goal-table-responsive">
+                        <div class="table-responsive cashflow-table-scroll p-4 mx-2 saving-goal-table-responsive">
                             <?php render_saving_goal_table('datatableSavingGoalArchive', $goalArsip, $mutasiByGoal, 'Belum ada celengan virtual yang diarsipkan.', $hasWalletAktif); ?>
                         </div>
                     </div>
@@ -618,7 +603,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                                 <option value="">Pilih Wallet Sumber</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $defaultWalletId ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(saving_goal_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -673,7 +658,7 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                                 <option value="">Pilih Wallet Tujuan</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === $defaultWalletId ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(saving_goal_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -716,10 +701,18 @@ $totalProgressAktif = $totalTargetAktif > 0 ? min(100, ($totalSaldoAktif / $tota
                             "previous": "&lt"
                         },
                     },
-                    dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+                    columnDefs: [
+                        { targets: -1, orderable: false, searchable: false }
+                    ],
+                    order: [[0, 'asc']],
+                    dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
                 });
             }
         });
+
+        if ($('#datatableSavingGoal').length) {
+            $('.cashflow-table-page-actions').appendTo('#datatableSavingGoal_wrapper .cashflow-datatable-top');
+        }
 
         $('#btnTambahSavingGoal').on('click', function() {
             $('#saving_goal_modal_title').text('Tambah Celengan Virtual');

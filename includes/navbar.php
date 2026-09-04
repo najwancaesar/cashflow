@@ -1,4 +1,7 @@
-<?php include_once __DIR__ . "/avatar_helper.php"; ?>
+<?php
+include_once __DIR__ . "/avatar_helper.php";
+include_once __DIR__ . "/csrf_helper.php";
+?>
 <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur"
     navbar-scroll="true">
     <div class="container-fluid py-1 px-3 d-flex">
@@ -12,6 +15,16 @@
         </nav>
         <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
             <ul class="navbar-nav ms-auto justify-content-end">
+                <?php if (strtolower((string) ($_SESSION['role'] ?? '')) !== 'admin') { ?>
+                    <li class="nav-item d-flex align-items-center me-2">
+                        <button type="button" class="btn btn-info btn-sm mb-0 cashflow-global-quick-add"
+                            data-bs-toggle="modal" data-bs-target="#globalQuickAddModal"
+                            aria-label="Tambah transaksi">
+                            <i class="fa fa-plus-circle" aria-hidden="true"></i>
+                            <span class="d-none d-md-inline ms-1">Tambah Transaksi</span>
+                        </button>
+                    </li>
+                <?php } ?>
                 <li class="nav-item d-flex align-items-center dropdown">
                     <a href="javascript:;" class="nav-link text-body font-weight-bold px-0 dropdown-toggle"
                         id="dropdownMenuButton" data-bs-toggle="dropdown">
@@ -38,13 +51,18 @@
                             </a>
                         </li>
                         <li class="d-flex justify-content-end">
-                            <a href="actions/aksi_logout.php" class="w-100 btn btn-info"><i
-                                    class="fa fa-sign-out" aria-hidden="true"></i> Logout</a>
+                            <form action="actions/aksi_logout.php" method="post" class="w-100 mb-0">
+                                <?= csrf_input() ?>
+                                <button type="submit" class="w-100 btn btn-info mb-0">
+                                    <i class="fa fa-sign-out" aria-hidden="true"></i> Logout
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </li>
                 <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
-                    <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
+                    <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav"
+                        aria-controls="sidenav-main" aria-expanded="false" aria-label="Buka menu navigasi">
                         <div class="sidenav-toggler-inner">
                             <i class="sidenav-toggler-line"></i>
                             <i class="sidenav-toggler-line"></i>

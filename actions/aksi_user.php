@@ -68,6 +68,58 @@ function fetch_user_by_id($con, $userId)
     return $user ?: null;
 }
 
+function user_has_related_data($con, $userId)
+{
+    $relations = [
+        'wallet' => 'user_id',
+        'kategori' => 'user_id',
+        'budget_kategori' => 'user_id',
+        'pemasukan' => 'user',
+        'pengeluaran' => 'user',
+        'hutang' => 'user',
+        'piutang' => 'user',
+        'transfer_wallet' => 'user_id',
+        'saving_goal' => 'user_id',
+        'saving_goal_mutasi' => 'user_id',
+        'recurring_transaction' => 'user_id',
+        'recurring_generation_log' => 'user_id',
+        'activity_log' => 'user_id',
+    ];
+
+    try {
+        $walletTypeTable = $con->query("SHOW TABLES LIKE 'wallet_type'");
+        if ($walletTypeTable && $walletTypeTable->num_rows > 0) {
+            $relations['wallet_type'] = 'user_id';
+        }
+        if ($walletTypeTable) {
+            $walletTypeTable->free();
+        }
+
+        foreach ($relations as $table => $column) {
+            $stmt = $con->prepare("SELECT 1 FROM `{$table}` WHERE `{$column}` = ? LIMIT 1");
+            if (!$stmt) {
+                error_log("CashFlow user dependency check could not prepare {$table}.");
+                return true;
+            }
+
+            $stmt->bind_param('i', $userId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $hasData = $result && $result->num_rows > 0;
+            $stmt->close();
+
+            if ($hasData) {
+                return true;
+            }
+        }
+    } catch (Throwable $exception) {
+        error_log('CashFlow user dependency check failed: ' . $exception->getMessage());
+        return true;
+    }
+
+    return false;
+}
+
 function validate_role_value($role)
 {
     return in_array($role, ['admin', 'user'], true);
@@ -403,18 +455,45 @@ if ($act === 'h') {
         show_sweetalert_and_redirect('User tidak ditemukan', 'Pengguna yang ingin dihapus tidak ditemukan.', 'error', 'main.php?module=pengguna');
     }
 
-    $stmt = $con->prepare("DELETE FROM user WHERE id_user = ?");
-    $stmt->bind_param("i", $targetUserId);
-    $stmt->execute();
-    $affectedRows = $stmt->affected_rows;
-    $stmt->close();
-
-    if ($affectedRows > 0) {
-        record_activity($con, 'pengguna', 'hapus_user', "Menghapus user ID {$targetUserId}.");
-        show_sweetalert_and_redirect('Berhasil', 'Pengguna berhasil dihapus.', 'success', 'main.php?module=pengguna');
+    if (user_has_related_data($con, $targetUserId)) {
+        show_sweetalert_and_redirect(
+            'Pengguna masih memiliki data',
+            'Akun tidak dapat dihapus permanen karena masih memiliki riwayat terkait. Nonaktifkan akun untuk mempertahankan integritas data.',
+            'warning',
+            "main.php?module=pengguna&detail={$targetUserId}"
+        );
     }
 
-    show_sweetalert_and_redirect('Gagal', 'Pengguna gagal dihapus.', 'error', 'main.php?module=pengguna');
+    try {
+        $con->begin_transaction();
+        $stmt = $con->prepare("DELETE FROM user WHERE id_user = ?");
+        if (!$stmt) {
+            throw new RuntimeException('Penghapusan user gagal disiapkan.');
+        }
+        $stmt->bind_param("i", $targetUserId);
+        if (!$stmt->execute()) {
+            throw new RuntimeException('Penghapusan user gagal dijalankan.');
+        }
+        $affectedRows = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($affectedRows <= 0) {
+            throw new RuntimeException('User tidak terhapus.');
+        }
+
+        $con->commit();
+    } catch (Throwable $exception) {
+        try {
+            $con->rollback();
+        } catch (Throwable $rollbackException) {
+            error_log('CashFlow user delete rollback failed.');
+        }
+        error_log('CashFlow user delete failed: ' . $exception->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Pengguna gagal dihapus.', 'error', 'main.php?module=pengguna');
+    }
+
+    record_activity($con, 'pengguna', 'hapus_user', "Menghapus user ID {$targetUserId} tanpa data terkait.");
+    show_sweetalert_and_redirect('Berhasil', 'Pengguna berhasil dihapus.', 'success', 'main.php?module=pengguna');
 }
 
 show_sweetalert_and_redirect('Aksi tidak valid', 'Permintaan yang Anda kirim tidak dikenali.', 'error', 'main.php?module=home');

@@ -1,6 +1,8 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/budget_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -13,57 +15,41 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 }
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
-$budgetBulan = (int) date('n');
-$budgetTahun = (int) date('Y');
-$periodeBudgetLabel = date('M Y');
+$budgetBulanSekarang = (int) date('n');
+$budgetTahunSekarang = (int) date('Y');
+$budgetBulan = isset($_GET['bulan']) ? (int) $_GET['bulan'] : $budgetBulanSekarang;
+$budgetTahun = isset($_GET['tahun']) ? (int) $_GET['tahun'] : $budgetTahunSekarang;
 
-function format_kategori_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
+if ($budgetBulan < 1 || $budgetBulan > 12) {
+    $budgetBulan = $budgetBulanSekarang;
+}
+if ($budgetTahun < 2000 || $budgetTahun > 2100) {
+    $budgetTahun = $budgetTahunSekarang;
 }
 
-function get_budget_status($budgetNominal, $totalTerpakai)
-{
-    if ($budgetNominal <= 0) {
-        return [
-            'label' => 'Belum diatur',
-            'badge_class' => 'bg-gradient-secondary',
-            'progress_class' => 'bg-gradient-secondary',
-            'percentage' => 0,
-            'width' => 0,
-        ];
-    }
-
-    $percentage = ($totalTerpakai / $budgetNominal) * 100;
-
-    if ($percentage >= 100) {
-        $label = 'Over Budget';
-        $badgeClass = 'bg-gradient-danger';
-        $progressClass = 'bg-gradient-danger';
-    } elseif ($percentage >= 80) {
-        $label = 'Warning';
-        $badgeClass = 'bg-gradient-warning';
-        $progressClass = 'bg-gradient-warning';
-    } else {
-        $label = 'Aman';
-        $badgeClass = 'bg-gradient-success';
-        $progressClass = 'bg-gradient-success';
-    }
-
-    return [
-        'label' => $label,
-        'badge_class' => $badgeClass,
-        'progress_class' => $progressClass,
-        'percentage' => $percentage,
-        'width' => min(100, $percentage),
-    ];
-}
+$namaBulanBudget = [
+    1 => 'Januari',
+    2 => 'Februari',
+    3 => 'Maret',
+    4 => 'April',
+    5 => 'Mei',
+    6 => 'Juni',
+    7 => 'Juli',
+    8 => 'Agustus',
+    9 => 'September',
+    10 => 'Oktober',
+    11 => 'November',
+    12 => 'Desember',
+];
+$periodeBudgetLabel = $namaBulanBudget[$budgetBulan] . ' ' . $budgetTahun;
+$isPeriodeBudgetBerjalan = cashflow_budget_is_current_period($budgetBulan, $budgetTahun);
 
 $kategoriQuery = "SELECT
                       kategori.id_kategori,
                       kategori.nama_kategori,
                       kategori.tipe_kategori,
                       kategori.created_at,
+                      budget_kategori.id_budget,
                       COALESCE(budget_kategori.nominal_budget, 0) AS nominal_budget,
                       COALESCE(SUM(pengeluaran.jumlah), 0) AS total_pengeluaran_bulan
                   FROM kategori
@@ -84,12 +70,61 @@ $kategoriQuery = "SELECT
                       kategori.nama_kategori,
                       kategori.tipe_kategori,
                       kategori.created_at,
+                      budget_kategori.id_budget,
                       budget_kategori.nominal_budget
                   ORDER BY kategori.tipe_kategori ASC, kategori.nama_kategori ASC";
 $kategoriStmt = mysqli_prepare($con, $kategoriQuery);
 mysqli_stmt_bind_param($kategoriStmt, "iiiii", $budgetBulan, $budgetTahun, $budgetBulan, $budgetTahun, $userYangSedangLogin);
 mysqli_stmt_execute($kategoriStmt);
 $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
+
+$kategoriRows = [];
+while ($kategoriRow = mysqli_fetch_assoc($kategoriResult)) {
+    $kategoriRows[] = $kategoriRow;
+}
+mysqli_stmt_close($kategoriStmt);
+
+$budgetHistoryQuery = "SELECT
+                          budget_kategori.id_budget,
+                          budget_kategori.id_kategori,
+                          budget_kategori.bulan,
+                          budget_kategori.tahun,
+                          budget_kategori.nominal_budget,
+                          budget_kategori.created_at,
+                          budget_kategori.updated_at,
+                          COALESCE(kategori.nama_kategori, 'Kategori tidak tersedia') AS nama_kategori,
+                          COALESCE(SUM(pengeluaran.jumlah), 0) AS total_terpakai
+                       FROM budget_kategori
+                       LEFT JOIN kategori
+                         ON kategori.id_kategori = budget_kategori.id_kategori
+                        AND kategori.user_id = budget_kategori.user_id
+                       LEFT JOIN pengeluaran
+                         ON pengeluaran.user = budget_kategori.user_id
+                        AND pengeluaran.id_kategori = budget_kategori.id_kategori
+                        AND pengeluaran.status = 'selesai'
+                        AND MONTH(pengeluaran.tanggal) = budget_kategori.bulan
+                        AND YEAR(pengeluaran.tanggal) = budget_kategori.tahun
+                       WHERE budget_kategori.user_id = ?
+                       GROUP BY
+                          budget_kategori.id_budget,
+                          budget_kategori.id_kategori,
+                          budget_kategori.bulan,
+                          budget_kategori.tahun,
+                          budget_kategori.nominal_budget,
+                          budget_kategori.created_at,
+                          budget_kategori.updated_at,
+                          kategori.nama_kategori
+                       ORDER BY budget_kategori.tahun DESC, budget_kategori.bulan DESC, nama_kategori ASC
+                       LIMIT 500";
+$budgetHistoryStmt = mysqli_prepare($con, $budgetHistoryQuery);
+mysqli_stmt_bind_param($budgetHistoryStmt, "i", $userYangSedangLogin);
+mysqli_stmt_execute($budgetHistoryStmt);
+$budgetHistoryResult = mysqli_stmt_get_result($budgetHistoryStmt);
+$budgetHistoryRows = [];
+while ($budgetHistoryRow = mysqli_fetch_assoc($budgetHistoryResult)) {
+    $budgetHistoryRows[] = $budgetHistoryRow;
+}
+mysqli_stmt_close($budgetHistoryStmt);
 ?>
 
 <div class="container-fluid py-4">
@@ -110,31 +145,60 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                             Kategori umum disiapkan otomatis saat akun dibuat, dan Anda tetap bisa menambah kategori sendiri kapan saja.
                         </p>
                     </div>
-                    <div class="text-end me-3 mt-3">
-                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
-                            data-bs-target="#modalTambah">
+                    <div class="cashflow-toolbar-panel category-budget-toolbar-panel mt-3">
+                        <form method="get" action="main.php" class="row g-3 align-items-end category-budget-filter cashflow-toolbar-row">
+                            <input type="hidden" name="module" value="kategori">
+                            <div class="col-md-4 col-sm-6 cashflow-filter-field">
+                                <label for="filterBudgetBulan" class="cashflow-filter-label">Bulan Budget</label>
+                                <div class="cashflow-control-wrap cashflow-select-wrap">
+                                    <select id="filterBudgetBulan" name="bulan" class="cashflow-form-control cashflow-select-control">
+                                        <?php foreach ($namaBulanBudget as $nomorBulan => $namaBulan) { ?>
+                                            <option value="<?= (int) $nomorBulan ?>" <?= $nomorBulan === $budgetBulan ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($namaBulan, ENT_QUOTES, 'UTF-8') ?>
+                                            </option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6 cashflow-filter-field">
+                                <label for="filterBudgetTahun" class="cashflow-filter-label">Tahun</label>
+                                <input id="filterBudgetTahun" type="number" name="tahun" class="cashflow-form-control"
+                                    min="2000" max="2100" value="<?= (int) $budgetTahun ?>">
+                            </div>
+                            <div class="col-md-5 d-flex flex-wrap gap-2 cashflow-filter-actions">
+                                <button type="submit" class="btn btn-info mb-0 flex-grow-1">Tampilkan</button>
+                                <a href="main.php?module=kategori" class="btn btn-outline-secondary mb-0 flex-grow-1">Bulan Berjalan</a>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 px-4 mt-3">
+                        <p class="text-sm text-secondary mb-0">
+                            Periode ditampilkan: <strong><?= htmlspecialchars($periodeBudgetLabel, ENT_QUOTES, 'UTF-8') ?></strong>.
+                            <?= $isPeriodeBudgetBerjalan ? 'Budget dapat ditambah atau diedit.' : 'Histori ditampilkan dalam mode baca.' ?>
+                        </p>
+                        <button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal" data-bs-target="#modalTambah">
                             <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Kategori
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <table class="table align-items-center mb-0" id="datatable">
                             <thead>
                                 <tr>
                                     <th>Nama Kategori</th>
                                     <th>Tipe</th>
-                                    <th>Budget Bulan Ini</th>
+                                    <th>Budget Periode</th>
                                     <th>Dibuat</th>
-                                    <th></th>
+                                    <th class="cashflow-action-col">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php while ($row = mysqli_fetch_assoc($kategoriResult)) { ?>
+                                <?php foreach ($kategoriRows as $row) { ?>
                                     <?php
                                     $isKategoriPengeluaran = $row['tipe_kategori'] === 'pengeluaran';
                                     $budgetNominal = (float) ($row['nominal_budget'] ?? 0);
                                     $totalTerpakai = (float) ($row['total_pengeluaran_bulan'] ?? 0);
-                                    $sisaBudget = max(0, $budgetNominal - $totalTerpakai);
-                                    $budgetStatus = get_budget_status($budgetNominal, $totalTerpakai);
+                                    $sisaBudget = $budgetNominal - $totalTerpakai;
+                                    $budgetStatus = cashflow_budget_status($budgetNominal, $totalTerpakai);
                                     $budgetModalId = 'modalBudgetKategori' . (int) $row['id_kategori'];
                                     $namaKategoriEsc = htmlspecialchars($row['nama_kategori'], ENT_QUOTES, 'UTF-8');
                                     ?>
@@ -153,7 +217,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                             <?php if ($isKategoriPengeluaran) { ?>
                                                 <div class="budget-category-box category-budget-summary">
                                                     <div class="category-budget-summary-header">
-                                                        <span class="category-budget-title">Budget Bulan Ini</span>
+                                                        <span class="category-budget-title">Budget <?= htmlspecialchars($periodeBudgetLabel, ENT_QUOTES, 'UTF-8') ?></span>
                                                         <span class="badge badge-sm <?= htmlspecialchars($budgetStatus['badge_class'], ENT_QUOTES, 'UTF-8') ?>">
                                                             <?= htmlspecialchars($budgetStatus['label']) ?>
                                                         </span>
@@ -161,9 +225,9 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                     <div class="category-budget-period"><?= htmlspecialchars($periodeBudgetLabel) ?></div>
                                                     <p class="text-xs text-secondary mb-1 category-budget-amount">
                                                         Terpakai
-                                                        <strong class="text-dark"><?= format_kategori_rupiah($totalTerpakai) ?></strong>
+                                                        <strong class="text-dark"><?= cashflow_format_rupiah($totalTerpakai) ?></strong>
                                                         dari
-                                                        <strong class="text-dark"><?= format_kategori_rupiah($budgetNominal) ?></strong>
+                                                        <strong class="text-dark"><?= cashflow_format_rupiah($budgetNominal) ?></strong>
                                                     </p>
                                                     <div class="progress budget-category-progress category-budget-progress mb-1">
                                                         <div class="progress-bar <?= htmlspecialchars($budgetStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
@@ -175,16 +239,21 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                     </div>
                                                     <div class="category-budget-meta">
                                                         <span><?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai</span>
-                                                        <span>Sisa <?= format_kategori_rupiah($sisaBudget) ?></span>
+                                                        <span>Sisa <?= cashflow_format_rupiah($sisaBudget) ?></span>
                                                     </div>
-                                                    <button type="button"
-                                                        class="btn btn-sm btn-outline-info mb-0 btn-budget-modal"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>">
-                                                        Atur Budget
-                                                    </button>
+                                                    <?php if ($isPeriodeBudgetBerjalan) { ?>
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-outline-info mb-0 btn-budget-modal"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>">
+                                                            <?= !empty($row['id_budget']) ? 'Edit Budget' : 'Tambah Budget' ?>
+                                                        </button>
+                                                    <?php } else { ?>
+                                                        <span class="text-xs text-secondary">Histori hanya baca</span>
+                                                    <?php } ?>
                                                 </div>
 
+                                                <?php if ($isPeriodeBudgetBerjalan) { ?>
                                                 <div class="modal fade category-budget-modal" id="<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>" tabindex="-1"
                                                     aria-labelledby="<?= htmlspecialchars($budgetModalId, ENT_QUOTES, 'UTF-8') ?>Label" aria-hidden="true">
                                                     <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -211,9 +280,9 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                                     </div>
                                                                     <p class="text-xs text-secondary mb-2">
                                                                         Terpakai
-                                                                        <strong class="text-dark"><?= format_kategori_rupiah($totalTerpakai) ?></strong>
+                                                                        <strong class="text-dark"><?= cashflow_format_rupiah($totalTerpakai) ?></strong>
                                                                         dari
-                                                                        <strong class="text-dark"><?= format_kategori_rupiah($budgetNominal) ?></strong>
+                                                                        <strong class="text-dark"><?= cashflow_format_rupiah($budgetNominal) ?></strong>
                                                                     </p>
                                                                     <div class="progress budget-category-progress category-budget-progress mb-2">
                                                                         <div class="progress-bar <?= htmlspecialchars($budgetStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
@@ -225,7 +294,7 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                                     </div>
                                                                     <div class="category-budget-meta mb-3">
                                                                         <span><?= number_format((float) $budgetStatus['percentage'], 1) ?>% terpakai</span>
-                                                                        <span>Sisa <?= format_kategori_rupiah($sisaBudget) ?></span>
+                                                                        <span>Sisa <?= cashflow_format_rupiah($sisaBudget) ?></span>
                                                                     </div>
                                                                     <label class="form-label">Nominal Budget</label>
                                                                     <div class="input-group input-group-outline budget-category-input category-budget-control">
@@ -246,16 +315,18 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <?php } ?>
                                             <?php } else { ?>
                                                 <p class="text-xs text-secondary mb-0">Tidak berlaku untuk pemasukan</p>
                                             <?php } ?>
                                         </td>
-                                        <td>
+                                        <td data-order="<?= htmlspecialchars((string) $row['created_at'], ENT_QUOTES, 'UTF-8') ?>">
                                             <p class="text-xs text-secondary mb-0">
                                                 <?= htmlspecialchars(date('d M Y H:i', strtotime($row['created_at']))) ?>
                                             </p>
                                         </td>
-                                        <td class="align-middle">
+                                        <td class="align-middle cashflow-action-col">
+                                            <div class="cashflow-action-group">
                                             <form action="actions/aksi_kategori.php?act=h" method="post" class="d-inline">
                                                 <?= csrf_input() ?>
                                                 <input type="hidden" name="id_kategori" value="<?= (int) $row['id_kategori'] ?>">
@@ -265,18 +336,21 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                                                     data-confirm-text="Kategori yang dihapus tidak akan otomatis menghapus transaksi lama."
                                                     data-confirm-confirm-text="Ya, hapus"
                                                     data-confirm-cancel-text="Batal"
-                                                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+                                                    title="Hapus kategori" aria-label="Hapus kategori">
                                                     <i class="fa fa-trash" aria-hidden="true"></i>
                                                 </button>
                                             </form>
 
-                                            <a type="button"
+                                            <a href="#" role="button"
                                                 data-id="<?= (int) $row['id_kategori'] ?>"
                                                 data-nama="<?= htmlspecialchars($row['nama_kategori'], ENT_QUOTES) ?>"
                                                 data-tipe="<?= htmlspecialchars($row['tipe_kategori'], ENT_QUOTES) ?>"
-                                                class="text-secondary text-warning font-weight-bold text-xs btneditkategori">
-                                                <i class="fa fa-pencil" aria-hidden="true"></i>
+                                                class="text-secondary text-warning font-weight-bold text-xs btneditkategori"
+                                                title="Edit kategori" aria-label="Edit kategori">
+                                                <i class="fa fa-pencil" aria-hidden="true"></i> Edit
                                             </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php } ?>
@@ -287,9 +361,72 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
             </div>
         </div>
     </div>
-</div>
 
-<?php mysqli_stmt_close($kategoriStmt); ?>
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card my-4">
+                <div class="card-header p-3 pb-0">
+                    <h6 class="mb-1">Histori Budget</h6>
+                    <p class="text-sm text-secondary mb-0">Penggunaan dihitung ulang dari pengeluaran selesai pada setiap periode.</p>
+                </div>
+                <div class="card-body px-0 pb-2">
+                    <?php if (empty($budgetHistoryRows)) { ?>
+                        <div class="px-4 py-4 text-center">
+                            <i class="fa fa-history text-secondary mb-2" aria-hidden="true"></i>
+                            <p class="text-sm text-secondary mb-0">Belum ada histori budget kategori.</p>
+                        </div>
+                    <?php } else { ?>
+                        <div class="table-responsive p-4 mx-2" role="region" aria-label="Histori budget kategori" tabindex="0">
+                            <table class="table align-items-center mb-0" id="datatableBudgetHistory">
+                                <thead>
+                                    <tr>
+                                        <th>Kategori</th>
+                                        <th>Periode</th>
+                                        <th>Budget</th>
+                                        <th>Terpakai</th>
+                                        <th>Sisa</th>
+                                        <th>Persentase</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($budgetHistoryRows as $historyRow) { ?>
+                                        <?php
+                                        $historyBudget = (float) ($historyRow['nominal_budget'] ?? 0);
+                                        $historyUsed = (float) ($historyRow['total_terpakai'] ?? 0);
+                                        $historyRemaining = $historyBudget - $historyUsed;
+                                        $historyStatus = cashflow_budget_status($historyBudget, $historyUsed);
+                                        $historyMonth = (int) ($historyRow['bulan'] ?? 0);
+                                        $historyPeriod = ($namaBulanBudget[$historyMonth] ?? 'Bulan tidak valid') . ' ' . (int) ($historyRow['tahun'] ?? 0);
+                                        ?>
+                                        <tr>
+                                            <td><p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($historyRow['nama_kategori'], ENT_QUOTES, 'UTF-8') ?></p></td>
+                                            <td data-order="<?= (int) ($historyRow['tahun'] ?? 0) * 100 + $historyMonth ?>"><p class="text-xs text-secondary mb-0 text-nowrap"><?= htmlspecialchars($historyPeriod, ENT_QUOTES, 'UTF-8') ?></p></td>
+                                            <td data-order="<?= htmlspecialchars((string) $historyBudget, ENT_QUOTES, 'UTF-8') ?>"><p class="text-xs font-weight-bold mb-0 text-nowrap"><?= cashflow_format_rupiah($historyBudget) ?></p></td>
+                                            <td data-order="<?= htmlspecialchars((string) $historyUsed, ENT_QUOTES, 'UTF-8') ?>"><p class="text-xs text-secondary mb-0 text-nowrap"><?= cashflow_format_rupiah($historyUsed) ?></p></td>
+                                            <td data-order="<?= htmlspecialchars((string) $historyRemaining, ENT_QUOTES, 'UTF-8') ?>"><p class="text-xs <?= $historyRemaining < 0 ? 'text-danger' : 'text-secondary' ?> mb-0 text-nowrap"><?= cashflow_format_rupiah($historyRemaining) ?></p></td>
+                                            <td data-order="<?= htmlspecialchars((string) $historyStatus['percentage'], ENT_QUOTES, 'UTF-8') ?>" style="min-width: 150px;">
+                                                <div class="progress budget-category-progress mb-1">
+                                                    <div class="progress-bar <?= htmlspecialchars($historyStatus['progress_class'], ENT_QUOTES, 'UTF-8') ?>"
+                                                        role="progressbar"
+                                                        style="width: <?= htmlspecialchars((string) $historyStatus['width'], ENT_QUOTES, 'UTF-8') ?>%;"
+                                                        aria-valuenow="<?= htmlspecialchars((string) round($historyStatus['width'], 2), ENT_QUOTES, 'UTF-8') ?>"
+                                                        aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <span class="text-xs text-secondary"><?= number_format((float) $historyStatus['percentage'], 1) ?>%</span>
+                                            </td>
+                                            <td><span class="badge badge-sm <?= htmlspecialchars($historyStatus['badge_class'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($historyStatus['label'], ENT_QUOTES, 'UTF-8') ?></span></td>
+                                        </tr>
+                                    <?php } ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="modal fade" id="modalTambah" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
@@ -400,6 +537,8 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
 
         $('#datatable').DataTable({
             language: {
+                "emptyTable": "Belum ada kategori untuk akun ini.",
+                "zeroRecords": "Tidak ada kategori yang cocok.",
                 "paginate": {
                     "first": "&laquo",
                     "last": "&raquo",
@@ -407,7 +546,29 @@ $kategoriResult = mysqli_stmt_get_result($kategoriStmt);
                     "previous": "&lt"
                 },
             },
-            dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+            columnDefs: [
+                { targets: -1, orderable: false, searchable: false }
+            ],
+            order: [[0, 'asc']],
+            dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
         });
+
+        if ($('#datatableBudgetHistory').length) {
+            $('#datatableBudgetHistory').DataTable({
+                order: [[1, 'desc']],
+                pageLength: 10,
+                language: {
+                    "emptyTable": "Belum ada histori budget.",
+                    "zeroRecords": "Tidak ada histori budget yang cocok.",
+                    "paginate": {
+                        "first": "&laquo",
+                        "last": "&raquo",
+                        "next": "&gt",
+                        "previous": "&lt"
+                    }
+                },
+                dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
+            });
+        }
     });
 </script>

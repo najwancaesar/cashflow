@@ -3,6 +3,257 @@ html {
     overflow-x: hidden;
 }
 
+/* Financial calendar and read-only reminders */
+.calendar-summary-grid,
+.financial-reminder-summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.financial-reminder-summary {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.calendar-summary-card {
+    display: flex;
+    min-width: 0;
+    min-height: 72px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-left-width: 4px;
+    border-radius: 12px;
+    background: #fff;
+}
+
+.calendar-summary-card strong {
+    color: #344767;
+    font-size: 1.25rem;
+}
+
+.calendar-accent-danger {
+    border-left-color: #ef4444 !important;
+}
+
+.calendar-accent-warning {
+    border-left-color: #f59e0b !important;
+}
+
+.calendar-accent-info {
+    border-left-color: #2688eb !important;
+}
+
+.calendar-accent-secondary {
+    border-left-color: #94a3b8 !important;
+}
+
+.calendar-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.calendar-filter-grid .form-control {
+    width: 100%;
+    min-height: 46px;
+    background-color: #fff;
+}
+
+.calendar-filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.calendar-filter-actions .btn {
+    display: inline-flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.financial-calendar-list,
+.financial-reminder-nearest {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.financial-calendar-event {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(120px, 150px) minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-left-width: 4px;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.calendar-event-date {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.calendar-event-main,
+.calendar-event-main h6,
+.calendar-event-main p {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.calendar-event-action .btn {
+    white-space: nowrap;
+}
+
+.calendar-empty-state {
+    padding: 28px 16px;
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 14px;
+    text-align: center;
+}
+
+.financial-reminder-item {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(100px, 130px) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-left-width: 4px;
+    border-radius: 10px;
+    color: #344767;
+}
+
+.financial-reminder-item:hover {
+    color: #344767;
+    background: rgba(248, 250, 252, 0.9);
+}
+
+.financial-reminder-date {
+    color: #64748b;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.financial-reminder-title {
+    min-width: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+/* Transaction archive filters and actions */
+.archive-filter-toolbar {
+    width: 100%;
+}
+
+.archive-filter-form {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.archive-filter-form .form-label {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.archive-filter-form .form-control {
+    width: auto;
+    min-width: 170px;
+    min-height: 42px;
+    background-color: #fff;
+}
+
+.archive-filter-form .btn {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+}
+
+.archive-action-form {
+    margin-right: 0.55rem;
+}
+
+@media (max-width: 1199.98px) {
+    .calendar-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .calendar-filter-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .calendar-filter-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .calendar-summary-grid,
+    .financial-reminder-summary,
+    .calendar-filter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .calendar-filter-actions {
+        grid-column: auto;
+        flex-direction: column;
+    }
+
+    .calendar-filter-actions .btn,
+    .calendar-filter-actions a {
+        width: 100%;
+    }
+
+    .financial-calendar-event,
+    .financial-reminder-item {
+        grid-template-columns: 1fr;
+        gap: 9px;
+        align-items: start;
+    }
+
+    .calendar-event-action,
+    .calendar-event-action .btn {
+        width: 100%;
+    }
+
+    .financial-reminder-item .badge {
+        justify-self: start;
+    }
+
+    .archive-filter-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .archive-filter-form .form-control,
+    .archive-filter-form .btn {
+        width: 100%;
+    }
+}
+
+:root {
+    --cashflow-sidenav-width: 15.625rem;
+    --cashflow-sidenav-gutter: 1.5rem;
+    --cashflow-desktop-content-offset: calc(var(--cashflow-sidenav-width) + var(--cashflow-sidenav-gutter));
+}
+
 body.g-sidenav-show {
     min-height: 100vh;
     overflow-x: hidden;
@@ -19,6 +270,370 @@ body.g-sidenav-show {
 
 .app-main-content .table-responsive .table {
     margin-bottom: 0;
+}
+
+/* Sprint 1: shared daily usability components. */
+.cashflow-global-quick-add {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.cashflow-quick-add-modal .modal-dialog {
+    max-width: 560px;
+}
+
+.cashflow-quick-add-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.cashflow-quick-add-item {
+    min-width: 0;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.85rem;
+    background: #fff;
+    color: #344767;
+    font-size: 0.84rem;
+    font-weight: 700;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.cashflow-quick-add-item:hover,
+.cashflow-quick-add-item:focus-visible {
+    border-color: rgba(14, 165, 233, 0.45);
+    color: #344767;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+.cashflow-quick-add-icon,
+.cashflow-wallet-type-icon {
+    flex: 0 0 38px;
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: rgba(148, 163, 184, 0.12);
+}
+
+.cashflow-empty-state {
+    width: 100%;
+    padding: 1.5rem;
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 1rem;
+    background: rgba(248, 250, 252, 0.75);
+    color: #64748b;
+    text-align: center;
+}
+
+.cashflow-empty-state > i {
+    display: block;
+    margin-bottom: 0.6rem;
+    font-size: 1.5rem;
+}
+
+.cashflow-page-actions .btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-bottom: 0;
+}
+
+.cashflow-wallet-type-badge {
+    display: inline-flex;
+    align-items: center;
+}
+
+.cashflow-wallet-type-inline {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.35;
+}
+
+.cashflow-wallet-type-inline > i {
+    flex: 0 0 auto;
+}
+
+.cashflow-wallet-type-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cashflow-wallet-type-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.85rem;
+}
+
+.min-width-0 {
+    min-width: 0;
+}
+
+.cashflow-is-loading {
+    cursor: wait !important;
+    opacity: 0.75;
+}
+
+@media (max-width: 767.98px) {
+    .app-main-content .modal-dialog {
+        max-height: calc(100dvh - 1.5rem);
+        margin: 0.75rem;
+    }
+
+    .app-main-content .modal-content {
+        max-height: calc(100dvh - 1.5rem);
+        overflow: hidden;
+    }
+
+    .app-main-content .modal-body {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .cashflow-quick-add-modal .modal-dialog {
+        min-height: 100%;
+        align-items: flex-end;
+        margin: 0;
+        max-height: 100dvh;
+    }
+
+    .cashflow-quick-add-modal .modal-content {
+        max-height: min(82dvh, 680px);
+        border-radius: 1.25rem 1.25rem 0 0;
+    }
+
+    .cashflow-page-actions,
+    .cashflow-wallet-type-item {
+        align-items: stretch !important;
+        flex-direction: column;
+    }
+
+    .cashflow-page-actions .btn,
+    .cashflow-wallet-type-item > .d-flex:last-child,
+    .cashflow-wallet-type-item > .d-flex:last-child .btn,
+    .cashflow-wallet-type-item > .d-flex:last-child form {
+        width: 100%;
+    }
+}
+
+/* Final specificity guard for long table text after legacy nowrap rules. */
+body .app-main-content .table-responsive .table th.cashflow-long-text-col,
+body .app-main-content .table-responsive .table td.cashflow-long-text-col,
+body .app-main-content .table-responsive .table .cashflow-long-text,
+body .app-main-content .table-responsive .table .cashflow-long-text * {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Final stabilization: unified table toolbar and action columns. */
+.cashflow-toolbar-panel {
+    display: flex;
+    width: auto;
+    max-width: 100%;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1rem 1.5rem 0;
+    padding: 0.9rem 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 0.9rem;
+    background: #fff;
+    box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+}
+
+.cashflow-toolbar-row {
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-toolbar-group {
+    display: flex;
+    min-width: 0;
+    align-items: flex-end;
+    gap: 0.75rem;
+}
+
+.cashflow-toolbar-data {
+    flex: 1 1 420px;
+}
+
+.cashflow-toolbar-actions {
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.cashflow-toolbar-panel .cashflow-datatable-top {
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-toolbar-panel .cashflow-datatable-top .input-group {
+    width: min(100%, 340px);
+}
+
+.cashflow-toolbar-panel .dataTables_length select,
+.cashflow-toolbar-panel .dataTables_filter input {
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
+    background: #fff;
+}
+
+.cashflow-toolbar-panel .btn {
+    min-height: 44px;
+    margin: 0 !important;
+    white-space: nowrap;
+}
+
+.cashflow-action-col {
+    width: 1%;
+    min-width: 75px;
+    text-align: left !important;
+    white-space: normal !important;
+}
+
+.cashflow-action-group {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.cashflow-action-group form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.cashflow-action-group a,
+.cashflow-action-group button {
+    position: static !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+.mobile-transaction-toolbar {
+    margin-bottom: 1rem;
+}
+
+table.dataTable thead th.cashflow-action-col::before,
+table.dataTable thead th.cashflow-action-col::after,
+table.dataTable thead th.action-col::before,
+table.dataTable thead th.action-col::after {
+    display: none !important;
+    content: none !important;
+}
+
+table.dataTable thead th.cashflow-action-col,
+table.dataTable thead th.action-col {
+    background-image: none !important;
+    cursor: default;
+}
+
+@media (max-width: 1199.98px) {
+    .cashflow-toolbar-panel {
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    .cashflow-toolbar-data {
+        flex-basis: 100%;
+    }
+
+    .cashflow-toolbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .cashflow-toolbar-panel {
+        flex-direction: column;
+        margin-right: 1rem;
+        margin-left: 1rem;
+        padding: 0.85rem;
+    }
+
+    .cashflow-toolbar-group,
+    .cashflow-toolbar-actions,
+    .cashflow-toolbar-panel .cashflow-datatable-top,
+    .cashflow-toolbar-panel .cashflow-datatable-top .input-group,
+    .cashflow-toolbar-panel .dataTables_length,
+    .cashflow-toolbar-panel .dataTables_filter,
+    .cashflow-toolbar-panel .btn {
+        width: 100%;
+        max-width: none;
+    }
+
+    .cashflow-toolbar-group,
+    .cashflow-toolbar-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cashflow-action-col {
+        min-width: 75px;
+    }
+
+    .cashflow-action-group {
+        gap: 0.65rem 0.85rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .cashflow-quick-add-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 576px) {
+    .app-main-content .table-responsive .cashflow-table-md {
+        min-width: 820px;
+    }
+
+    .app-main-content .table-responsive .cashflow-table-lg {
+        min-width: 980px;
+    }
+
+    .app-main-content .table-responsive .cashflow-table-xl {
+        min-width: 1180px;
+    }
+
+    .app-main-content .cashflow-responsive-data td[data-label="Tanggal"],
+    .app-main-content .cashflow-responsive-data td[data-label="Jumlah"],
+    .app-main-content .cashflow-responsive-data td[data-label="Nominal"],
+    .app-main-content .cashflow-responsive-data td[data-label="Status"] {
+        white-space: nowrap !important;
+    }
+
+    .app-main-content .cashflow-responsive-data td[data-label="Tanggal"] > *,
+    .app-main-content .cashflow-responsive-data td[data-label="Jumlah"] > *,
+    .app-main-content .cashflow-responsive-data td[data-label="Nominal"] > *,
+    .app-main-content .cashflow-responsive-data td[data-label="Status"] > * {
+        white-space: nowrap !important;
+    }
 }
 
 .app-main-content .btn,
@@ -146,104 +761,6 @@ body.g-sidenav-show {
     line-height: 1.35;
 }
 
-.cashflow-table-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0 1.5rem 1rem;
-}
-
-.cashflow-table-controls {
-    display: grid !important;
-    grid-template-columns: auto minmax(260px, 1fr);
-    flex: 1 1 auto;
-    align-items: center;
-    gap: 0.85rem;
-    min-width: 0;
-    margin: 0 !important;
-}
-
-.cashflow-table-controls .dataTables_length,
-.cashflow-table-controls .input-group,
-.cashflow-table-controls .dataTables_filter {
-    width: 100%;
-    margin: 0 !important;
-}
-
-.cashflow-table-controls .dataTables_length label {
-    display: grid;
-    grid-template-columns: auto minmax(4.75rem, 1fr) auto;
-    align-items: center;
-    gap: 0.55rem;
-    margin-bottom: 0;
-    color: #64748b;
-    font-size: 0.85rem;
-    white-space: normal;
-}
-
-.cashflow-table-controls .dataTables_length select {
-    min-width: 4.5rem;
-    min-height: 42px;
-    border-color: rgba(123, 128, 154, 0.32);
-    border-radius: 0.65rem;
-    background-color: #fff;
-}
-
-.cashflow-table-controls .input-group {
-    max-width: none;
-    justify-content: flex-end !important;
-    margin-left: auto !important;
-}
-
-.cashflow-table-controls .dataTables_filter label {
-    display: grid !important;
-    grid-template-columns: auto minmax(220px, 1fr);
-    align-items: center;
-    gap: 0.65rem;
-    width: 100%;
-    margin-bottom: 0;
-    color: #64748b;
-    font-size: 0.9rem;
-    font-weight: 600;
-    white-space: normal !important;
-}
-
-.cashflow-table-controls .dataTables_filter input {
-    width: 100% !important;
-    min-width: 0;
-    min-height: 46px;
-    margin-left: 0 !important;
-    padding: 0.65rem 0.9rem;
-    border: 1px solid rgba(123, 128, 154, 0.28);
-    border-radius: 0.8rem;
-    background-color: #fff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.cashflow-table-controls .dataTables_filter input:focus {
-    border-color: rgba(26, 115, 232, 0.4);
-    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.09);
-    outline: none;
-}
-
-.cashflow-table-action {
-    flex: 0 0 auto;
-    margin: 0 !important;
-    text-align: right !important;
-}
-
-.cashflow-table-action .btn {
-    margin-bottom: 0;
-    min-height: 46px;
-    border-radius: 0.8rem;
-    box-shadow: 0 10px 20px rgba(52, 71, 103, 0.14);
-}
-
-.cashflow-table-action .material-icons {
-    font-size: 1rem;
-}
 
 .app-main-content .table-responsive .dataTables_wrapper > .d-flex:first-child {
     margin-bottom: 1rem;
@@ -324,7 +841,7 @@ body.g-sidenav-show {
     text-align: center;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     .saving-goal-table .saving-goal-action-cell {
         min-width: 108px;
     }
@@ -358,12 +875,161 @@ body.g-sidenav-show {
 
 .app-main-content .dashboard-latest-table {
     width: 100%;
-    min-width: 820px;
+    min-width: 980px;
     table-layout: fixed;
+}
+
+/* Stabilization B: reusable filters, table wrapping, and DataTables placement */
+.cashflow-filter-field {
+    min-width: 0;
+}
+
+.cashflow-filter-label {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.cashflow-control-wrap {
+    position: relative;
+    min-width: 0;
+}
+
+.cashflow-form-control {
+    display: block;
+    width: 100%;
+    min-height: 46px;
+    padding: 0.65rem 2.5rem 0.65rem 0.85rem;
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
+    background-color: #fff;
+    color: #344767;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cashflow-form-control:focus {
+    border-color: #2688eb;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(38, 136, 235, 0.14);
+}
+
+.cashflow-form-control:disabled {
+    cursor: not-allowed;
+    background-color: #f1f5f9;
+    color: #94a3b8;
+}
+
+.cashflow-select-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    cursor: pointer;
+}
+
+.cashflow-select-wrap::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0.95rem;
+    width: 0.48rem;
+    height: 0.48rem;
+    border-right: 2px solid #64748b;
+    border-bottom: 2px solid #64748b;
+    pointer-events: none;
+    transform: translateY(-68%) rotate(45deg);
+}
+
+.archive-filter-form.cashflow-filter-form {
+    align-items: flex-end;
+}
+
+.archive-filter-form .cashflow-filter-field {
+    width: min(100%, 190px);
+}
+
+.archive-filter-form .cashflow-form-control {
+    min-width: 170px;
+}
+
+.archive-filter-form .btn,
+.category-budget-filter .btn {
+    min-height: 46px;
+}
+
+.cashflow-table-scroll {
+    width: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    /* overflow-y: visible tidak valid berdampingan dengan overflow-x: auto (CSS spec
+       akan upgrade otomatis ke overflow-y: auto), sehingga menyebabkan scrollbar
+       vertikal lokal yang tidak diinginkan di dalam kotak tabel.
+       Gunakan overflow-y: clip untuk menekan scrollbar vertikal lokal
+       tanpa memotong konten yang melampaui batas (mis. dropdown menu Bootstrap). */
+    overflow-y: clip;
+    -webkit-overflow-scrolling: touch;
+}
+
+.cashflow-long-text-col {
+    width: 24%;
+    min-width: 170px;
+    max-width: 340px;
+    white-space: normal !important;
+}
+
+.cashflow-long-text,
+.cashflow-long-text * {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+
+
+@media (max-width: 575.98px) {
+    .archive-filter-form .cashflow-filter-field,
+    .archive-filter-form .cashflow-form-control,
+    .archive-filter-form .btn,
+    .category-budget-filter .cashflow-filter-actions,
+    .category-budget-filter .cashflow-filter-actions .btn,
+    .category-budget-filter .cashflow-filter-actions a {
+        width: 100%;
+    }
+
+    .cashflow-long-text-col {
+        width: auto;
+        min-width: 150px;
+        max-width: none;
+    }
+
+
+}
+
+.app-main-content .dashboard-latest-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scrollbar-gutter: stable;
+}
+
+.app-main-content .dashboard-latest-scroll:focus-visible {
+    outline: 2px solid rgba(14, 165, 233, 0.45);
+    outline-offset: -2px;
 }
 
 .app-main-content .dashboard-latest-table th,
 .app-main-content .dashboard-latest-table td {
+    box-sizing: border-box;
+    overflow: hidden;
     vertical-align: middle !important;
     padding: 0.7rem 0.85rem !important;
     line-height: 1.35;
@@ -379,7 +1045,7 @@ body.g-sidenav-show {
 }
 
 .app-main-content .dashboard-latest-table .col-status {
-    width: 9%;
+    width: 11%;
     text-align: center !important;
     white-space: nowrap;
 }
@@ -391,7 +1057,7 @@ body.g-sidenav-show {
 }
 
 .app-main-content .dashboard-latest-table .col-note {
-    width: 27%;
+    width: 24%;
     text-align: left !important;
 }
 
@@ -401,7 +1067,7 @@ body.g-sidenav-show {
 }
 
 .app-main-content .dashboard-latest-table .col-amount {
-    width: 16%;
+    width: 17%;
     text-align: right !important;
     white-space: nowrap;
 }
@@ -430,8 +1096,10 @@ body.g-sidenav-show {
 .app-main-content .dashboard-latest-table .dashboard-note,
 .app-main-content .dashboard-latest-table .dashboard-category,
 .app-main-content .dashboard-latest-table .dashboard-wallet-name {
+    max-width: 100%;
+    white-space: normal !important;
     overflow-wrap: anywhere;
-    word-break: break-word;
+    word-break: normal;
 }
 
 .app-main-content .dashboard-latest-table .dashboard-wallet-name {
@@ -590,6 +1258,48 @@ body.g-sidenav-show {
     font-size: 16px;
 }
 
+.cashflow-sidenav-backdrop {
+    display: none;
+}
+
+/*
+ * The mobile backdrop sits between the sidenav and main content, so the
+ * Material Dashboard adjacent-sibling desktop offset no longer matches.
+ * Preserve the legacy desktop dimensions without depending on DOM adjacency.
+ */
+@media (min-width: 1200px) {
+    body.g-sidenav-show > .sidenav.fixed-start {
+        width: var(--cashflow-sidenav-width);
+        max-width: var(--cashflow-sidenav-width);
+        transform: translateX(0) !important;
+    }
+
+    body.g-sidenav-show > .app-main-content {
+        width: calc(100% - var(--cashflow-desktop-content-offset)) !important;
+        max-width: calc(100% - var(--cashflow-desktop-content-offset));
+        margin-left: var(--cashflow-desktop-content-offset) !important;
+    }
+
+    body.g-sidenav-show > .cashflow-sidenav-backdrop {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    body.g-sidenav-show,
+    body.g-sidenav-show.cashflow-sidenav-open {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: auto;
+    }
+
+    #iconNavbarSidenav,
+    .cashflow-sidenav-close {
+        display: none !important;
+    }
+}
+
 @media (max-width: 1199.98px) {
     body.g-sidenav-show .app-main-content {
         width: 100%;
@@ -599,38 +1309,112 @@ body.g-sidenav-show {
     }
 
     body.g-sidenav-show::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        z-index: 1040;
-        background: rgba(15, 23, 42, 0);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.22s ease, background 0.22s ease;
+        display: none !important;
+        content: none !important;
     }
 
-    body.g-sidenav-show.g-sidenav-pinned::before {
-        background: rgba(15, 23, 42, 0.34);
+    .cashflow-sidenav-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 1070;
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        border: 0;
+        background: rgba(15, 23, 42, 0.52);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        cursor: pointer;
+        transition: opacity 0.22s ease, visibility 0s linear 0.22s;
+    }
+
+    body.g-sidenav-show.g-sidenav-pinned .cashflow-sidenav-backdrop,
+    body.cashflow-sidenav-open .cashflow-sidenav-backdrop {
         opacity: 1;
+        visibility: visible;
         pointer-events: auto;
+        transition: opacity 0.22s ease;
+    }
+
+    body.cashflow-sidenav-open {
+        overflow: hidden !important;
+        overscroll-behavior: none;
     }
 
     .sidenav.fixed-start {
         width: min(17.125rem, calc(100vw - 1.5rem));
-        max-height: calc(100vh - 1.5rem);
-        z-index: 1050;
-        margin: 0.75rem !important;
-        border-radius: 1rem !important;
-        overflow-y: auto;
+        height: 100vh;
+        height: 100dvh;
+        max-height: none;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        z-index: 1080;
+        margin: 0 !important;
+        border-radius: 0 1rem 1rem 0 !important;
+        overflow: hidden;
         -webkit-overflow-scrolling: touch;
         box-shadow: 0 20px 48px rgba(15, 23, 42, 0.22);
         transition: transform 0.22s ease, box-shadow 0.22s ease, opacity 0.22s ease;
     }
 
     .sidenav .sidenav-header {
+        position: relative;
+        flex: 0 0 auto;
         min-height: auto;
         height: auto;
         padding-bottom: 0.5rem;
+    }
+
+    .sidenav .sidenav-header .navbar-brand {
+        min-height: 4.875rem;
+        display: flex;
+        align-items: center;
+        padding-right: 3.75rem;
+    }
+
+    .sidenav #sidenav-collapse-main {
+        display: block !important;
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 1rem;
+    }
+
+    .cashflow-sidenav-close {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        z-index: 2;
+        width: 44px;
+        height: 44px;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 0;
+        border-radius: 0.85rem;
+        background: rgba(255, 255, 255, 0.14);
+        font-size: 1.1rem;
+        opacity: 0.9;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .cashflow-sidenav-close:hover,
+    .cashflow-sidenav-close:focus-visible {
+        background: rgba(255, 255, 255, 0.24);
+        outline: 2px solid rgba(255, 255, 255, 0.72);
+        outline-offset: 2px;
     }
 
     .sidenav .navbar-nav .nav-link {
@@ -877,52 +1661,6 @@ body.g-sidenav-show {
         gap: 0.25rem;
     }
 
-    .cashflow-table-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.75rem;
-        padding: 0 1rem 1rem;
-    }
-
-    .cashflow-table-controls {
-        display: grid !important;
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-        width: 100%;
-    }
-
-    .cashflow-table-controls .dataTables_length label,
-    .cashflow-table-controls .dataTables_filter label {
-        width: 100%;
-    }
-
-    .cashflow-table-controls .dataTables_filter label {
-        display: grid !important;
-        grid-template-columns: 1fr;
-        gap: 0.45rem;
-    }
-
-    .cashflow-table-controls .dataTables_length label {
-        display: grid !important;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-    }
-
-    .cashflow-table-controls .input-group {
-        max-width: none;
-        width: 100% !important;
-        margin-left: 0 !important;
-    }
-
-    .cashflow-table-controls .dataTables_filter input,
-    .cashflow-table-controls .dataTables_length select {
-        min-width: 0;
-        width: 100% !important;
-    }
-
-    .cashflow-table-action,
-    .cashflow-table-action .btn {
-        width: 100%;
-    }
 
     .app-main-content .table-responsive .table {
         min-width: 760px;
@@ -1265,7 +2003,7 @@ body.g-sidenav-show {
         row-gap: 0.75rem;
     }
 
-    .app-main-content .col-10.col-md-8 {
+    .app-main-content .report-page-column {
         flex: 0 0 100%;
         max-width: 100%;
     }
@@ -1601,33 +2339,33 @@ body.g-sidenav-show {
 }
 
 @media (max-width: 575.98px) {
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] {
         display: block;
         width: 100%;
         min-width: 0;
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"]::before {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"]::before {
         display: block;
         width: 100%;
         margin-bottom: 0.55rem;
         text-align: left;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box {
         padding: 0.85rem;
         border-radius: 0.9rem;
         background: #f8fafc;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-summary {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-summary {
         width: 100%;
         max-width: 100%;
         padding: 0.85rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-summary-header {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-summary-header {
         display: flex;
         width: 100%;
         align-items: flex-start;
@@ -1636,42 +2374,42 @@ body.g-sidenav-show {
         margin-bottom: 0.45rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box p,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box span:not(.badge),
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-box strong {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box p,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box span:not(.badge),
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-box strong {
         text-align: left !important;
         overflow-wrap: anywhere;
         word-break: break-word;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-form {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-form {
         display: block;
         width: 100%;
         margin-top: 0.65rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .budget-category-progress {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .budget-category-progress {
         width: 100%;
         height: 0.5rem;
         margin-top: 0.45rem;
         margin-bottom: 0.45rem !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-title {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-title {
         font-size: 0.75rem;
         line-height: 1.35;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-period {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-period {
         margin-bottom: 0.55rem;
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-amount {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-amount {
         margin-bottom: 0.55rem !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-meta {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-meta {
         display: flex;
         width: 100%;
         flex-direction: column;
@@ -1680,7 +2418,7 @@ body.g-sidenav-show {
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .btn-budget-modal {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .btn-budget-modal {
         display: inline-flex;
         width: 100%;
         min-height: 42px;
@@ -1690,8 +2428,8 @@ body.g-sidenav-show {
         border-radius: 0.75rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-control,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-form {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-control,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-form {
         display: flex;
         width: 100%;
         min-width: 0;
@@ -1700,7 +2438,7 @@ body.g-sidenav-show {
         gap: 0.6rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-input-field {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-input-field {
         display: block;
         width: 100% !important;
         min-width: 0;
@@ -1713,7 +2451,7 @@ body.g-sidenav-show {
         text-align: left !important;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-submit {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-submit {
         display: inline-flex;
         width: 100%;
         min-height: 44px;
@@ -1723,11 +2461,11 @@ body.g-sidenav-show {
         border-radius: 0.75rem;
     }
 
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal p,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal span:not(.badge),
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal strong,
-    .app-main-content .cashflow-responsive-table td[data-label="Budget Bulan Ini"] .category-budget-modal .text-xs {
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal p,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal span:not(.badge),
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal strong,
+    .app-main-content .cashflow-responsive-table td[data-label^="Budget"] .category-budget-modal .text-xs {
         text-align: left !important;
     }
 
@@ -1761,76 +2499,7 @@ body.g-sidenav-show {
     }
 }
 
-/* Desktop-only bulk delete controls for transaction tables */
-.transaction-table-toolbar {
-    display: flex;
-    width: auto;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-    margin: 0 1rem 16px;
-}
-
-.transaction-toolbar-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.transaction-toolbar-actions .btn,
-.bulk-delete-btn,
-.add-transaction-btn {
-    display: inline-flex;
-    min-height: 48px;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    white-space: nowrap;
-}
-
-.transaction-table th.bulk-select-col,
-.transaction-table td.bulk-select-col,
-table.dataTable th.bulk-select-col,
-table.dataTable td.bulk-select-col {
-    width: 48px !important;
-    min-width: 48px !important;
-    max-width: 48px !important;
-    padding-right: 0 !important;
-    padding-left: 0 !important;
-    text-align: center !important;
-    vertical-align: middle !important;
-}
-
-.bulk-select-col input[type="checkbox"],
-.bulk-select-all,
-.bulk-select-row {
-    display: inline-block !important;
-    width: 18px !important;
-    height: 18px !important;
-    min-width: 18px !important;
-    min-height: 18px !important;
-    margin: 0 auto !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    position: static !important;
-    cursor: pointer;
-    accent-color: #4f46e5;
-}
-
-table.dataTable thead th.bulk-select-col::before,
-table.dataTable thead th.bulk-select-col::after {
-    display: none !important;
-    content: none !important;
-}
-
-table.dataTable thead th.bulk-select-col {
-    background-image: none !important;
-    cursor: default;
-}
-
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
     .desktop-transaction-section {
         display: none !important;
     }
@@ -1839,31 +2508,175 @@ table.dataTable thead th.bulk-select-col {
         display: block !important;
     }
 
-    .desktop-bulk-only,
-    .desktop-bulk-toolbar .bulk-delete-btn,
-    .bulk-select-col,
-    th.bulk-select-col,
-    td.bulk-select-col {
-        display: none !important;
-    }
-
-    .transaction-table-toolbar {
-        justify-content: stretch;
-    }
-
-    .transaction-toolbar-actions {
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .transaction-toolbar-actions .add-transaction-btn {
-        width: 100%;
-    }
 }
 
 .mobile-transaction-section {
     width: 100%;
+}
+
+/* Final release polish: compact table controls, row menus, and modal controls. */
+.cashflow-feature-description {
+    margin: 1rem 1.5rem 0;
+    color: #67748e;
+    font-size: 0.875rem;
+    line-height: 1.55;
+}
+
+.cashflow-table-page-actions {
+    display: flex;
+    width: auto;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin: 1rem 1.5rem 0;
+}
+
+.cashflow-table-page-actions .btn,
+.add-transaction-btn {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+}
+
+/* .cashflow-datatable-top .input-group {
+    width: min(100%, 360px);
+} */
+.cashflow-row-action-dropdown {
+    position: relative;
+    display: inline-flex;
+}
+
+.cashflow-row-action-toggle {
+    display: inline-flex;
+    min-width: 88px;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.7rem;
+}
+
+.cashflow-row-action-menu {
+    min-width: 220px;
+    max-width: min(300px, calc(100vw - 2rem));
+    padding: 0.45rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 0.75rem;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.14);
+    z-index: 1080;
+}
+
+.cashflow-row-action-menu form {
+    margin: 0;
+}
+
+.cashflow-row-action-menu .dropdown-item {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    padding: 0.55rem 0.7rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    font-size: 0.82rem;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.cashflow-row-action-menu .cashflow-row-action-note {
+    line-height: 1.4;
+}
+
+.table-responsive:has(.cashflow-row-action-dropdown.show) {
+    overflow: visible;
+}
+
+.cashflow-modal-control,
+.cashflow-modal-select,
+.cashflow-color-control {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #d7dce8 !important;
+    border-radius: 0.65rem !important;
+    background-color: #fff !important;
+    color: #344767;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cashflow-modal-select {
+    padding-right: 2.5rem;
+    appearance: auto;
+    cursor: pointer;
+}
+
+.cashflow-color-control {
+    padding: 0.35rem;
+    cursor: pointer;
+}
+
+.cashflow-modal-control:focus,
+.cashflow-modal-select:focus,
+.cashflow-color-control:focus {
+    outline: none;
+    border-color: #2688eb !important;
+    box-shadow: 0 0 0 3px rgba(38, 136, 235, 0.15);
+}
+
+.cashflow-modal-control:invalid:not(:placeholder-shown),
+.cashflow-modal-select:invalid {
+    border-color: #dc3545 !important;
+}
+
+.cashflow-user-identity-cell,
+.cashflow-user-identity-cell .user-mobile-identity,
+.cashflow-user-identity-cell .user-mobile-email {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.cashflow-user-action-cell,
+.cashflow-user-table.cashflow-responsive-table tbody tr:has(.cashflow-row-action-dropdown.show),
+.cashflow-user-table.cashflow-responsive-table td:has(.cashflow-row-action-dropdown.show) {
+    overflow: visible !important;
+}
+
+@media (max-width: 575.98px) {
+    .cashflow-feature-description,
+    .cashflow-table-page-actions {
+        margin-right: 1rem;
+        margin-left: 1rem;
+    }
+
+    .cashflow-table-page-actions,
+    .cashflow-table-page-actions .btn,
+    .mobile-transaction-toolbar .btn,
+    .mobile-transaction-toolbar .cashflow-toolbar-group {
+        width: 100%;
+    }
+
+    .cashflow-table-page-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .mobile-transaction-toolbar {
+        margin: 1rem;
+    }
+
+    .cashflow-row-action-toggle {
+        min-height: 42px;
+    }
 }
 
 .mobile-transaction-list {
@@ -2044,7 +2857,7 @@ table.dataTable thead th.bulk-select-col {
     min-height: 48px;
 }
 
-@media (max-width: 1199px) {
+@media (max-width: 1199.98px) {
     .audit-log-filter-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -2068,4 +2881,140 @@ table.dataTable thead th.bulk-select-col {
     .audit-log-filter-actions a {
         width: 100%;
     }
+}
+
+/* Keep the global Quick Add as a bottom sheet after legacy modal overrides. */
+@media (max-width: 767.98px) {
+    body .app-main-content .cashflow-quick-add-modal .modal-dialog {
+        min-height: 100%;
+        max-height: 100dvh;
+        align-items: flex-end;
+        margin: 0;
+    }
+
+    body .app-main-content .cashflow-quick-add-modal .modal-content {
+        max-height: min(82dvh, 680px);
+        border-radius: 1.25rem 1.25rem 0 0;
+    }
+}
+
+
+/* Fix Dropdown Chevron for all select in outline group */
+.input-group.input-group-outline select.form-control {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23495057' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 14px 10px;
+    padding-right: 1.75rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* ============================================================
+   Cashflow DataTable Toolbar — Show entries | Search | Tombol Aksi
+   SATU-SATUNYA blok CSS untuk .cashflow-datatable-top.
+   Jangan tambah blok override lain di tempat lain untuk selector ini.
+   ============================================================ */
+/* Pastikan wrapper Datatables merenggang mengikuti tabel jika tabel lebih lebar (scroll horizontal),
+   sehingga toolbar atas dan bawah ikut sejajar lebarnya dengan tabel. */
+.cashflow-table-scroll .dataTables_wrapper {
+    min-width: 100%;
+    width: max-content;
+}
+
+.cashflow-datatable-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+}
+
+.cashflow-datatable-top .dataTables_length {
+    order: 1;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_length label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.cashflow-datatable-top .dataTables_length select {
+    min-height: 42px;
+    margin: 0;
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
+}
+
+.cashflow-datatable-top .input-group.input-group-outline {
+    order: 2;
+    flex: 1 1 240px;
+    width: auto;
+    max-width: none;
+    margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_filter {
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_filter label {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    margin: 0;
+}
+
+.cashflow-datatable-top .dataTables_filter input {
+    flex: 1 1 auto;
+    width: 100% !important;
+    min-height: 42px;
+    margin-left: 0 !important;
+    border: 1px solid rgba(123, 128, 154, 0.32);
+    border-radius: 0.7rem;
+}
+
+.cashflow-datatable-top .cashflow-table-page-actions {
+    order: 3;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+@media (max-width: 575.98px) {
+    .cashflow-datatable-top {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cashflow-datatable-top .dataTables_length,
+    .cashflow-datatable-top .input-group.input-group-outline,
+    .cashflow-datatable-top .cashflow-table-page-actions {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .cashflow-datatable-top .cashflow-table-page-actions .btn,
+    .cashflow-datatable-top .add-transaction-btn {
+        width: 100%;
+    }
+}
+
+/* Sembunyikan scrollbar vertikal di sidebar dan konten utama, tanpa hilangkan fungsinya */
+.sidenav,
+body.g-sidenav-show {
+    scrollbar-width: none;       /* Firefox */
+    -ms-overflow-style: none;    /* IE/Edge lama */
+}
+
+.sidenav::-webkit-scrollbar,
+body.g-sidenav-show::-webkit-scrollbar {
+    display: none;               /* Chrome, Edge, Safari */
 }

@@ -10,11 +10,12 @@ if (!function_exists('activity_log_table_exists')) {
         }
 
         try {
-            $stmt = @$con->prepare("SELECT COUNT(*)
+            $stmt = $con->prepare("SELECT COUNT(*)
                                     FROM information_schema.TABLES
                                     WHERE TABLE_SCHEMA = DATABASE()
                                       AND TABLE_NAME = 'activity_log'");
             if (!$stmt) {
+                error_log('CashFlow activity log table check could not be prepared.');
                 $exists = false;
                 return false;
             }
@@ -27,6 +28,7 @@ if (!function_exists('activity_log_table_exists')) {
             $exists = (int) ($row[0] ?? 0) > 0;
             return $exists;
         } catch (Throwable $exception) {
+            error_log('CashFlow activity log table check failed: ' . $exception->getMessage());
             $exists = false;
             return false;
         }
@@ -43,8 +45,8 @@ if (!function_exists('record_activity')) {
                 return false;
             }
 
-            if (session_status() === PHP_SESSION_NONE) {
-                @session_start();
+            if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+                session_start();
             }
 
             $userId = $userId !== null ? (int) $userId : (int) ($_SESSION['id_user'] ?? 0);
@@ -61,10 +63,11 @@ if (!function_exists('record_activity')) {
                 return false;
             }
 
-            $stmt = @$con->prepare("INSERT INTO activity_log
+            $stmt = $con->prepare("INSERT INTO activity_log
                 (user_id, role, module, aksi, deskripsi, ip_address, user_agent, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
             if (!$stmt) {
+                error_log('CashFlow activity log insert could not be prepared.');
                 return false;
             }
 
@@ -74,6 +77,7 @@ if (!function_exists('record_activity')) {
 
             return (bool) $result;
         } catch (Throwable $exception) {
+            error_log('CashFlow activity log insert failed: ' . $exception->getMessage());
             return false;
         }
     }

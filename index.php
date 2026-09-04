@@ -5,13 +5,14 @@
   <meta charset="utf-8">
   <title>CashFlow Control</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="CashFlow Control helps you record income, expenses, monitor balances, and analyze cashflow with a modern dashboard.">
+  <meta name="description"
+    content="CashFlow Control helps you record income, expenses, monitor balances, and analyze cashflow with a modern dashboard.">
   <link href="assets/img/logocv.jpg" rel="icon">
   <link href="assets/img/logocv.jpg" rel="apple-touch-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="lib/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="lib/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <link href="assets/css/landing-enhance.css" rel="stylesheet">
   <style>
@@ -952,8 +953,11 @@
           <span class="brand-mark brand-logo"><img src="assets/img/logocv.jpg" alt="CashFlow Control"></span>
           <span>CashFlow Control</span>
         </a>
-        <button class="navbar-toggler border-0 p-0" type="button" data-toggle="collapse" data-target="#navbarMain" aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="d-inline-flex align-items-center justify-content-center" style="width:44px;height:44px;border-radius:14px;background:rgba(29,119,255,.08);color:#1d77ff;"><i class="fa fa-bars"></i></span>
+        <button class="navbar-toggler border-0 p-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
+          aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="d-inline-flex align-items-center justify-content-center"
+            style="width:44px;height:44px;border-radius:14px;background:rgba(29,119,255,.08);color:#1d77ff;"><i
+              class="fa fa-bars"></i></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarMain">
           <ul class="navbar-nav mx-auto">
@@ -977,15 +981,19 @@
             <div class="hero-copy">
               <span class="eyebrow">Modern Finance Workspace</span>
               <h1 class="display-title">Kelola cashflow pribadi dengan dashboard yang rapi dan mudah dibaca.</h1>
-              <p class="lead-copy">CashFlow Control membantu kamu mencatat pemasukan, pengeluaran, utang, piutang, kategori, dan laporan dalam satu workspace yang bersih, modern, dan fokus pada data yang benar-benar kamu punya.</p>
+              <p class="lead-copy">CashFlow Control membantu kamu mencatat pemasukan, pengeluaran, utang, piutang,
+                kategori, dan laporan dalam satu workspace yang bersih, modern, dan fokus pada data yang benar-benar
+                kamu punya.</p>
               <div class="hero-actions">
                 <a href="register.php" class="btn-solid">Mulai Catat Cashflow <i class="fa fa-long-arrow-right"></i></a>
                 <a href="#preview" class="btn-glass">Lihat Dashboard</a>
               </div>
               <div class="hero-proof">
-                <div class="proof-chip"><i class="fa fa-check-circle"></i> Pemasukan dan pengeluaran tercatat lebih cepat</div>
+                <div class="proof-chip"><i class="fa fa-check-circle"></i> Pemasukan dan pengeluaran tercatat lebih
+                  cepat</div>
                 <div class="proof-chip"><i class="fa fa-line-chart"></i> Analisis cashflow lebih mudah dipahami</div>
-                <div class="proof-chip"><i class="fa fa-shield"></i> UI bersih untuk first impression yang meyakinkan</div>
+                <div class="proof-chip"><i class="fa fa-shield"></i> UI bersih untuk first impression yang meyakinkan
+                </div>
               </div>
             </div>
           </div>
@@ -1029,8 +1037,12 @@
                             <stop offset="100%" stop-color="#0f9f74" />
                           </linearGradient>
                         </defs>
-                        <path class="trend-area" d="M0,120 C34,104 52,84 84,92 C118,102 132,62 164,70 C196,78 210,42 242,48 C274,54 292,32 320,40 L320,160 L0,160 Z"></path>
-                        <path class="trend-line" d="M0,120 C34,104 52,84 84,92 C118,102 132,62 164,70 C196,78 210,42 242,48 C274,54 292,32 320,40"></path>
+                        <path class="trend-area"
+                          d="M0,120 C34,104 52,84 84,92 C118,102 132,62 164,70 C196,78 210,42 242,48 C274,54 292,32 320,40 L320,160 L0,160 Z">
+                        </path>
+                        <path class="trend-line"
+                          d="M0,120 C34,104 52,84 84,92 C118,102 132,62 164,70 C196,78 210,42 242,48 C274,54 292,32 320,40">
+                        </path>
                         <g class="trend-points">
                           <circle cx="0" cy="120" r="4"></circle>
                           <circle cx="84" cy="92" r="4"></circle>
@@ -1054,14 +1066,16 @@
                       </div>
                       <div class="transaction">
                         <div class="transaction-main">
-                          <span class="transaction-icon" style="background:rgba(226,78,92,.10);color:#e24e5c;"><i class="fa fa-arrow-up"></i></span>
+                          <span class="transaction-icon" style="background:rgba(226,78,92,.10);color:#e24e5c;"><i
+                              class="fa fa-arrow-up"></i></span>
                           <div><strong>Biaya Operasional</strong><small>Pengeluaran • 2 jam lalu</small></div>
                         </div>
                         <div class="expense">- Rp 860.000</div>
                       </div>
                       <div class="floating-note inline-note fade d3">
                         <strong>Insight cepat</strong>
-                        <small>Kondisi saldo, kategori aktif, dan laporan cashflow bisa dibaca tanpa berpindah-pindah halaman.</small>
+                        <small>Kondisi saldo, kategori aktif, dan laporan cashflow bisa dibaca tanpa berpindah-pindah
+                          halaman.</small>
                       </div>
                     </div>
                   </div>
@@ -1069,7 +1083,8 @@
                     <small>Budget Monitoring</small>
                     <h5 class="mt-2 mb-0">76% target bulanan sudah tercapai</h5>
                     <div class="progress-shell"><span></span></div>
-                    <p class="mt-3 mb-0">Kategori transaksi membantu kamu melihat pola pengeluaran terbesar lebih cepat.</p>
+                    <p class="mt-3 mb-0">Kategori transaksi membantu kamu melihat pola pengeluaran terbesar lebih cepat.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1084,7 +1099,8 @@
         <div class="stats">
           <div class="stat-card fade d1">
             <div class="stat-number">24/7</div>
-            <p class="muted-copy">Akses data cashflow kapan saja dengan tampilan yang tetap nyaman di desktop maupun mobile.</p>
+            <p class="muted-copy">Akses data cashflow kapan saja dengan tampilan yang tetap nyaman di desktop maupun
+              mobile.</p>
           </div>
           <div class="stat-card fade d2">
             <div class="stat-number">6 Core</div>
@@ -1092,7 +1108,8 @@
           </div>
           <div class="stat-card fade d3">
             <div class="stat-number">Realtime</div>
-            <p class="muted-copy">Perubahan transaksi langsung tercermin pada ringkasan dashboard dan panel monitoring.</p>
+            <p class="muted-copy">Perubahan transaksi langsung tercermin pada ringkasan dashboard dan panel monitoring.
+            </p>
           </div>
           <div class="stat-card fade d4">
             <div class="stat-number">Clean UI</div>
@@ -1106,31 +1123,39 @@
       <div class="container">
         <span class="eyebrow">Feature Highlights</span>
         <h2 class="section-title">Didesain untuk membuat pencatatan keuangan terasa modern, ringan, dan meyakinkan.</h2>
-        <p class="muted-copy" style="max-width:640px;">Setiap modul dibuat untuk membantu user memahami arus kas dengan cepat, bukan sekadar memasukkan angka. Hasilnya adalah workflow yang lebih rapi dan insight yang lebih jelas.</p>
+        <p class="muted-copy" style="max-width:640px;">Setiap modul dibuat untuk membantu user memahami arus kas dengan
+          cepat, bukan sekadar memasukkan angka. Hasilnya adalah workflow yang lebih rapi dan insight yang lebih jelas.
+        </p>
         <div class="features mt-5">
           <div class="feature-card fade d1"><span class="feature-icon"><i class="fa fa-plus-circle"></i></span>
             <h4>Mencatat Pemasukan</h4>
-            <p class="muted-copy">Input transaksi pemasukan dengan cepat, beri catatan, dan simpan histori secara terstruktur.</p>
+            <p class="muted-copy">Input transaksi pemasukan dengan cepat, beri catatan, dan simpan histori secara
+              terstruktur.</p>
           </div>
           <div class="feature-card fade d2"><span class="feature-icon"><i class="fa fa-credit-card"></i></span>
             <h4>Mencatat Pengeluaran</h4>
-            <p class="muted-copy">Lacak biaya operasional, kebutuhan rutin, dan pengeluaran penting agar arus kas tetap sehat.</p>
+            <p class="muted-copy">Lacak biaya operasional, kebutuhan rutin, dan pengeluaran penting agar arus kas tetap
+              sehat.</p>
           </div>
           <div class="feature-card fade d3"><span class="feature-icon"><i class="fa fa-tags"></i></span>
             <h4>Mengelola Kategori</h4>
-            <p class="muted-copy">Kelompokkan transaksi agar pola pengeluaran dan sumber pemasukan lebih mudah dibaca.</p>
+            <p class="muted-copy">Kelompokkan transaksi agar pola pengeluaran dan sumber pemasukan lebih mudah dibaca.
+            </p>
           </div>
           <div class="feature-card fade d1"><span class="feature-icon"><i class="fa fa-money"></i></span>
             <h4>Memantau Saldo</h4>
-            <p class="muted-copy">Lihat posisi saldo aktif secara cepat dan pahami perubahan kondisi keuangan setiap saat.</p>
+            <p class="muted-copy">Lihat posisi saldo aktif secara cepat dan pahami perubahan kondisi keuangan setiap
+              saat.</p>
           </div>
           <div class="feature-card fade d2"><span class="feature-icon"><i class="fa fa-file-text-o"></i></span>
             <h4>Melihat Laporan</h4>
-            <p class="muted-copy">Tinjau rekap pemasukan dan pengeluaran dalam periode tertentu tanpa repot merapikan manual.</p>
+            <p class="muted-copy">Tinjau rekap pemasukan dan pengeluaran dalam periode tertentu tanpa repot merapikan
+              manual.</p>
           </div>
           <div class="feature-card fade d3"><span class="feature-icon"><i class="fa fa-line-chart"></i></span>
             <h4>Analisis Cashflow</h4>
-            <p class="muted-copy">Temukan tren, bulan terkuat, dan area pemborosan dengan tampilan yang lebih mudah dipahami.</p>
+            <p class="muted-copy">Temukan tren, bulan terkuat, dan area pemborosan dengan tampilan yang lebih mudah
+              dipahami.</p>
           </div>
         </div>
       </div>
@@ -1141,16 +1166,20 @@
         <div class="two-col">
           <div>
             <span class="eyebrow">Dashboard Preview</span>
-            <h2 class="section-title">Preview antarmuka yang terasa seperti finance cockpit, bukan sekadar tabel transaksi.</h2>
-            <p class="muted-copy">Arah visual halaman ini dibuat untuk menunjukkan seperti apa produk cashflow yang terasa premium, profesional, dan mudah dipercaya oleh user pertama kali.</p>
+            <h2 class="section-title">Preview antarmuka yang terasa seperti finance cockpit, bukan sekadar tabel
+              transaksi.</h2>
+            <p class="muted-copy">Arah visual halaman ini dibuat untuk menunjukkan seperti apa produk cashflow yang
+              terasa premium, profesional, dan mudah dipercaya oleh user pertama kali.</p>
             <div class="benefits mt-4">
               <div class="benefit-card fade d1"><span class="benefit-icon"><i class="fa fa-bolt"></i></span>
                 <h4>Decision Faster</h4>
-                <p class="muted-copy">User lebih cepat melihat transaksi penting, saldo bergerak, dan kategori paling dominan.</p>
+                <p class="muted-copy">User lebih cepat melihat transaksi penting, saldo bergerak, dan kategori paling
+                  dominan.</p>
               </div>
               <div class="benefit-card fade d2"><span class="benefit-icon"><i class="fa fa-sliders"></i></span>
                 <h4>Data Lebih Tertata</h4>
-                <p class="muted-copy">Whitespace, typography, dan card layout dibuat agar informasi terasa rapi dan tidak sempit.</p>
+                <p class="muted-copy">Whitespace, typography, dan card layout dibuat agar informasi terasa rapi dan
+                  tidak sempit.</p>
               </div>
             </div>
           </div>
@@ -1183,11 +1212,17 @@
                           <stop offset="100%" stop-color="rgba(29,119,255,.02)"></stop>
                         </linearGradient>
                         <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#1d77ff" flood-opacity=".18"></feDropShadow>
+                          <feDropShadow dx="0" dy="14" stdDeviation="12" flood-color="#1d77ff" flood-opacity=".18">
+                          </feDropShadow>
                         </filter>
                       </defs>
-                      <path class="line-area" d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96 L600,220 L0,220 Z" fill="url(#fillArea)"></path>
-                      <path class="line-curve" d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96" fill="none" stroke="#1d77ff" stroke-width="5" stroke-linecap="round" filter="url(#lineGlow)"></path>
+                      <path class="line-area"
+                        d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96 L600,220 L0,220 Z"
+                        fill="url(#fillArea)"></path>
+                      <path class="line-curve"
+                        d="M0,160 C60,138 92,70 150,82 C210,94 250,128 300,112 C350,96 385,38 450,50 C512,62 548,120 600,96"
+                        fill="none" stroke="#1d77ff" stroke-width="5" stroke-linecap="round" filter="url(#lineGlow)">
+                      </path>
                       <g class="line-points">
                         <circle cx="150" cy="82" r="5"></circle>
                         <circle cx="300" cy="112" r="5"></circle>
@@ -1203,7 +1238,8 @@
                     <div class="summary-item"><span>Kategori aktif</span><strong>12</strong></div>
                     <div class="summary-item"><span>Transaksi minggu ini</span><strong>48</strong></div>
                     <div class="summary-item"><span>Laporan terbaru</span><strong>Ready</strong></div>
-                    <div class="summary-item"><span>Cashflow growth</span><strong style="color:var(--green-deep);">+21%</strong></div>
+                    <div class="summary-item"><span>Cashflow growth</span><strong
+                        style="color:var(--green-deep);">+21%</strong></div>
                   </div>
                 </div>
               </div>
@@ -1216,8 +1252,10 @@
     <section class="section">
       <div class="container">
         <span class="eyebrow">Why It Works</span>
-        <h2 class="section-title">Lebih dari sekadar pencatatan, ini adalah sistem yang membuat cashflow lebih mudah dianalisis.</h2>
-        <p class="muted-copy" style="max-width:680px;">Fokus desain dan struktur fitur dibuat agar user tidak kewalahan. Semua terasa lebih intuitif, lebih terukur, dan lebih meyakinkan saat ingin mengambil keputusan finansial.</p>
+        <h2 class="section-title">Lebih dari sekadar pencatatan, ini adalah sistem yang membuat cashflow lebih mudah
+          dianalisis.</h2>
+        <p class="muted-copy" style="max-width:680px;">Fokus desain dan struktur fitur dibuat agar user tidak kewalahan.
+          Semua terasa lebih intuitif, lebih terukur, dan lebih meyakinkan saat ingin mengambil keputusan finansial.</p>
         <div class="benefits mt-5">
           <div class="benefit-card fade d1"><span class="benefit-icon"><i class="fa fa-eye"></i></span>
             <h4>Lebih Mudah Dipahami</h4>
@@ -1229,11 +1267,13 @@
           </div>
           <div class="benefit-card fade d3"><span class="benefit-icon"><i class="fa fa-filter"></i></span>
             <h4>Analisis Lebih Terarah</h4>
-            <p class="muted-copy">Kategori transaksi dan laporan membantu menemukan pola cashflow dengan lebih presisi.</p>
+            <p class="muted-copy">Kategori transaksi dan laporan membantu menemukan pola cashflow dengan lebih presisi.
+            </p>
           </div>
           <div class="benefit-card fade d4"><span class="benefit-icon"><i class="fa fa-mobile"></i></span>
             <h4>Nyaman di Semua Device</h4>
-            <p class="muted-copy">Layout dibuat mobile-first agar tetap premium dan mudah dipakai di laptop maupun smartphone.</p>
+            <p class="muted-copy">Layout dibuat mobile-first agar tetap premium dan mudah dipakai di laptop maupun
+              smartphone.</p>
           </div>
         </div>
       </div>
@@ -1245,7 +1285,8 @@
           <div class="contact-card fade d1">
             <span class="eyebrow">Contact</span>
             <h2 class="section-title">Bangun sistem cashflow yang lebih rapi untuk aktivitas keuangan harianmu.</h2>
-            <p class="muted-copy">Punya pertanyaan, butuh demo, atau ingin mulai menggunakan sistem ini untuk pencatatan keuangan? Tinggalkan pesanmu dan kita bisa lanjut dari sana.</p>
+            <p class="muted-copy">Punya pertanyaan, butuh demo, atau ingin mulai menggunakan sistem ini untuk pencatatan
+              keuangan? Tinggalkan pesanmu dan kita bisa lanjut dari sana.</p>
             <div class="contact-list">
               <div class="contact-item"><i class="fa fa-envelope-o"></i>
                 <div><strong>Email</strong>
@@ -1274,22 +1315,26 @@
               <div class="form-row">
                 <div class="form-group col-md-6">
                   <label class="font-weight-bold">Nama</label>
-                  <input type="text" name="name" class="form-control" placeholder="Masukkan nama" autocomplete="name" required>
+                  <input type="text" name="name" class="form-control" placeholder="Masukkan nama" autocomplete="name"
+                    required>
                 </div>
                 <div class="form-group col-md-6">
                   <label class="font-weight-bold">Email</label>
-                  <input type="email" name="email" class="form-control" placeholder="nama@email.com" autocomplete="email" required>
+                  <input type="email" name="email" class="form-control" placeholder="nama@email.com"
+                    autocomplete="email" required>
                 </div>
               </div>
 
               <div class="form-group">
                 <label class="font-weight-bold">Subjek</label>
-                <input type="text" name="user_subject" class="form-control" placeholder="Apa yang ingin kamu tanyakan?" required>
+                <input type="text" name="user_subject" class="form-control" placeholder="Apa yang ingin kamu tanyakan?"
+                  required>
               </div>
 
               <div class="form-group">
                 <label class="font-weight-bold">Pesan</label>
-                <textarea name="message" class="form-control" placeholder="Ceritakan kebutuhanmu secara singkat..." required></textarea>
+                <textarea name="message" class="form-control" placeholder="Ceritakan kebutuhanmu secara singkat..."
+                  required></textarea>
               </div>
 
               <button type="submit" class="btn-solid w-100 border-0">
@@ -1303,8 +1348,8 @@
   </main>
 
   <?php include "includes/footer.php"; ?>
-  <script src="js/vendor/jquery-1.11.3.min.js"></script>
-  <script src="lib/bootstrap/js/bootstrap.min.js"></script>
+  <script src="assets/js/jquery.js"></script>
+  <script src="assets/js/core/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     const contactForm = document.getElementById('contactForm');
@@ -1312,7 +1357,7 @@
     if (contactForm) {
       const submitBtn = contactForm.querySelector('button[type="submit"]');
 
-      contactForm.addEventListener('submit', async function(event) {
+      contactForm.addEventListener('submit', async function (event) {
         event.preventDefault();
 
         const formData = new FormData(contactForm);
@@ -1374,4 +1419,5 @@
   </script>
   <script src="assets/js/landing-enhance.js"></script>
 </body>
+
 </html>

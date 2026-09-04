@@ -1,19 +1,22 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $today = date('Y-m-d');
 
 function format_piutang_due_date($value)
 {
 	if (empty($value) || $value === '0000-00-00') {
-		return '-';
+		return 'Tanpa jatuh tempo';
 	}
 
 	$timestamp = strtotime((string) $value);
 	if ($timestamp === false) {
-		return '-';
+		return 'Tanpa jatuh tempo';
 	}
 
 	return date('d M Y', $timestamp);
@@ -59,15 +62,14 @@ while ($walletRow = $walletResult ? $walletResult->fetch_assoc() : null) {
 $stmtWallet->close();
 $hasActiveWallet = !empty($activeWallets);
 
-$stmtPiutang = $con->prepare("SELECT piutang.*, user.nama,
+$stmtPiutang = $con->prepare("SELECT piutang.*,
 		wallet.nama_wallet AS wallet_penerimaan_nama,
 		wallet.tipe_wallet AS wallet_penerimaan_tipe,
 		pemasukan.id_pemasukan AS linked_pemasukan_id
 	FROM piutang
-	INNER JOIN user ON piutang.user = user.id_user
 	LEFT JOIN wallet ON piutang.id_wallet_penerimaan = wallet.id_wallet AND wallet.user_id = piutang.user
 	LEFT JOIN pemasukan ON piutang.id_pemasukan = pemasukan.id_pemasukan AND pemasukan.user = piutang.user
-	WHERE user.id_user = ?
+	WHERE piutang.user = ?
 	ORDER BY piutang.tanggal DESC, piutang.id_piutang DESC");
 $stmtPiutang->bind_param("i", $userYangSedangLogin);
 $stmtPiutang->execute();
@@ -87,17 +89,18 @@ $sql = $stmtPiutang->get_result();
 				<div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
 					<div class="bg-gradient-info shadow-info border-radius-lg pt-4 pb-3">
 						<h6 class="text-white text-capitalize ps-3">Piutang</h6>
-					</div>	
+					</div>
 				</div>
 				<div class="card-body px-0 pb-2">
-					<div class="text-end me-3">
-						<button type="button" class="btn btn-secondary" data-bs-toggle="modal"
+					<p class="cashflow-feature-description">Catat dana yang harus diterima. Pelunasan piutang akan membuat pemasukan pada wallet penerimaan yang dipilih.</p>
+					<div class="cashflow-table-page-actions">
+						<button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal"
 							data-bs-target="#modalTambah">
 							<i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
 						</button>
 					</div>
-					<div class="table-responsive p-4 mx-2">
-						<table class="table align-items-center mb-0" id="datatable">
+					<div class="table-responsive cashflow-table-scroll p-4 mx-2">
+						<table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatable">
 							<thead>
 								<tr>
 									<th>
@@ -106,14 +109,12 @@ $sql = $stmtPiutang->get_result();
 										Debitur
 									</th>
 									<th>Jumlah Piutang</th>
-									<th>
+									<th class="cashflow-long-text-col">
 										Catatan
 									</th>
 									<th>Jatuh Tempo</th>
-									<th>Status Jatuh Tempo</th>
-									<th>User</th>
 									<th>Status</th>
-									<th></th>
+									<th class="cashflow-action-col">Aksi</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -124,40 +125,37 @@ $sql = $stmtPiutang->get_result();
 							?>
 
 								<tr>
-									<td class="align-middle text-center">
+								<td class="align-middle text-center" data-order="<?= htmlspecialchars((string) $row['tanggal'], ENT_QUOTES, 'UTF-8') ?>">
 										<span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?></span>
 									</td>
 									<td>
 										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
-									<td>
-										<p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?>
+								<td data-order="<?= htmlspecialchars((string) ($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>">
+									<p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>
 										</p>
 									</td>
-									<td>
-										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?></p>
+									<td class="cashflow-long-text-col">
+										<p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
-									<td>
-										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_piutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
-									</td>
-									<td class="align-middle text-center text-sm">
-										<span class="badge badge-sm <?= htmlspecialchars($dueBadge['class'], ENT_QUOTES, 'UTF-8') ?>">
-											<?= htmlspecialchars($dueBadge['label'], ENT_QUOTES, 'UTF-8') ?>
-										</span>
-									</td>
-									<td>
-										<p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['nama'], ENT_QUOTES, 'UTF-8') ?></p>
+								<td data-order="<?= htmlspecialchars((string) ($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+									<p class="text-xs text-secondary mb-0"><?= htmlspecialchars(format_piutang_due_date($row['tanggal_jatuh_tempo'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
 									</td>
 									<td class="align-middle text-center text-sm">
 										<?php if (($row['status'] ?? '') === 'selesai') { ?>
-											<span class="badge badge-sm bg-gradient-success">Selesai</span>
+											<span class="badge badge-sm bg-gradient-success" style="cursor:pointer;"
+												data-piutang-revert="true"
+												data-id="<?= (int) $row['id_piutang'] ?>"
+												data-debitur="<?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?>"
+												title="Klik untuk batalkan pelunasan"
+											>Selesai ↩</span>
 											<?php if (!empty($row['tanggal_lunas']) || !empty($row['wallet_penerimaan_nama'])) { ?>
 												<small class="d-block text-xs text-secondary mt-1">
 													Diterima ke
 													<strong><?= htmlspecialchars($row['wallet_penerimaan_nama'] ?? 'Wallet: -', ENT_QUOTES, 'UTF-8') ?></strong>
-													<?php if (!empty($row['wallet_penerimaan_tipe'])) { ?>
-														(<?= htmlspecialchars($row['wallet_penerimaan_tipe'], ENT_QUOTES, 'UTF-8') ?>)
-													<?php } ?>
+												<?php if (!empty($row['id_wallet_penerimaan'])) { ?>
+													(<?= cashflow_wallet_type_inline_html(cashflow_wallet_type_meta_for_wallet($row['wallet_penerimaan_tipe'], $row['id_wallet_penerimaan'], $walletCustomTypeMap)) ?>)
+												<?php } ?>
 													<?php if (!empty($row['tanggal_lunas'])) { ?>
 														pada <?= htmlspecialchars(format_piutang_due_date($row['tanggal_lunas']), ENT_QUOTES, 'UTF-8') ?>
 													<?php } ?>
@@ -165,45 +163,58 @@ $sql = $stmtPiutang->get_result();
 											<?php } ?>
 										<?php } else { ?>
 											<button type="button"
-												class="badge badge-sm bg-gradient-warning border-0 text-white btnlunaspiutang"
+												class="badge badge-sm <?= htmlspecialchars($dueBadge['class'], ENT_QUOTES, 'UTF-8') ?> border-0 text-white btnlunaspiutang"
 												data-bs-toggle="modal"
 												data-bs-target="#modalLunasPiutang"
 												data-id="<?= (int) $row['id_piutang'] ?>"
 												data-debitur="<?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?>"
-												data-jumlah="Rp. <?= htmlspecialchars(number_format((float) ($row['jumlah'] ?? 0)), ENT_QUOTES, 'UTF-8') ?>"
+											data-jumlah="<?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>"
 												<?= !$hasActiveWallet ? 'disabled' : '' ?>>
-												Pending
+												<?= htmlspecialchars($dueBadge['label'], ENT_QUOTES, 'UTF-8') ?>
 											</button>
 											<?php if (!$hasActiveWallet) { ?>
 												<small class="d-block text-xs text-danger mt-1">Buat/aktifkan wallet terlebih dahulu.</small>
 											<?php } ?>
 										<?php } ?>
 									</td>
-									<td class="align-middle">
-										<form action="actions/aksi_piutang.php?act=h" method="post" class="d-inline">
-											<?= csrf_input() ?>
-											<input type="hidden" name="id_piutang" value="<?= (int) $row['id_piutang'] ?>">
-											<button type="submit"
-												data-confirm="true"
-												data-confirm-title="Hapus data piutang ini?"
-												data-confirm-text="Data piutang yang dihapus tidak bisa dikembalikan."
-												data-confirm-confirm-text="Ya, hapus"
-												data-confirm-cancel-text="Batal"
-												class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
-												<i class="fa fa-trash" aria-hidden="true"></i>
-											</button>
-										</form>
+										<td class="align-middle cashflow-action-col">
+											<div class="cashflow-action-group">
+											<?php
+											$isLunasRow = ($row['status'] ?? '') === 'selesai' && !empty($row['id_pemasukan']);
+											$deleteTitle = $isLunasRow
+												? 'Hapus piutang lunas ini?'
+												: 'Hapus data piutang ini?';
+											$deleteText = $isLunasRow
+												? 'PERHATIAN: Menghapus piutang yang sudah lunas akan IKUT menghapus catatan pemasukan terkait dan mengurangi saldo wallet. Tindakan ini tidak bisa dibatalkan.'
+												: 'Data piutang yang dihapus tidak bisa dikembalikan.';
+											?>
+											<form action="actions/aksi_piutang.php?act=h" method="post" class="d-inline">
+												<?= csrf_input() ?>
+												<input type="hidden" name="id_piutang" value="<?= (int) $row['id_piutang'] ?>">
+												<button type="submit"
+													data-confirm="true"
+													data-confirm-title="<?= htmlspecialchars($deleteTitle, ENT_QUOTES, 'UTF-8') ?>"
+													data-confirm-text="<?= htmlspecialchars($deleteText, ENT_QUOTES, 'UTF-8') ?>"
+													data-confirm-confirm-text="Ya, hapus"
+													data-confirm-cancel-text="Batal"
+													class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+												title="Hapus" aria-label="Hapus">
+													<i class="fa fa-trash" aria-hidden="true"></i>
+												</button>
+											</form>
 
-										<a type="submit"
+										<a href="#" role="button"
 											data-id="<?= (int) $row['id_piutang'] ?>"
 											data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?>"
 											data-debitur="<?= htmlspecialchars($row['debitur'], ENT_QUOTES, 'UTF-8') ?>"
 											data-catatan="<?= htmlspecialchars($row['catatan'], ENT_QUOTES, 'UTF-8') ?>"
 											data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES, 'UTF-8') ?>"
 											data-jatuh_tempo="<?= htmlspecialchars($row['tanggal_jatuh_tempo'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-											class="text-secondary text-warning font-weight-bold text-xs btneditpiutang">
+											class="text-secondary text-warning font-weight-bold text-xs btneditpiutang"
+											title="Edit piutang" aria-label="Edit piutang">
 											<i class="fa fa-pencil" aria-hidden="true"></i>
 										</a>
+										</div>
 									</td>
 								</tr>
 
@@ -254,7 +265,7 @@ $sql = $stmtPiutang->get_result();
 					<div class="row my-3">
 						<label>Debitur</label>
 						<div class="input-group input-group-outline">
-							<input type="text" name="debitur" id="debitur" class="form-control">
+							<input type="text" name="debitur" id="debitur" class="form-control" maxlength="100" required>
 						</div>
 					</div>
 					<div class="row my-3">
@@ -266,7 +277,7 @@ $sql = $stmtPiutang->get_result();
 					<div class="row my-3">
 						<label>Catatan</label>
 						<div class="input-group input-group-outline">
-							<textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3"></textarea>
+							<textarea name="catatan" id="catatan" class="form-control" cols="10" rows="3" maxlength="1000"></textarea>
 						</div>
 					</div>
 				</div>
@@ -304,7 +315,7 @@ $sql = $stmtPiutang->get_result();
 								<?php foreach ($activeWallets as $wallet) { ?>
 									<option value="<?= (int) $wallet['id_wallet'] ?>">
 										<?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?>
-										(<?= htmlspecialchars($wallet['tipe_wallet'], ENT_QUOTES, 'UTF-8') ?>)
+										(<?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>)
 										<?= (int) ($wallet['is_default'] ?? 0) === 1 ? ' - Default' : '' ?>
 									</option>
 								<?php } ?>
@@ -344,15 +355,35 @@ $sql = $stmtPiutang->get_result();
 					"previous": "&lt"
 				},
 			},
-			dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+			columnDefs: [
+				{ targets: -1, orderable: false, searchable: false }
+			],
+			order: [[0, 'desc']],
+			dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
 		});
 
 		$(document).on("click", ".btneditpiutang", function() {
 			$('#tanggal_jatuh_tempo').val($(this).attr("data-jatuh_tempo") || '');
 		});
-
 		$(document).on("click", 'button[data-bs-target="#modalTambah"]', function() {
 			$('#tanggal_jatuh_tempo').val('');
+		});
+
+		$('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
+
+		$(document).on("click", ".btneditpiutang", function() {
+			var id = $(this).data('id');
+			var debitur = $(this).data('debitur');
+			var jumlah = $(this).data('jumlah');
+			var tgl = $(this).data('tgl');
+			var ket = $(this).data('ket');
+
+			$("#edit_id_piutang").val(id);
+			$("#edit_debitur").val(debitur);
+			$("#edit_jumlah").val(jumlah);
+			$("#edit_tgl_piutang").val(tgl);
+			$("#edit_keterangan").val(ket);
+			$('#tanggal_jatuh_tempo').val($(this).attr("data-jatuh_tempo") || '');
 		});
 
 		$(document).on("click", ".btnlunaspiutang", function() {
@@ -360,5 +391,36 @@ $sql = $stmtPiutang->get_result();
 			$('#tanggal_lunas_piutang').val('<?= htmlspecialchars($today, ENT_QUOTES, 'UTF-8') ?>');
 			$('#lunas_piutang_info').text('Lunasi piutang dari ' + ($(this).attr("data-debitur") || '-') + ' sebesar ' + ($(this).attr("data-jumlah") || 'Rp. 0') + '.');
 		});
+
+		// Handler klik badge "Selesai ↩" — batalkan pelunasan piutang
+		$(document).on("click", "[data-piutang-revert]", function() {
+			var id = $(this).attr("data-id");
+			var debitur = $(this).attr("data-debitur") || '-';
+			if (!id) return;
+			
+			var safeDebitur = $('<div>').text(debitur).html();
+			
+			Swal.fire({
+				title: 'Batalkan pelunasan piutang?',
+				html: 'Membatalkan pelunasan piutang dari <strong>' + safeDebitur + '</strong> akan <strong>menghapus catatan pemasukan terkait</strong> dan mengurangi saldo wallet penerimaan.<br><br>Status piutang akan kembali ke <em>Pending</em>.',
+				icon: 'warning',
+				showCancelButton: true,
+				confirmButtonColor: '#d33',
+				cancelButtonColor: '#6c757d',
+				confirmButtonText: 'Ya, batalkan pelunasan',
+				cancelButtonText: 'Tidak'
+			}).then(function(result) {
+				if (result.isConfirmed) {
+					$('#revert-piutang-id').val(id);
+					$('#form-revert-piutang').submit();
+				}
+			});
+		});
 	});
 </script>
+
+<!-- Form tersembunyi untuk revert status piutang -->
+<form id="form-revert-piutang" action="actions/aksi_piutang.php?act=revert_status" method="post" style="display:none;">
+	<?= csrf_input() ?>
+	<input type="hidden" name="id_piutang" id="revert-piutang-id" value="">
+</form>

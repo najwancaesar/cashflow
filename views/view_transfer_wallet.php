@@ -1,6 +1,8 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -14,34 +16,11 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
 $tanggalHariIni = date('Y-m-d');
-
-function transfer_wallet_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
+$walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 
 function transfer_wallet_status_badge($status)
 {
-    $classes = [
-        'selesai' => 'bg-gradient-success',
-        'pending' => 'bg-gradient-warning',
-        'batal' => 'bg-gradient-secondary',
-    ];
-
-    return $classes[$status] ?? 'bg-gradient-secondary';
-}
-
-function transfer_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'Cash',
-        'bank' => 'Bank',
-        'e_wallet' => 'E-Wallet',
-        'tabungan' => 'Tabungan',
-        'lainnya' => 'Lainnya',
-    ];
-
-    return $labels[$type] ?? 'Lainnya';
+    return cashflow_status_badge_class($status);
 }
 
 $walletAktif = [];
@@ -114,13 +93,13 @@ mysqli_stmt_close($transferStmt);
                             Transfer wallet membutuhkan minimal 2 wallet aktif.
                         </div>
                     <?php } ?>
-                    <div class="text-end me-3 mt-3">
-                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal"
+                    <div class="cashflow-table-page-actions">
+                        <button type="button" class="btn btn-secondary mb-0" data-bs-toggle="modal"
                             data-bs-target="#modalTransferWallet" <?= $transferFormDisabled ? 'disabled' : '' ?>>
                             <i class="fa fa-exchange" aria-hidden="true"></i> Tambah Transfer
                         </button>
                     </div>
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <?php if (empty($transferRows)) { ?>
                             <div class="border border-radius-lg p-4 text-center">
                                 <i class="fa fa-exchange text-secondary mb-2" aria-hidden="true"></i>
@@ -128,7 +107,7 @@ mysqli_stmt_close($transferStmt);
                                 <p class="text-xs text-secondary mb-0">Tambahkan transfer pertama untuk memindahkan saldo antar wallet.</p>
                             </div>
                         <?php } else { ?>
-                            <table class="table align-items-center mb-0" id="datatable">
+                            <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatable">
                                 <thead>
                                     <tr>
                                         <th>Tanggal</th>
@@ -136,8 +115,8 @@ mysqli_stmt_close($transferStmt);
                                         <th>Wallet Tujuan</th>
                                         <th>Jumlah</th>
                                         <th>Status</th>
-                                        <th>Catatan</th>
-                                        <th></th>
+                                        <th class="cashflow-long-text-col">Catatan</th>
+                                        <th class="cashflow-action-col">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -145,41 +124,45 @@ mysqli_stmt_close($transferStmt);
                                         <?php
                                         $statusTransfer = (string) ($row['status'] ?? 'selesai');
                                         $jumlahTransfer = (float) ($row['jumlah'] ?? 0);
+                                        $walletAsalTypeMeta = cashflow_wallet_type_meta_for_wallet($row['tipe_wallet_asal'], $row['wallet_asal_id'], $walletCustomTypeMap);
+                                        $walletTujuanTypeMeta = cashflow_wallet_type_meta_for_wallet($row['tipe_wallet_tujuan'], $row['wallet_tujuan_id'], $walletCustomTypeMap);
                                         ?>
                                         <tr>
-                                            <td class="align-middle text-center">
-                                                <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?></span>
+                                            <td class="align-middle text-center" data-order="<?= htmlspecialchars((string) $row['tanggal'], ENT_QUOTES, 'UTF-8') ?>">
+                                                <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars(cashflow_format_date($row['tanggal']), ENT_QUOTES, 'UTF-8') ?></span>
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet_asal'], ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(transfer_wallet_type_label($row['tipe_wallet_asal']), ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletAsalTypeMeta) ?></p>
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet_tujuan'], ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(transfer_wallet_type_label($row['tipe_wallet_tujuan']), ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletTujuanTypeMeta) ?></p>
                                             </td>
-                                            <td>
-                                                <p class="text-xs font-weight-bold mb-0"><?= transfer_wallet_rupiah($jumlahTransfer) ?></p>
+                                            <td data-order="<?= htmlspecialchars((string) $jumlahTransfer, ENT_QUOTES, 'UTF-8') ?>">
+                                                <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($jumlahTransfer), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
                                                 <span class="badge badge-sm <?= htmlspecialchars(transfer_wallet_status_badge($statusTransfer), ENT_QUOTES, 'UTF-8') ?>">
                                                     <?= htmlspecialchars(ucfirst($statusTransfer), ENT_QUOTES, 'UTF-8') ?>
                                                 </span>
                                             </td>
-                                            <td>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                            <td class="cashflow-long-text-col">
+                                                <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
-                                            <td class="align-middle">
-                                                <a type="button"
-                                                    class="text-secondary text-warning font-weight-bold text-xs me-2 btnedittransferwallet"
+                                            <td class="align-middle cashflow-action-col">
+                                                <div class="cashflow-action-group">
+                                                <a href="#" role="button"
+                                                    class="text-secondary text-warning font-weight-bold text-xs btnedittransferwallet"
                                                     data-id="<?= (int) $row['id_transfer'] ?>"
                                                     data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES, 'UTF-8') ?>"
                                                     data-wallet-asal="<?= (int) $row['wallet_asal_id'] ?>"
                                                     data-wallet-tujuan="<?= (int) $row['wallet_tujuan_id'] ?>"
                                                     data-jumlah="<?= htmlspecialchars(number_format($jumlahTransfer, 0, '', ''), ENT_QUOTES, 'UTF-8') ?>"
                                                     data-status="<?= htmlspecialchars($statusTransfer, ENT_QUOTES, 'UTF-8') ?>"
-                                                    data-catatan="<?= htmlspecialchars($row['catatan'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
-                                                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                                                    data-catatan="<?= htmlspecialchars($row['catatan'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                                    title="Edit transfer" aria-label="Edit transfer">
+                                                    <i class="fa fa-pencil" aria-hidden="true"></i> Edit
                                                 </a>
 
                                                 <?php if ($statusTransfer === 'selesai') { ?>
@@ -192,11 +175,12 @@ mysqli_stmt_close($transferStmt);
                                                             data-confirm-text="Transfer akan diubah menjadi status batal dan tidak dihitung pada saldo wallet."
                                                             data-confirm-confirm-text="Ya, batalkan"
                                                             data-confirm-cancel-text="Batal"
-                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+                                                            title="Batalkan transfer" aria-label="Batalkan transfer">
                                                             <i class="fa fa-ban" aria-hidden="true"></i> Batalkan
                                                         </button>
                                                     </form>
-                                                <?php } elseif (in_array($statusTransfer, ['pending', 'batal'], true)) { ?>
+                                                <?php } elseif ($statusTransfer === 'pending') { ?>
                                                     <form action="actions/aksi_transfer_wallet.php?act=hp" method="post" class="d-inline">
                                                         <?= csrf_input() ?>
                                                         <input type="hidden" name="id_transfer" value="<?= (int) $row['id_transfer'] ?>">
@@ -206,11 +190,13 @@ mysqli_stmt_close($transferStmt);
                                                             data-confirm-text="Transfer yang dihapus permanen tidak bisa dikembalikan."
                                                             data-confirm-confirm-text="Ya, hapus permanen"
                                                             data-confirm-cancel-text="Batal"
-                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
-                                                            <i class="fa fa-trash" aria-hidden="true"></i> Hapus Permanen
+                                                            class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+                                                            title="Hapus" aria-label="Hapus">
+                                                            <i class="fa fa-trash" aria-hidden="true"></i> Hapus
                                                         </button>
                                                     </form>
                                                 <?php } ?>
+                                                </div>
                                             </td>
                                         </tr>
                                     <?php } ?>
@@ -253,7 +239,7 @@ mysqli_stmt_close($transferStmt);
                                 <option value="">Pilih Wallet Asal</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>">
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(transfer_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -266,7 +252,7 @@ mysqli_stmt_close($transferStmt);
                                 <option value="">Pilih Wallet Tujuan</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>">
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(transfer_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -319,8 +305,13 @@ mysqli_stmt_close($transferStmt);
                         "previous": "&lt"
                     },
                 },
-                dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+                columnDefs: [
+                    { targets: -1, orderable: false, searchable: false }
+                ],
+                order: [[0, 'desc']],
+                dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
+            $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
         }
 
         $(document).on("click", ".btnedittransferwallet", function() {

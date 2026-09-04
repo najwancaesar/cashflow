@@ -1,7 +1,12 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
+include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 $userYangSedangLogin = (int) ($_SESSION['id_user'] ?? 0);
+$walletCustomTypeMap = $userYangSedangLogin > 0
+    ? cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin)
+    : [];
 
 if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     echo "<script>window.location.href='main.php?module=home';</script>";
@@ -52,6 +57,7 @@ if ($userYangSedangLogin > 0) {
             'id_wallet' => (int) $row['id_wallet'],
             'nama_wallet' => $row['nama_wallet'],
             'tipe_wallet' => $row['tipe_wallet'],
+            'wallet_type_meta' => cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap),
             'is_default' => (int) ($row['is_default'] ?? 0),
             'is_active' => (int) ($row['is_active'] ?? 0),
         ];
@@ -67,7 +73,7 @@ if ($userYangSedangLogin > 0) {
         </div>
     </div>
     <div class="row justify-content-center">
-        <div class="col-10 col-md-8">
+        <div class="col-12 col-md-10 col-lg-8 report-page-column">
 
             <div class="card my-4">
                 <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
@@ -86,6 +92,7 @@ if ($userYangSedangLogin > 0) {
                         </div>
                     </div>
                     <form method="POST" action="tcpdf/examples/laprekap.php" target="_blank" id="formLaporan">
+                        <?= csrf_input() ?>
                         <input type="hidden" name="output" id="output" value="print">
                         <div class="row">
                             <div class="col-sm-6 text-center">Laporan Transaksi</div>
@@ -148,7 +155,7 @@ if ($userYangSedangLogin > 0) {
                             <div class="col-sm-5">
                                 <input type="hidden" name="tanggal" id="tanggal">
                                 <div class="row g-2">
-                                    <div class="col-12 col-md-6">
+                                    <div class="col-12 col-lg-6">
                                         <label class="form-label text-xs text-secondary mb-1" for="tanggal_awal">Tanggal awal</label>
                                         <div class="input-group input-group-outline">
                                             <input
@@ -162,7 +169,7 @@ if ($userYangSedangLogin > 0) {
                                             >
                                         </div>
                                     </div>
-                                    <div class="col-12 col-md-6">
+                                    <div class="col-12 col-lg-6">
                                         <label class="form-label text-xs text-secondary mb-1" for="tanggal_akhir">Tanggal akhir</label>
                                         <div class="input-group input-group-outline">
                                             <input
@@ -207,7 +214,10 @@ if ($userYangSedangLogin > 0) {
                                         <option value="">Semua Wallet</option>
                                         <?php foreach ($walletOptions as $walletOption) { ?>
                                             <?php
-                                            $walletLabelParts = [$walletOption['nama_wallet']];
+                                            $walletLabelParts = [
+                                                $walletOption['nama_wallet'],
+                                                cashflow_wallet_type_text($walletOption['wallet_type_meta']),
+                                            ];
                                             if ((int) $walletOption['is_default'] === 1) {
                                                 $walletLabelParts[] = 'Default';
                                             }

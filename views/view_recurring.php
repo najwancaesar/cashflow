@@ -1,6 +1,8 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
 
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location.href='./';</script>";
@@ -13,27 +15,10 @@ if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
 }
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$walletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
 $tanggalHariIni = date('Y-m-d');
 $periodeBulanIni = (int) date('n');
 $periodeTahunIni = (int) date('Y');
-
-function recurring_rupiah($value)
-{
-    return 'Rp. ' . number_format((float) $value);
-}
-
-function recurring_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'Cash',
-        'bank' => 'Bank',
-        'e_wallet' => 'E-Wallet',
-        'tabungan' => 'Tabungan',
-        'lainnya' => 'Lainnya',
-    ];
-
-    return $labels[$type] ?? 'Lainnya';
-}
 
 function recurring_type_label($type)
 {
@@ -172,7 +157,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                         <?php } ?>
                     </div>
 
-                    <div class="d-flex flex-wrap justify-content-end gap-2 me-3 mt-3">
+                    <div class="cashflow-table-page-actions">
                         <form action="actions/aksi_recurring.php?act=g" method="post" class="d-inline">
                             <?= csrf_input() ?>
                             <button type="submit"
@@ -191,7 +176,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                         </button>
                     </div>
 
-                    <div class="table-responsive p-4 mx-2">
+                    <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                         <?php if (empty($recurringRows)) { ?>
                             <div class="border border-radius-lg p-4 text-center">
                                 <i class="fa fa-refresh text-secondary mb-2" aria-hidden="true"></i>
@@ -199,10 +184,10 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                 <p class="text-xs text-secondary mb-0">Tambahkan template pertama untuk transaksi rutin seperti gaji, internet, atau subscription.</p>
                             </div>
                         <?php } else { ?>
-                            <table class="table align-items-center mb-0" id="datatableRecurring">
+                            <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-xl" id="datatableRecurring">
                                 <thead>
                                     <tr>
-                                        <th>Template</th>
+                                        <th class="cashflow-long-text-col">Template</th>
                                         <th>Tipe</th>
                                         <th>Kategori</th>
                                         <th>Wallet</th>
@@ -210,7 +195,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                         <th>Jadwal</th>
                                         <th>Status</th>
                                         <th>Bulan Ini</th>
-                                        <th></th>
+                                        <th class="cashflow-action-col">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -233,9 +218,9 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                         $toggleTextClass = $isActive === 1 ? 'text-danger' : 'text-success';
                                         ?>
                                         <tr>
-                                            <td>
+                                            <td class="cashflow-long-text-col">
                                                 <p class="text-xs font-weight-bold mb-1"><?= htmlspecialchars($row['nama_recurring'], ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
                                                 <span class="badge badge-sm <?= $row['tipe_transaksi'] === 'pengeluaran' ? 'bg-gradient-warning' : 'bg-gradient-info' ?>">
@@ -247,10 +232,10 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                             </td>
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['nama_wallet'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['tipe_wallet'] ? recurring_wallet_type_label($row['tipe_wallet']) : '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                                <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html(cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap)) ?></p>
                                             </td>
-                                            <td>
-                                                <p class="text-xs font-weight-bold mb-0"><?= recurring_rupiah($jumlah) ?></p>
+                                            <td data-order="<?= htmlspecialchars((string) $jumlah, ENT_QUOTES, 'UTF-8') ?>">
+                                                <p class="text-xs font-weight-bold mb-0"><?= cashflow_format_rupiah($jumlah) ?></p>
                                                 <p class="text-xs text-secondary mb-0">Default: <?= htmlspecialchars(ucfirst($statusTransaksiDefault), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
@@ -271,8 +256,8 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                                     <?= $logBulanIni ? 'Sudah Generate' : 'Belum Generate' ?>
                                                 </span>
                                             </td>
-                                            <td class="align-middle">
-                                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                            <td class="align-middle cashflow-action-col">
+                                                <div class="cashflow-action-group">
                                                     <button type="button"
                                                         class="text-secondary text-warning font-weight-bold text-xs border-0 bg-transparent p-0 btneditrecurring"
                                                         data-id="<?= (int) $row['id_recurring'] ?>"
@@ -370,7 +355,7 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                                     <option value="">Pilih Wallet</option>
                                     <?php foreach ($walletAktif as $wallet) { ?>
                                         <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === (int) $defaultWalletId ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(recurring_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                            <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                         </option>
                                     <?php } ?>
                                 </select>
@@ -452,9 +437,15 @@ $formDisabled = empty($walletAktif) || (empty($kategoriByType['pemasukan']) && e
                         "previous": "&lt"
                     },
                 },
-                dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+                    columnDefs: [
+                        { targets: -1, orderable: false, searchable: false }
+                    ],
+                    order: [[0, 'asc']],
+                    dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
             });
         }
+
+        $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
 
         function filterRecurringCategoryOptions(selectedCategory) {
             var tipe = $('#tipe_transaksi').val();

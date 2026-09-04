@@ -5,6 +5,7 @@ include __DIR__ . "/../includes/sweetalert_helper.php";
 include __DIR__ . "/../includes/nominal_helper.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
 include_once __DIR__ . "/../includes/activity_log_helper.php";
+include_once __DIR__ . "/../includes/wallet_balance_helper.php";
 
 function saving_goal_redirect()
 {
@@ -53,12 +54,13 @@ function is_valid_saving_goal_status($status)
     return in_array($status, ['aktif', 'selesai', 'arsip'], true);
 }
 
-function fetch_saving_goal_by_id($con, $goalId, $userId)
+function fetch_saving_goal_by_id($con, $goalId, $userId, $forUpdate = false)
 {
+    $lockClause = $forUpdate ? ' FOR UPDATE' : '';
     $stmt = $con->prepare("SELECT id_goal, user_id, nama_goal, target_nominal, target_tanggal, status
                            FROM saving_goal
                            WHERE id_goal = ? AND user_id = ?
-                           LIMIT 1");
+                           LIMIT 1{$lockClause}");
     $stmt->bind_param("ii", $goalId, $userId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -85,108 +87,6 @@ function hitung_saldo_saving_goal($con, $goalId, $userId)
     $stmt->close();
 
     return (float) ($row['saldo'] ?? 0);
-}
-
-function saving_goal_single_value($con, $sql, $types = '', $params = [])
-{
-    $stmt = $con->prepare($sql);
-    if ($types !== '' && !empty($params)) {
-        $bindParams = [$types];
-        foreach ($params as $key => $value) {
-            $bindParams[] = &$params[$key];
-        }
-        call_user_func_array([$stmt, 'bind_param'], $bindParams);
-    }
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result ? $result->fetch_row() : null;
-    $stmt->close();
-
-    return (float) ($row[0] ?? 0);
-}
-
-function fetch_active_wallet_for_saving_goal($con, $walletId, $userId)
-{
-    $stmt = $con->prepare("SELECT id_wallet
-                           FROM wallet
-                           WHERE id_wallet = ? AND user_id = ? AND is_active = 1
-                           LIMIT 1");
-    $stmt->bind_param("ii", $walletId, $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $wallet = $result ? $result->fetch_assoc() : null;
-    $stmt->close();
-
-    return $wallet ?: null;
-}
-
-function hitung_saldo_wallet_saving_goal($con, $userId, $walletId)
-{
-    $saldoAwal = saving_goal_single_value(
-        $con,
-        "SELECT COALESCE(saldo_awal, 0)
-         FROM wallet
-         WHERE id_wallet = ? AND user_id = ?
-         LIMIT 1",
-        "ii",
-        [$walletId, $userId]
-    );
-
-    $totalPemasukan = saving_goal_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM pemasukan
-         WHERE user = ? AND id_wallet = ? AND status = 'selesai'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    $totalPengeluaran = saving_goal_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM pengeluaran
-         WHERE user = ? AND id_wallet = ? AND status = 'selesai'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    $totalTransferMasuk = saving_goal_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM transfer_wallet
-         WHERE user_id = ? AND wallet_tujuan_id = ? AND status = 'selesai'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    $totalTransferKeluar = saving_goal_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM transfer_wallet
-         WHERE user_id = ? AND wallet_asal_id = ? AND status = 'selesai'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    $totalSetorCelengan = saving_goal_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM saving_goal_mutasi
-         WHERE user_id = ? AND id_wallet = ? AND tipe = 'setor'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    $totalTarikCelengan = saving_goal_single_value(
-        $con,
-        "SELECT COALESCE(SUM(jumlah), 0)
-         FROM saving_goal_mutasi
-         WHERE user_id = ? AND id_wallet = ? AND tipe = 'tarik'",
-        "ii",
-        [$userId, $walletId]
-    );
-
-    return $saldoAwal + $totalPemasukan - $totalPengeluaran + $totalTransferMasuk - $totalTransferKeluar - $totalSetorCelengan + $totalTarikCelengan;
 }
 
 if (!isset($_SESSION['id_user'])) {
@@ -282,17 +182,8 @@ if ($act === 'setor' || $act === 'tarik') {
         show_sweetalert_and_redirect('Data tidak valid', 'ID target tabungan tidak valid.', 'error', saving_goal_redirect());
     }
 
-    $goal = fetch_saving_goal_by_id($con, $goalId, $userId);
-    if (!$goal) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Target tabungan tidak ditemukan.', 'warning', saving_goal_redirect());
-    }
-
-    if (in_array(($goal['status'] ?? ''), ['selesai', 'arsip'], true)) {
-        show_sweetalert_and_redirect('Aksi dibatasi', 'Target tabungan selesai atau arsip tidak bisa menerima setor/tarik.', 'warning', saving_goal_redirect());
-    }
-
-    if ($walletId <= 0 || !fetch_active_wallet_for_saving_goal($con, $walletId, $userId)) {
-        show_sweetalert_and_redirect('Akses ditolak', 'Wallet tidak valid, tidak aktif, atau bukan milik Anda.', 'error', saving_goal_redirect());
+    if ($walletId <= 0) {
+        show_sweetalert_and_redirect('Data tidak valid', 'Wallet wajib dipilih.', 'error', saving_goal_redirect());
     }
 
     if ($tanggal === false) {
@@ -308,35 +199,55 @@ if ($act === 'setor' || $act === 'tarik') {
         show_sweetalert_and_redirect('Data tidak valid', 'Jumlah mutasi harus lebih dari 0.', 'error', saving_goal_redirect());
     }
 
-    if ($act === 'setor') {
-        $saldoWallet = hitung_saldo_wallet_saving_goal($con, $userId, $walletId);
-        if ($saldoWallet + 0.0001 < $jumlah) {
-            show_sweetalert_and_redirect('Saldo tidak cukup', 'Saldo wallet tidak mencukupi untuk setor ke target tabungan.', 'warning', saving_goal_redirect());
-        }
-    }
-
-    if ($act === 'tarik') {
-        $saldoTerkumpul = hitung_saldo_saving_goal($con, $goalId, $userId);
-        if ($saldoTerkumpul + 0.0001 < $jumlah) {
-            show_sweetalert_and_redirect('Saldo tidak cukup', 'Jumlah tarik tidak boleh melebihi saldo terkumpul.', 'warning', saving_goal_redirect());
-        }
-    }
-
     $tipe = $act === 'setor' ? 'setor' : 'tarik';
-    $stmt = $con->prepare("INSERT INTO saving_goal_mutasi (id_goal, user_id, id_wallet, tanggal, tipe, jumlah, catatan, created_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
-    $stmt->bind_param("iiissds", $goalId, $userId, $walletId, $tanggal, $tipe, $jumlah, $catatan);
-    $result = $stmt->execute();
-    $newMutasiId = (int) $stmt->insert_id;
-    $stmt->close();
+    try {
+        $con->begin_transaction();
+        cashflow_lock_owned_wallets($con, $userId, [$walletId], [$walletId]);
+        $goal = fetch_saving_goal_by_id($con, $goalId, $userId, true);
+        if (!$goal) {
+            throw new DomainException('Target tabungan tidak ditemukan atau bukan milik Anda.');
+        }
+        if (in_array(($goal['status'] ?? ''), ['selesai', 'arsip'], true)) {
+            throw new DomainException('Target tabungan selesai atau arsip tidak bisa menerima setor/tarik.');
+        }
 
-    if ($result) {
+        if ($tipe === 'setor') {
+            $saldoWallet = cashflow_calculate_wallet_balance($con, $userId, $walletId);
+            if ($jumlah > $saldoWallet + 0.00001) {
+                throw new DomainException('Saldo wallet tidak mencukupi untuk setor ke target tabungan.');
+            }
+        } else {
+            $saldoTerkumpul = hitung_saldo_saving_goal($con, $goalId, $userId);
+            if ($jumlah > $saldoTerkumpul + 0.00001) {
+                throw new DomainException('Jumlah tarik tidak boleh melebihi saldo terkumpul.');
+            }
+        }
+
+        $stmt = $con->prepare("INSERT INTO saving_goal_mutasi (id_goal, user_id, id_wallet, tanggal, tipe, jumlah, catatan, created_at)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+        if (!$stmt) {
+            throw new RuntimeException('Gagal menyiapkan mutasi celengan.');
+        }
+        $stmt->bind_param("iiissds", $goalId, $userId, $walletId, $tanggal, $tipe, $jumlah, $catatan);
+        if (!$stmt->execute()) {
+            $stmt->close();
+            throw new RuntimeException('Mutasi celengan gagal ditambahkan.');
+        }
+        $newMutasiId = (int) $stmt->insert_id;
+        $stmt->close();
+        $con->commit();
+
         record_activity($con, 'saving_goal', $tipe, "Mencatat {$tipe} celengan ID {$goalId}, mutasi ID {$newMutasiId}.");
         $message = $tipe === 'setor' ? 'Setor celengan berhasil ditambahkan.' : 'Tarik celengan berhasil ditambahkan.';
         show_sweetalert_and_redirect('Berhasil', $message, 'success', saving_goal_redirect());
+    } catch (DomainException $error) {
+        $con->rollback();
+        show_sweetalert_and_redirect('Aksi ditolak', $error->getMessage(), 'warning', saving_goal_redirect());
+    } catch (Throwable $error) {
+        $con->rollback();
+        error_log('Mutasi celengan gagal: ' . $error->getMessage());
+        show_sweetalert_and_redirect('Gagal', 'Mutasi celengan gagal ditambahkan.', 'error', saving_goal_redirect());
     }
-
-    show_sweetalert_and_redirect('Gagal', 'Mutasi celengan gagal ditambahkan.', 'error', saving_goal_redirect());
 }
 
 if ($act === 'status') {

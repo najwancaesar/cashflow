@@ -1,8 +1,20 @@
-<?php 
+<?php
 session_start();
 if(!isset($_SESSION['nama'])){
     header('Location: ./');
     exit;
+}
+
+function cashflow_asset_version($relativePath)
+{
+    $normalizedPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, ltrim((string) $relativePath, '/\\'));
+    $absolutePath = __DIR__ . DIRECTORY_SEPARATOR . $normalizedPath;
+    if (!is_file($absolutePath)) {
+        return '1';
+    }
+
+    $modifiedAt = filemtime($absolutePath);
+    return $modifiedAt !== false ? (string) $modifiedAt : '1';
 }
 
 ?>
@@ -11,7 +23,7 @@ if(!isset($_SESSION['nama'])){
 
 <head>
     <?php include "includes/header.php" ?>
-    <link href="assets/css/app-responsive.css" rel="stylesheet" />
+    <link href="assets/css/app-responsive.css?v=<?= rawurlencode(cashflow_asset_version('assets/css/app-responsive.css')) ?>" rel="stylesheet" />
 </head>
 
 <body class="g-sidenav-show bg-gray-200">
@@ -20,6 +32,7 @@ if(!isset($_SESSION['nama'])){
     <main class="main-content position-relative border-radius-lg app-main-content">
         <!-- Navbar -->
         <?php include "includes/navbar.php" ?>
+        <?php include "includes/quick_add.php" ?>
 
         <!-- End Navbar -->
         <script src="assets/js/jquery.js"></script>
@@ -31,6 +44,7 @@ if(!isset($_SESSION['nama'])){
     <script src="assets/js/core/bootstrap.min.js"></script>
     <script src="assets/js/plugins/perfect-scrollbar.min.js"></script>
     <script src="assets/js/plugins/smooth-scrollbar.min.js"></script>
+    <script src="assets/js/app-vendor-compat.js?v=<?= rawurlencode(cashflow_asset_version('assets/js/app-vendor-compat.js')) ?>"></script>
     <script src="assets/js/plugins/chartjs.min.js"></script>
     <script src="assets/vendor/daterangepicker/moment.min.js"></script>
     <script src="assets/vendor/daterangepicker/daterangepicker.js"></script>
@@ -70,7 +84,8 @@ if(!isset($_SESSION['nama'])){
     </script>
     <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
     <script src="assets/js/material-dashboard.min.js?v=3.0.0"></script>
-    <script src="assets/js/app-ui-fixes.js"></script>
+    <script src="assets/js/app-ui-fixes.js?v=<?= rawurlencode(cashflow_asset_version('assets/js/app-ui-fixes.js')) ?>"></script>
+    <script src="assets/js/quick-add.js?v=<?= rawurlencode(cashflow_asset_version('assets/js/quick-add.js')) ?>"></script>
     <?php
     include_once "includes/sweetalert_helper.php";
     render_sweetalert_flash_script();

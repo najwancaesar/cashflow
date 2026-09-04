@@ -1,25 +1,57 @@
 <?php
 include __DIR__ . "/../includes/koneksi.php";
 include_once __DIR__ . "/../includes/csrf_helper.php";
+include_once __DIR__ . "/../includes/ui_helper.php";
+include_once __DIR__ . "/../includes/wallet_type_helper.php";
+include_once __DIR__ . "/../includes/budget_helper.php";
 
 $userYangSedangLogin = (int) $_SESSION['id_user'];
+$walletCustomTypeMap = [];
+if ($userYangSedangLogin > 0) {
+    $loadedWalletCustomTypeMap = cashflow_get_wallet_custom_type_map($con, $userYangSedangLogin);
+    $walletCustomTypeMap = is_array($loadedWalletCustomTypeMap) ? $loadedWalletCustomTypeMap : [];
+}
+$budgetUsageMap = $userYangSedangLogin > 0
+    ? cashflow_get_user_budget_usage_map($con, $userYangSedangLogin)
+    : [];
+
+function build_pengeluaran_budget_confirmation(array $row, array $budgetUsageMap)
+{
+    $default = [
+        'title' => 'Ubah status transaksi?',
+        'text' => 'Status transaksi akan diubah menjadi Selesai.',
+    ];
+
+    if ((string) ($row['status'] ?? '') === 'selesai') {
+        $default['text'] = 'Status transaksi akan diubah menjadi Pending.';
+        return $default;
+    }
+
+    $key = cashflow_budget_period_key($row['id_kategori'] ?? 0, $row['tanggal'] ?? '');
+    $budget = $key !== '' ? ($budgetUsageMap[$key] ?? null) : null;
+    $budgetNominal = (float) ($budget['nominal_budget'] ?? 0);
+    if ($budgetNominal <= 0) {
+        return $default;
+    }
+
+    $projectedUsage = (float) ($budget['total_terpakai'] ?? 0) + (float) ($row['jumlah'] ?? 0);
+    if ($projectedUsage < $budgetNominal) {
+        return $default;
+    }
+
+    return [
+        'title' => 'Budget kategori akan terlampaui',
+        'text' => 'Jika diselesaikan, penggunaan kategori menjadi Rp. '
+            . number_format($projectedUsage)
+            . ' dari budget Rp. '
+            . number_format($budgetNominal)
+            . '. Transaksi tetap boleh dilanjutkan.',
+    ];
+}
 
 if (strtolower((string) ($_SESSION['role'] ?? '')) === 'admin') {
     echo "<script>window.location.href='main.php?module=home';</script>";
     exit;
-}
-
-function pengeluaran_wallet_type_label($type)
-{
-    $labels = [
-        'cash' => 'Cash',
-        'bank' => 'Bank',
-        'e_wallet' => 'E-Wallet',
-        'tabungan' => 'Tabungan',
-        'lainnya' => 'Lainnya',
-    ];
-
-    return $labels[$type] ?? 'Lainnya';
 }
 
 $kategoriPengeluaran = [];
@@ -67,7 +99,9 @@ $transaksiQuery = "SELECT
                        kategori.nama_kategori,
                        wallet.nama_wallet,
                        wallet.tipe_wallet,
-                       wallet.is_active AS wallet_is_active
+                       wallet.is_active AS wallet_is_active,
+                       recurring_generation_log.id_log AS recurring_log_id,
+                       hutang.id_hutang AS linked_hutang_id
                    FROM pengeluaran
                    LEFT JOIN kategori
                        ON pengeluaran.id_kategori = kategori.id_kategori
@@ -76,6 +110,13 @@ $transaksiQuery = "SELECT
                    LEFT JOIN wallet
                        ON pengeluaran.id_wallet = wallet.id_wallet
                       AND wallet.user_id = pengeluaran.user
+                   LEFT JOIN recurring_generation_log
+                       ON recurring_generation_log.user_id = pengeluaran.user
+                      AND recurring_generation_log.tipe_transaksi = 'pengeluaran'
+                      AND recurring_generation_log.id_transaksi = pengeluaran.id_pengeluaran
+                   LEFT JOIN hutang
+                       ON hutang.user = pengeluaran.user
+                      AND hutang.id_pengeluaran = pengeluaran.id_pengeluaran
                    WHERE pengeluaran.user = ?
                    ORDER BY pengeluaran.tanggal DESC, pengeluaran.id_pengeluaran DESC";
 $transaksiStmt = mysqli_prepare($con, $transaksiQuery);
@@ -89,45 +130,36 @@ while ($row = mysqli_fetch_assoc($transaksiResult)) {
 }
 mysqli_stmt_close($transaksiStmt);
 
-$renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) use ($defaultWalletName, $defaultWalletId) {
+$renderPengeluaranRow = function (array $row) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap, $budgetUsageMap) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
-    $walletDisplayType = $row['tipe_wallet'] ? pengeluaran_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+    $walletDisplayTypeMeta = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
+    $walletDisplayType = cashflow_wallet_type_text($walletDisplayTypeMeta);
+    $budgetConfirmation = build_pengeluaran_budget_confirmation($row, $budgetUsageMap);
     $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
         ? (int) $row['id_wallet']
         : $defaultWalletId;
 ?>
     <tr>
-        <?php if ($includeBulkColumn) { ?>
-            <td class="bulk-select-col text-center">
-                <input
-                    type="checkbox"
-                    class="bulk-select-row bulk-pengeluaran-checkbox"
-                    name="id_pengeluaran[]"
-                    value="<?= (int) $row['id_pengeluaran'] ?>"
-                    form="bulkDeletePengeluaranForm"
-                    aria-label="Pilih transaksi pengeluaran ini">
-            </td>
-        <?php } ?>
-        <td class="align-middle text-center">
-            <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars($row['tanggal']) ?></span>
+        <td class="align-middle text-center" data-order="<?= htmlspecialchars((string) $row['tanggal'], ENT_QUOTES, 'UTF-8') ?>">
+            <span class="text-secondary text-xs font-weight-bold"><?= htmlspecialchars(cashflow_format_date($row['tanggal']), ENT_QUOTES, 'UTF-8') ?></span>
         </td>
-        <td>
-            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['catatan']) ?></p>
+        <td class="cashflow-long-text-col">
+            <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['catatan']) ?></p>
         </td>
-        <td>
+        <td data-order="<?= htmlspecialchars((string) ($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?>">
             <p class="text-xs text-secondary mb-0">
                 <?= htmlspecialchars($row['nama_kategori'] ?? 'Belum dikategorikan') ?>
             </p>
         </td>
         <td>
-            <p class="text-xs font-weight-bold mb-0">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></p>
+            <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?></p>
         </td>
         <td>
             <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></p>
-            <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></p>
+            <p class="text-xs text-secondary mb-0"><?= cashflow_wallet_type_inline_html($walletDisplayTypeMeta) ?></p>
         </td>
         <td class="align-middle text-center text-sm">
             <form action="actions/aksi_pengeluaran.php?act=l" method="post" class="d-inline">
@@ -136,8 +168,8 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
                 <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
                 <button type="submit"
                     data-confirm="true"
-                    data-confirm-title="Ubah status transaksi?"
-                    data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
+                    data-confirm-title="<?= htmlspecialchars($budgetConfirmation['title'], ENT_QUOTES, 'UTF-8') ?>"
+                    data-confirm-text="<?= htmlspecialchars($budgetConfirmation['text'], ENT_QUOTES, 'UTF-8') ?>"
                     data-confirm-confirm-text="Ya, ubah"
                     data-confirm-cancel-text="Batal"
                     class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
@@ -145,7 +177,9 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
                 </button>
             </form>
         </td>
-        <td class="align-middle">
+        <td class="align-middle cashflow-action-col">
+            <div class="cashflow-action-group">
+            <?php if (empty($row['recurring_log_id']) && empty($row['linked_hutang_id'])) { ?>
             <form action="actions/aksi_pengeluaran.php?act=h" method="post" class="d-inline">
                 <?= csrf_input() ?>
                 <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
@@ -155,12 +189,14 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
                     data-confirm-text="Data pengeluaran yang dihapus tidak bisa dikembalikan."
                     data-confirm-confirm-text="Ya, hapus"
                     data-confirm-cancel-text="Batal"
-                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                    class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+                    title="Hapus" aria-label="Hapus">
                     <i class="fa fa-trash" aria-hidden="true"></i>
                 </button>
             </form>
+            <?php } ?>
 
-            <a type="submit"
+            <a href="#" role="button"
                 data-id="<?= (int) $row['id_pengeluaran'] ?>"
                 data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES) ?>"
                 data-status="<?= htmlspecialchars($row['status'], ENT_QUOTES) ?>"
@@ -168,20 +204,24 @@ $renderPengeluaranRow = function (array $row, bool $includeBulkColumn = false) u
                 data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
                 data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
                 data-wallet="<?= htmlspecialchars((string) $editWalletId, ENT_QUOTES) ?>"
-                class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
+                class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran"
+                title="Edit pengeluaran" aria-label="Edit pengeluaran">
                 <i class="fa fa-pencil" aria-hidden="true"></i>
             </a>
+            </div>
         </td>
     </tr>
 <?php
 };
 
-$renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $defaultWalletId) {
+$renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $defaultWalletId, $walletCustomTypeMap, $budgetUsageMap) {
     $statusTransaksi = (string) ($row['status'] ?? 'pending');
     $targetStatus = $statusTransaksi === 'selesai' ? 'pending' : 'selesai';
     $targetStatusLabel = ucfirst($targetStatus);
     $walletDisplayName = $row['nama_wallet'] ?: $defaultWalletName;
-    $walletDisplayType = $row['tipe_wallet'] ? pengeluaran_wallet_type_label($row['tipe_wallet']) : 'Fallback';
+    $walletDisplayTypeMeta = cashflow_wallet_type_meta_from_row($row, $walletCustomTypeMap);
+    $walletDisplayType = cashflow_wallet_type_text($walletDisplayTypeMeta);
+    $budgetConfirmation = build_pengeluaran_budget_confirmation($row, $budgetUsageMap);
     $editWalletId = !empty($row['id_wallet']) && (string) ($row['wallet_is_active'] ?? '0') === '1'
         ? (int) $row['id_wallet']
         : $defaultWalletId;
@@ -190,7 +230,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         (string) ($row['catatan'] ?? ''),
         (string) ($row['nama_kategori'] ?? ''),
         (string) ($row['nama_wallet'] ?? ''),
-        (string) ($row['tipe_wallet'] ?? ''),
+        $walletDisplayType,
         (string) ($row['status'] ?? ''),
         (string) ($row['jumlah'] ?? ''),
     ])));
@@ -198,7 +238,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
     <article class="mobile-transaction-card" data-search="<?= htmlspecialchars($searchText, ENT_QUOTES, 'UTF-8') ?>">
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Tanggal</span>
-            <span class="mobile-transaction-value"><?= htmlspecialchars($row['tanggal']) ?></span>
+            <span class="mobile-transaction-value"><?= htmlspecialchars(cashflow_format_date($row['tanggal']), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Catatan</span>
@@ -210,13 +250,13 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         </div>
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Jumlah Pengeluaran</span>
-            <span class="mobile-transaction-value fw-bold">Rp. <?= number_format((float) ($row['jumlah'] ?? 0)) ?></span>
+            <span class="mobile-transaction-value fw-bold"><?= htmlspecialchars(cashflow_format_rupiah($row['jumlah'] ?? 0), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="mobile-transaction-row">
             <span class="mobile-transaction-label">Wallet</span>
             <span class="mobile-transaction-value">
                 <strong><?= htmlspecialchars($walletDisplayName, ENT_QUOTES, 'UTF-8') ?></strong><br>
-                <small><?= htmlspecialchars($walletDisplayType, ENT_QUOTES, 'UTF-8') ?></small>
+                <small><?= cashflow_wallet_type_inline_html($walletDisplayTypeMeta) ?></small>
             </span>
         </div>
         <div class="mobile-transaction-row">
@@ -228,8 +268,8 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                     <input type="hidden" name="status" value="<?= htmlspecialchars($targetStatus, ENT_QUOTES, 'UTF-8') ?>">
                     <button type="submit"
                         data-confirm="true"
-                        data-confirm-title="Ubah status transaksi?"
-                        data-confirm-text="Status transaksi akan diubah menjadi <?= htmlspecialchars($targetStatusLabel, ENT_QUOTES, 'UTF-8') ?>."
+                        data-confirm-title="<?= htmlspecialchars($budgetConfirmation['title'], ENT_QUOTES, 'UTF-8') ?>"
+                        data-confirm-text="<?= htmlspecialchars($budgetConfirmation['text'], ENT_QUOTES, 'UTF-8') ?>"
                         data-confirm-confirm-text="Ya, ubah"
                         data-confirm-cancel-text="Batal"
                         class="badge badge-sm <?= $statusTransaksi === 'selesai' ? 'bg-gradient-success' : 'bg-gradient-warning' ?> border-0 text-white">
@@ -241,6 +281,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
         <div class="mobile-transaction-row mobile-transaction-actions-row">
             <span class="mobile-transaction-label">Aksi</span>
             <span class="mobile-transaction-value mobile-transaction-actions">
+                <?php if (empty($row['recurring_log_id']) && empty($row['linked_hutang_id'])) { ?>
                 <form action="actions/aksi_pengeluaran.php?act=h" method="post" class="d-inline">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id_pengeluaran" value="<?= (int) $row['id_pengeluaran'] ?>">
@@ -250,12 +291,14 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                         data-confirm-text="Data pengeluaran yang dihapus tidak bisa dikembalikan."
                         data-confirm-confirm-text="Ya, hapus"
                         data-confirm-cancel-text="Batal"
-                        class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0">
+                        class="text-secondary text-danger font-weight-bold text-xs border-0 bg-transparent p-0"
+                        title="Hapus" aria-label="Hapus">
                         <i class="fa fa-trash" aria-hidden="true"></i>
                     </button>
                 </form>
+                <?php } ?>
 
-                <a type="submit"
+                <a href="#" role="button"
                     data-id="<?= (int) $row['id_pengeluaran'] ?>"
                     data-tanggal="<?= htmlspecialchars($row['tanggal'], ENT_QUOTES) ?>"
                     data-status="<?= htmlspecialchars($row['status'], ENT_QUOTES) ?>"
@@ -263,7 +306,8 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                     data-jumlah="<?= htmlspecialchars($row['jumlah'], ENT_QUOTES) ?>"
                     data-kategori="<?= htmlspecialchars((string) ($row['id_kategori'] ?? ''), ENT_QUOTES) ?>"
                     data-wallet="<?= htmlspecialchars((string) $editWalletId, ENT_QUOTES) ?>"
-                    class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran">
+                    class="text-secondary text-warning font-weight-bold text-xs btneditpengeluaran"
+                    title="Edit pengeluaran" aria-label="Edit pengeluaran">
                     <i class="fa fa-pencil" aria-hidden="true"></i>
                 </a>
             </span>
@@ -288,52 +332,30 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                     </div>
                 </div>
                 <div class="card-body px-0 pb-2">
-                    <form id="bulkDeletePengeluaranForm" action="actions/aksi_pengeluaran.php?act=bulk_delete" method="post" class="d-none">
-                        <?= csrf_input() ?>
-                    </form>
+                    <p class="cashflow-feature-description">Catat penggunaan dana dari wallet. Transaksi selesai mengurangi saldo dan tidak boleh melebihi saldo yang tersedia.</p>
                     <div class="desktop-transaction-section d-none d-md-block">
-                        <div class="transaction-table-toolbar desktop-bulk-toolbar">
-                            <div class="transaction-toolbar-actions">
-                                <button
-                                    type="submit"
-                                    form="bulkDeletePengeluaranForm"
-                                    id="bulkDeletePengeluaranBtn"
-                                    class="btn btn-outline-danger mb-0 bulk-delete-btn"
-                                    disabled
-                                    data-confirm="true"
-                                    data-confirm-title="Hapus transaksi terpilih?"
-                                    data-confirm-text="Data pengeluaran yang dipilih akan dihapus dan tidak bisa dikembalikan."
-                                    data-confirm-confirm-text="Ya, hapus"
-                                    data-confirm-cancel-text="Batal"
-                                    data-confirm-form="#bulkDeletePengeluaranForm">
-                                    <i class="fa fa-trash" aria-hidden="true"></i>
-                                    <span class="bulk-delete-label">Hapus Terpilih</span>
-                                </button>
-                                <button type="button" class="btn btn-secondary mb-0 add-transaction-btn" data-bs-toggle="modal"
-                                    data-bs-target="#modalTambah">
-                                    <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
-                                </button>
-                            </div>
+                        <div class="cashflow-table-page-actions">
+                            <button type="button" class="btn btn-secondary mb-0 add-transaction-btn" data-bs-toggle="modal"
+                                data-bs-target="#modalTambah">
+                                <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
+                            </button>
                         </div>
-                        <div class="table-responsive p-4 mx-2">
+                        <div class="table-responsive cashflow-table-scroll p-4 mx-2">
                             <table class="table align-items-center mb-0 transaction-table" id="datatablePengeluaranDesktop" data-skip-responsive="true">
                                 <thead>
                                     <tr>
-                                        <th class="bulk-select-col text-center">
-                                            <input type="checkbox" id="selectAllPengeluaran" class="bulk-select-all" aria-label="Pilih semua pengeluaran">
-                                        </th>
                                         <th>Tanggal</th>
-                                        <th>Catatan</th>
+                                        <th class="cashflow-long-text-col">Catatan</th>
                                         <th>Kategori</th>
                                         <th>Jumlah Pengeluaran</th>
                                         <th>Wallet</th>
                                         <th>Status</th>
-                                        <th></th>
+                                        <th class="cashflow-action-col">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php foreach ($transaksiRows as $row) {
-                                        $renderPengeluaranRow($row, true);
+                                        $renderPengeluaranRow($row);
                                     } ?>
                                 </tbody>
                             </table>
@@ -341,20 +363,34 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                     </div>
 
                     <div class="mobile-transaction-section d-block d-md-none">
-                        <div class="px-4 mx-2 mb-3">
-                            <button type="button" class="btn btn-secondary w-100 mb-0 add-transaction-btn" data-bs-toggle="modal"
-                                data-bs-target="#modalTambah">
-                                <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
-                            </button>
-                        </div>
-                        <div class="px-4 mx-2 mb-3">
-                            <label class="form-label fw-bold text-sm mb-2" for="mobilePengeluaranSearch">Search:</label>
-                            <input type="search" class="form-control mobile-transaction-search" id="mobilePengeluaranSearch" data-target="#mobilePengeluaranList" placeholder="Ketik untuk mencari data...">
+                        <div class="mobile-transaction-toolbar">
+                            <?php if (!empty($transaksiRows)) { ?>
+                                <div class="cashflow-toolbar-group cashflow-toolbar-data">
+                                    <div class="w-100">
+                                        <label class="form-label fw-bold text-sm mb-2" for="mobilePengeluaranSearch">Search:</label>
+                                        <input type="search" class="form-control mobile-transaction-search" id="mobilePengeluaranSearch" data-target="#mobilePengeluaranList" placeholder="Ketik untuk mencari data...">
+                                    </div>
+                                </div>
+                            <?php } ?>
+                            <div class="cashflow-toolbar-group cashflow-toolbar-actions">
+                                <button type="button" class="btn btn-secondary w-100 mb-0 add-transaction-btn" data-bs-toggle="modal"
+                                    data-bs-target="#modalTambah">
+                                    <i class="fa fa-plus-circle" aria-hidden="true"></i> Tambah Transaksi
+                                </button>
+                            </div>
                         </div>
                         <div class="mobile-transaction-list px-4 mx-2" id="mobilePengeluaranList">
-                            <?php foreach ($transaksiRows as $row) {
-                                $renderMobilePengeluaranCard($row);
-                            } ?>
+                            <?php if (empty($transaksiRows)) { ?>
+                                <div class="cashflow-empty-state">
+                                    <i class="fa fa-arrow-circle-up" aria-hidden="true"></i>
+                                    <p class="mb-1">Belum ada pengeluaran.</p>
+                                    <small>Gunakan tombol Tambah Transaksi untuk membuat pencatatan pertama.</small>
+                                </div>
+                            <?php } else { ?>
+                                <?php foreach ($transaksiRows as $row) {
+                                    $renderMobilePengeluaranCard($row);
+                                } ?>
+                            <?php } ?>
                         </div>
                     </div>
                 </div>
@@ -367,7 +403,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content">
-            <form action="actions/aksi_pengeluaran.php?act=t" method="post">
+            <form action="actions/aksi_pengeluaran.php?act=t" method="post" id="pengeluaranTransactionForm" class="budget-warning-expense-form">
                 <?= csrf_input() ?>
                 <div class="modal-header p-0 position-relative mt-n4 mx-3 z-index-2">
                     <div
@@ -415,7 +451,7 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                                 <option value="">Pilih Wallet</option>
                                 <?php foreach ($walletAktif as $wallet) { ?>
                                     <option value="<?= (int) $wallet['id_wallet'] ?>" <?= (int) $wallet['id_wallet'] === (int) $defaultWalletId ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(pengeluaran_wallet_type_label($wallet['tipe_wallet']), ENT_QUOTES, 'UTF-8') ?>
+                                        <?= htmlspecialchars($wallet['nama_wallet'], ENT_QUOTES, 'UTF-8') ?> - <?= htmlspecialchars(cashflow_wallet_type_text(cashflow_wallet_type_meta_from_row($wallet, $walletCustomTypeMap)), ENT_QUOTES, 'UTF-8') ?>
                                     </option>
                                 <?php } ?>
                             </select>
@@ -452,7 +488,11 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
 <script>
     $(document).ready(function() {
         var defaultWalletId = "<?= htmlspecialchars((string) $defaultWalletId, ENT_QUOTES, 'UTF-8') ?>";
+        var budgetUsageMap = <?= json_encode($budgetUsageMap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        var originalExpenseBudgetState = null;
         var datatableLanguage = {
+            "emptyTable": "Belum ada pengeluaran.",
+            "zeroRecords": "Tidak ada pengeluaran yang cocok dengan pencarian.",
             "paginate": {
                 "first": "&laquo",
                 "last": "&raquo",
@@ -460,120 +500,132 @@ $renderMobilePengeluaranCard = function (array $row) use ($defaultWalletName, $d
                 "previous": "&lt"
             },
         };
-        var datatableDom = ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">';
 
-        var pengeluaranDesktopTable = $('#datatablePengeluaranDesktop').DataTable({
+        $('#datatablePengeluaranDesktop').DataTable({
             language: datatableLanguage,
             columnDefs: [
-                { targets: 0, orderable: false, searchable: false },
                 { targets: -1, orderable: false, searchable: false }
             ],
-            dom: datatableDom
+            order: [[0, 'desc']],
+            dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
         });
 
-        var selectedPengeluaranIds = {};
-        var bulkPengeluaranResizeTimer = null;
+        $('.cashflow-table-page-actions').appendTo('.cashflow-datatable-top');
 
-        function syncBulkPengeluaranFormInputs() {
-            var $form = $('#bulkDeletePengeluaranForm');
-            $form.find('.js-bulk-generated-input').remove();
-
-            Object.keys(selectedPengeluaranIds).forEach(function(id) {
-                $('<input>', {
-                    type: 'hidden',
-                    name: 'id_pengeluaran[]',
-                    value: id,
-                    class: 'js-bulk-generated-input'
-                }).appendTo($form);
-            });
-        }
-
-        function syncPengeluaranCheckboxNodes(nodes) {
-            $(nodes).find('.bulk-pengeluaran-checkbox').each(function() {
-                this.checked = selectedPengeluaranIds[this.value] === true;
-            });
-        }
-
-        function updateBulkPengeluaranState() {
-            var selectedCount = Object.keys(selectedPengeluaranIds).length;
-            var $button = $('#bulkDeletePengeluaranBtn');
-            var $label = $button.find('.bulk-delete-label');
-            var filteredNodes = pengeluaranDesktopTable.rows({ search: 'applied' }).nodes();
-            var $filteredCheckboxes = $(filteredNodes).find('.bulk-pengeluaran-checkbox');
-            var filteredCount = $filteredCheckboxes.length;
-            var filteredCheckedCount = 0;
-            var selectAll = $('#selectAllPengeluaran').get(0);
-
-            $filteredCheckboxes.each(function() {
-                if (selectedPengeluaranIds[this.value] === true) {
-                    filteredCheckedCount++;
-                }
-            });
-
-            syncBulkPengeluaranFormInputs();
-            $button.prop('disabled', selectedCount === 0);
-            $label.text(selectedCount > 0 ? 'Hapus Terpilih (' + selectedCount + ')' : 'Hapus Terpilih');
-
-            if (selectAll) {
-                selectAll.checked = filteredCount > 0 && filteredCheckedCount === filteredCount;
-                selectAll.indeterminate = filteredCheckedCount > 0 && filteredCheckedCount < filteredCount;
-            }
-        }
-
-        $('#selectAllPengeluaran').on('change', function() {
-            var checked = this.checked;
-            var filteredNodes = pengeluaranDesktopTable.rows({ search: 'applied' }).nodes();
-
-            $(filteredNodes).find('.bulk-pengeluaran-checkbox').each(function() {
-                this.checked = checked;
-                if (checked) {
-                    selectedPengeluaranIds[this.value] = true;
-                } else {
-                    delete selectedPengeluaranIds[this.value];
-                }
-            });
-
-            updateBulkPengeluaranState();
-        });
-
-        $(document).on('change', '.bulk-pengeluaran-checkbox', function() {
-            if (this.checked) {
-                selectedPengeluaranIds[this.value] = true;
-            } else {
-                delete selectedPengeluaranIds[this.value];
+        function budgetPeriodKey(categoryId, transactionDate) {
+            var category = parseInt(categoryId, 10);
+            var date = String(transactionDate || '');
+            if (!category || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                return '';
             }
 
-            updateBulkPengeluaranState();
-        });
+            return date.slice(0, 7) + ':' + category;
+        }
 
-        pengeluaranDesktopTable.on('draw', function() {
-            syncPengeluaranCheckboxNodes(pengeluaranDesktopTable.rows({ page: 'current' }).nodes());
-            updateBulkPengeluaranState();
-        });
+        function budgetNominalNumber(value) {
+            var digits = String(value || '').replace(/\D/g, '');
+            return digits ? Number(digits) : 0;
+        }
 
-        $('#bulkDeletePengeluaranForm').on('submit', function() {
-            syncBulkPengeluaranFormInputs();
-        });
+        function continueExpenseSubmit(form, submitter) {
+            form.dataset.budgetWarningConfirmed = 'true';
+            if (typeof form.requestSubmit === 'function') {
+                submitter ? form.requestSubmit(submitter) : form.requestSubmit();
+                return;
+            }
 
-        $(window).on('resize orientationchange', function() {
-            clearTimeout(bulkPengeluaranResizeTimer);
-            bulkPengeluaranResizeTimer = setTimeout(function() {
-                pengeluaranDesktopTable.columns.adjust();
-                syncPengeluaranCheckboxNodes(pengeluaranDesktopTable.rows({ page: 'current' }).nodes());
-                updateBulkPengeluaranState();
-            }, 180);
-        });
+            form.submit();
+        }
 
-        syncPengeluaranCheckboxNodes(pengeluaranDesktopTable.rows({ page: 'current' }).nodes());
-        updateBulkPengeluaranState();
+        $('#pengeluaranTransactionForm').on('submit', function(event) {
+            var form = this;
+            if (form.dataset.budgetWarningConfirmed === 'true') {
+                delete form.dataset.budgetWarningConfirmed;
+                return;
+            }
+
+            var status = String($(form).find('[name="status"]').val() || '');
+            var categoryId = $(form).find('[name="id_kategori"]').val();
+            var transactionDate = $(form).find('[name="tanggal"]').val();
+            var amount = budgetNominalNumber($(form).find('[name="jumlah"]').val());
+            var key = budgetPeriodKey(categoryId, transactionDate);
+            var budget = key ? budgetUsageMap[key] : null;
+            var budgetNominal = Number(budget && budget.nominal_budget || 0);
+
+            if (status !== 'selesai' || amount <= 0 || budgetNominal <= 0) {
+                return;
+            }
+
+            var currentUsage = Number(budget.total_terpakai || 0);
+            if (originalExpenseBudgetState && originalExpenseBudgetState.status === 'selesai') {
+                var originalKey = budgetPeriodKey(
+                    originalExpenseBudgetState.categoryId,
+                    originalExpenseBudgetState.transactionDate
+                );
+                if (originalKey === key) {
+                    currentUsage = Math.max(0, currentUsage - originalExpenseBudgetState.amount);
+                }
+            }
+
+            var projectedUsage = currentUsage + amount;
+            if (projectedUsage < budgetNominal) {
+                return;
+            }
+
+            event.preventDefault();
+            var nativeEvent = event.originalEvent || event;
+            var submitter = nativeEvent.submitter || null;
+            var warningText = 'Penggunaan kategori akan menjadi Rp. '
+                + projectedUsage.toLocaleString('id-ID')
+                + ' dari budget Rp. '
+                + budgetNominal.toLocaleString('id-ID')
+                + '. Budget tidak memblokir transaksi.';
+
+            if (typeof Swal === 'undefined') {
+                if (window.confirm('Budget kategori akan terlampaui\n\n' + warningText + '\n\nTetap simpan pengeluaran?')) {
+                    continueExpenseSubmit(form, submitter);
+                }
+                return;
+            }
+
+            Swal.fire({
+                title: 'Budget kategori akan terlampaui',
+                text: warningText,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Tetap simpan',
+                cancelButtonText: 'Periksa kembali',
+                confirmButtonColor: '#0ea5e9',
+                cancelButtonColor: '#94a3b8',
+                reverseButtons: true,
+                focusCancel: true
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    continueExpenseSubmit(form, submitter);
+                }
+            });
+        });
 
         $(document).on("click", ".btneditpengeluaran", function() {
             var walletId = $(this).attr("data-wallet") || defaultWalletId;
             $('#id_wallet').val(walletId);
+            originalExpenseBudgetState = {
+                status: String($(this).attr('data-status') || ''),
+                transactionDate: String($(this).attr('data-tanggal') || ''),
+                categoryId: String($(this).attr('data-kategori') || ''),
+                amount: Number($(this).attr('data-jumlah') || 0)
+            };
+        });
+
+        $(document).on('click', '[data-bs-target="#modalTambah"]:not(.btneditpengeluaran)', function() {
+            originalExpenseBudgetState = null;
+            delete document.getElementById('pengeluaranTransactionForm').dataset.budgetWarningConfirmed;
         });
 
         $('#modalTambah').on('hidden.bs.modal', function() {
             $('#id_wallet').val(defaultWalletId);
+            originalExpenseBudgetState = null;
+            delete document.getElementById('pengeluaranTransactionForm').dataset.budgetWarningConfirmed;
         });
 
         $(document).on('input', '.mobile-transaction-search', function() {

@@ -1,4 +1,11 @@
 (function () {
+    'use strict';
+
+    if (window.__cashflowUiFixesInitialized) {
+        return;
+    }
+    window.__cashflowUiFixesInitialized = true;
+
     var lastModalTrigger = null;
     var modalTriggerSelector = [
         '[data-bs-toggle="modal"]',
@@ -23,58 +30,12 @@
         }
     }
 
-    function enhanceDataTableToolbar(table) {
-        if (!window.jQuery || !table) {
-            return;
-        }
-
-        var $ = window.jQuery;
-        var $table = $(table);
-        var $wrapper = $table.closest('.dataTables_wrapper');
-        var $tableArea = $wrapper.closest('.table-responsive');
-        var $cardBody = $tableArea.closest('.card-body');
-
-        if (!$wrapper.length || !$tableArea.length || !$cardBody.length) {
-            return;
-        }
-
-        if ($cardBody.children('.cashflow-table-toolbar').length) {
-            return;
-        }
-
-        var $controls = $wrapper.children('.d-flex').first();
-        if (!$controls.length) {
-            return;
-        }
-
-        var $action = $cardBody.children('.text-end').filter(function () {
-            return $(this).find('button[data-bs-toggle="modal"], a[data-bs-toggle="modal"]').length > 0;
-        }).first();
-
-        var $toolbar = $('<div class="cashflow-table-toolbar"></div>');
-        $controls.addClass('cashflow-table-controls');
-
-        $tableArea.before($toolbar);
-        $toolbar.append($controls);
-
-        if ($action.length) {
-            $action.addClass('cashflow-table-action');
-            $toolbar.append($action);
-        }
-
-        $controls.find('.dataTables_filter input')
-            .attr('placeholder', 'Ketik untuk mencari data...');
-    }
-
     function annotateResponsiveTable(table) {
         if (!table || table.dataset.skipResponsive === 'true' || table.classList.contains('cashflow-responsive-table')) {
             return;
         }
 
         var headers = Array.prototype.map.call(table.querySelectorAll('thead th'), function (header) {
-            if (header.classList.contains('bulk-select-col')) {
-                return null;
-            }
             return (header.textContent || '').replace(/\s+/g, ' ').trim();
         });
 
@@ -86,13 +47,7 @@
 
         Array.prototype.forEach.call(table.querySelectorAll('tbody tr'), function (row) {
             Array.prototype.forEach.call(row.children, function (cell, index) {
-                if (cell.classList.contains('bulk-select-col')) {
-                    cell.removeAttribute('data-label');
-                    cell.setAttribute('aria-hidden', 'true');
-                    return;
-                }
-
-                if (cell.classList.contains('action-col')) {
+                if (cell.classList.contains('action-col') || cell.classList.contains('cashflow-action-col')) {
                     cell.setAttribute('data-label', 'Aksi');
                     return;
                 }
@@ -114,13 +69,11 @@
         var $ = window.jQuery;
 
         $(document).on('init.dt', function (event, settings) {
-            enhanceDataTableToolbar(settings.nTable);
             annotateResponsiveTable(settings.nTable);
         });
 
         $(function () {
             $('table.dataTable, table[id="datatable"]').each(function () {
-                enhanceDataTableToolbar(this);
                 annotateResponsiveTable(this);
             });
         });
@@ -141,7 +94,6 @@
             '#iconNavbarSidenav',
             '#iconSidenav'
         ].join(',');
-        var sidebarToggle = document.getElementById('iconNavbarSidenav');
 
         function clearTapState(element) {
             if (!element) {
@@ -151,17 +103,6 @@
             window.setTimeout(function () {
                 element.classList.remove('cashflow-tap-active');
             }, 140);
-        }
-
-        function syncSidebarState() {
-            if (!sidebarToggle) {
-                return;
-            }
-
-            sidebarToggle.classList.toggle(
-                'cashflow-sidebar-open',
-                document.body.classList.contains('g-sidenav-pinned')
-            );
         }
 
         document.addEventListener('pointerdown', function (event) {
@@ -182,14 +123,193 @@
             clearTapState(event.target.closest(tapSelector));
         }, true);
 
-        document.addEventListener('click', function (event) {
-            if (event.target.closest('#iconNavbarSidenav, #iconSidenav')) {
-                window.setTimeout(syncSidebarState, 40);
-            }
-        }, true);
+    }
 
-        window.addEventListener('resize', syncSidebarState);
+    function setupMobileSidebar() {
+        var body = document.body;
+        var sidenav = document.getElementById('sidenav-main');
+        var sidebarToggle = document.getElementById('iconNavbarSidenav');
+        var sidebarClose = document.getElementById('iconSidenav');
+        var backdrop = document.querySelector('[data-cashflow-sidenav-backdrop]');
+
+        if (!body || !sidenav || !sidebarToggle || !backdrop) {
+            return;
+        }
+
+        var resizeFrame = null;
+
+        function setClassState(element, className, enabled) {
+            if (element.classList.contains(className) !== enabled) {
+                element.classList.toggle(className, enabled);
+            }
+        }
+
+        function setAttributeValue(element, name, value) {
+            if (element.getAttribute(name) !== value) {
+                element.setAttribute(name, value);
+            }
+        }
+
+        function isMobileSidebar() {
+            return window.innerWidth < 1200;
+        }
+
+        function syncSidebarState() {
+            if (!isMobileSidebar()) {
+                setClassState(body, 'g-sidenav-pinned', false);
+                setClassState(body, 'cashflow-sidenav-open', false);
+                setClassState(sidebarToggle, 'cashflow-sidebar-open', false);
+                setAttributeValue(sidebarToggle, 'aria-expanded', 'false');
+                setAttributeValue(sidebarToggle, 'aria-label', 'Buka menu navigasi');
+                setAttributeValue(backdrop, 'aria-hidden', 'true');
+                return;
+            }
+
+            var isOpen = body.classList.contains('g-sidenav-pinned');
+
+            setClassState(body, 'cashflow-sidenav-open', isOpen);
+            setClassState(sidebarToggle, 'cashflow-sidebar-open', isOpen);
+            setAttributeValue(sidebarToggle, 'aria-expanded', isOpen ? 'true' : 'false');
+            setAttributeValue(sidebarToggle, 'aria-label', isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi');
+            setAttributeValue(backdrop, 'aria-hidden', isOpen ? 'false' : 'true');
+        }
+
+        function scheduleSidebarSync() {
+            if (resizeFrame !== null) {
+                return;
+            }
+
+            resizeFrame = window.requestAnimationFrame(function () {
+                resizeFrame = null;
+                syncSidebarState();
+            });
+        }
+
+        function closeSidebar(restoreFocus) {
+            body.classList.remove('g-sidenav-pinned', 'cashflow-sidenav-open');
+            syncSidebarState();
+
+            if (restoreFocus) {
+                safeFocus(sidebarToggle);
+            }
+        }
+
+        sidebarToggle.addEventListener('click', function () {
+            scheduleSidebarSync();
+        });
+
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', function () {
+                window.requestAnimationFrame(function () {
+                    closeSidebar(true);
+                });
+            });
+        }
+
+        backdrop.addEventListener('click', function () {
+            closeSidebar(true);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && body.classList.contains('cashflow-sidenav-open')) {
+                event.preventDefault();
+                closeSidebar(true);
+            }
+        });
+
+        window.addEventListener('resize', scheduleSidebarSync, { passive: true });
+
         syncSidebarState();
+    }
+
+    function setupFormLoadingStates() {
+        function restoreSubmitButtons() {
+            document.querySelectorAll('[data-cashflow-loading="true"]').forEach(function (button) {
+                button.disabled = false;
+                button.classList.remove('cashflow-is-loading');
+                button.removeAttribute('aria-busy');
+                button.removeAttribute('data-cashflow-loading');
+                if (button.dataset.cashflowOriginalHtml) {
+                    button.innerHTML = button.dataset.cashflowOriginalHtml;
+                    delete button.dataset.cashflowOriginalHtml;
+                }
+            });
+        }
+
+        document.addEventListener('submit', function (event) {
+            var form = event.target;
+            var button = event.submitter;
+
+            if (!form || !button || form.dataset.noLoading === 'true' || form.target === '_blank') {
+                return;
+            }
+
+            window.setTimeout(function () {
+                if (event.defaultPrevented || button.disabled) {
+                    return;
+                }
+
+                button.dataset.cashflowOriginalHtml = button.innerHTML;
+                button.dataset.cashflowLoading = 'true';
+                button.classList.add('cashflow-is-loading');
+                button.setAttribute('aria-busy', 'true');
+                button.disabled = true;
+                button.innerHTML = '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i> Memproses...';
+            }, 0);
+        });
+
+        window.addEventListener('pageshow', restoreSubmitButtons);
+    }
+
+    function setupMaterialDashboardResizeGuard() {
+        var vendorResizeHandler = window.navbarColorOnResize;
+        var sidenav = document.getElementById('sidenav-main');
+        var configuratorReference = document.querySelector('[data-class]');
+
+        if (typeof vendorResizeHandler !== 'function' || configuratorReference) {
+            return;
+        }
+
+        window.removeEventListener('resize', vendorResizeHandler);
+
+        var resizeFrame = null;
+
+        function applyNavbarColor() {
+            if (!sidenav) {
+                return;
+            }
+
+            if (window.innerWidth > 1200) {
+                if (sidenav.classList.contains('bg-white')) {
+                    sidenav.classList.remove('bg-white');
+                }
+                if (sidenav.classList.contains('bg-transparent')) {
+                    sidenav.classList.remove('bg-transparent');
+                }
+                return;
+            }
+
+            if (!sidenav.classList.contains('bg-white')) {
+                sidenav.classList.add('bg-white');
+            }
+            if (sidenav.classList.contains('bg-transparent')) {
+                sidenav.classList.remove('bg-transparent');
+            }
+        }
+
+        function safeNavbarColorOnResize() {
+            if (resizeFrame !== null) {
+                return;
+            }
+
+            resizeFrame = window.requestAnimationFrame(function () {
+                resizeFrame = null;
+                applyNavbarColor();
+            });
+        }
+
+        window.addEventListener('resize', safeNavbarColorOnResize, { passive: true });
+        applyNavbarColor();
     }
 
     document.addEventListener('click', function (event) {
@@ -226,7 +346,10 @@
         safeFocus(lastModalTrigger);
     });
 
+    setupMaterialDashboardResizeGuard();
     setupDataTableToolbars();
     setupResponsiveTables();
     setupMobileMicroInteractions();
+    setupMobileSidebar();
+    setupFormLoadingStates();
 })();

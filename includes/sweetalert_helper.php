@@ -82,32 +82,7 @@ if (!function_exists('normalize_cashflow_redirect_url')) {
             return $redirect;
         }
 
-        $parts = parse_url($redirect);
-        if (!is_array($parts)) {
-            return $redirect;
-        }
-
-        $path = ltrim((string) ($parts['path'] ?? ''), './');
-        if (strtolower($path) !== 'main.php') {
-            return $redirect;
-        }
-
-        $queryParams = [];
-        if (!empty($parts['query'])) {
-            parse_str($parts['query'], $queryParams);
-        }
-
-        $module = $queryParams['module'] ?? '';
-        if (!in_array((string) $module, cashflow_allowed_clean_modules(), true)) {
-            return $redirect;
-        }
-
-        $cleanUrl = clean_module_url($module, $queryParams);
-        if (!empty($parts['fragment'])) {
-            $cleanUrl .= '#' . $parts['fragment'];
-        }
-
-        return $cleanUrl;
+        return $redirect;
     }
 }
 

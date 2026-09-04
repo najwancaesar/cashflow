@@ -236,13 +236,13 @@
 
 .balance-card {
     grid-area: balance;
-    grid-column: auto !important;
+
     box-shadow: 0 20px 38px rgba(15, 23, 42, 0.16);
 }
 
 .insight-card {
     grid-area: insight;
-    grid-column: auto !important;
+
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -273,12 +273,12 @@
 
 .transaction-card {
     grid-area: transactions;
-    grid-column: auto !important;
+
 }
 
 .mini-card {
     grid-area: mini;
-    grid-column: auto !important;
+
 }
 
 .mock-card,
@@ -625,7 +625,7 @@
     .landing-page .insight-card,
     .landing-page .transaction-card,
     .landing-page .mini-card {
-        grid-column: auto !important;
+
     }
 
     .landing-page .floating-note {

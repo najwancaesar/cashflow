@@ -331,7 +331,7 @@ if ($tableExists) {
                             </div>
                         </div>
                     <?php } ?>
-                    <div class="table-responsive p-4">
+                    <div class="table-responsive cashflow-table-scroll p-4">
                         <?php if (!$tableExists) { ?>
                             <div class="border border-radius-lg p-4 text-center">
                                 <i class="fa fa-history text-secondary mb-2" aria-hidden="true"></i>
@@ -343,7 +343,7 @@ if ($tableExists) {
                                 <p class="text-sm text-secondary mb-0">Belum ada aktivitas yang tercatat.</p>
                             </div>
                         <?php } else { ?>
-                            <table class="table align-items-center mb-0" id="datatableAuditLog">
+                            <table class="table align-items-center mb-0 cashflow-responsive-data cashflow-table-lg" id="datatableAuditLog">
                                 <thead>
                                     <tr>
                                         <th>Tanggal</th>
@@ -351,7 +351,7 @@ if ($tableExists) {
                                         <th>Role</th>
                                         <th>Module</th>
                                         <th>Aksi</th>
-                                        <th>Deskripsi</th>
+                                        <th class="cashflow-long-text-col">Deskripsi</th>
                                         <th>IP Address</th>
                                     </tr>
                                 </thead>
@@ -366,7 +366,7 @@ if ($tableExists) {
                                         }
                                         ?>
                                         <tr>
-                                            <td>
+                                            <td data-order="<?= htmlspecialchars((string) $row['created_at'], ENT_QUOTES, 'UTF-8') ?>">
                                                 <p class="text-xs text-secondary mb-0"><?= htmlspecialchars(audit_log_format_datetime($row['created_at']), ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
@@ -383,8 +383,8 @@ if ($tableExists) {
                                             <td>
                                                 <p class="text-xs font-weight-bold mb-0"><?= htmlspecialchars($row['aksi'] ?? '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
-                                            <td>
-                                                <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['deskripsi'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
+                                            <td class="cashflow-long-text-col">
+                                                <p class="text-xs text-secondary mb-0 cashflow-long-text"><?= htmlspecialchars($row['deskripsi'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
                                             </td>
                                             <td>
                                                 <p class="text-xs text-secondary mb-0"><?= htmlspecialchars($row['ip_address'] ?: '-', ENT_QUOTES, 'UTF-8') ?></p>
@@ -405,7 +405,7 @@ if ($tableExists) {
 $(document).ready(function() {
     if ($('#datatableAuditLog').length) {
         $('#datatableAuditLog').DataTable({
-            order: [],
+            order: [[0, 'desc']],
             language: {
                 "paginate": {
                     "first": "&laquo",
@@ -414,7 +414,7 @@ $(document).ready(function() {
                     "previous": "&lt"
                 },
             },
-            dom: ' <"d-flex"l<"input-group input-group-outline justify-content-end me-4"f>>rt<"d-flex justify-content-between"ip><"clear">'
+            dom: '<"cashflow-datatable-top"l<"input-group input-group-outline"f>>rt<"cashflow-datatable-bottom"ip><"clear">'
         });
     }
 });
